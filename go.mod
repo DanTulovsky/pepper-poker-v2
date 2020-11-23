@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	github.com/DanTulovsky/logger v0.0.0-20201122193752-91fc867e7ce8
+	github.com/Pallinder/go-randomdata v1.2.0
 	github.com/fatih/color v1.10.0
 	github.com/fullstorydev/grpcui v1.1.0
 	github.com/gogo/protobuf v1.3.1 // indirect

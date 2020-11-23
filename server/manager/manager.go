@@ -3,6 +3,7 @@ package manager
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/DanTulovsky/logger"
@@ -45,7 +46,6 @@ func New() *Manager {
 // Run is the main function that starts running the entire system
 func (m *Manager) Run(ctx context.Context) error {
 	m.startServers(ctx, m.fromGrpcServerChan)
-
 	m.createTables()
 
 	m.l.Info("Starting manager loop...")
@@ -83,85 +83,89 @@ func (m *Manager) startServers(ctx context.Context, serverChan chan actions.Play
 
 // tick is one ass through the manager
 func (m *Manager) tick() error {
-	m.l.Info("Tick()")
+	m.l.Debug("Tick()")
 
 	m.processPlayerRequests()
-	// m.processPlayerResponses()
-	m.tickTables()
+
+	if err := m.tickTables(); err != nil {
+		return err
+	}
 
 	time.Sleep(time.Second)
 
 	return nil
 }
 
-func (m *Manager) tickTables() {
+func (m *Manager) tickTables() error {
 	for _, t := range m.tables {
-		t.Tick()
+		// TODO: This stops the entire manager due to one broken table
+		if err := t.Tick(); err != nil {
+			return err
+		}
 	}
+	return nil
 }
-
-// // processPlayerResponses process responses sent to each player's channel (by the table)
-// func (m *Manager) processPlayerResponses() {
-
-// 	for _, p := range m.players {
-// 	OUTER:
-// 		for {
-// 			select {
-// 			case in := <-p.CommChannel:
-
-// 			default:
-// 				break OUTER
-// 			}
-
-// 		}
-// 	}
-
-// }
 
 // processPlayerRequests processes requests sent from the player via the grpc server
 func (m *Manager) processPlayerRequests() {
 	select {
 	case in := <-m.fromGrpcServerChan:
-		m.l.Infof("Received request from player: %#v", in.Data.PlayerAction.String())
+		playerName := in.Data.PlayerName
+		// playerID := in.Data.PlayerID
+		playerAction := in.Data.PlayerAction
+
+		m.l.Infof("[%v] Received request from player: %#v", playerName, playerAction.String())
 
 		switch in.Data.PlayerAction {
 		case proto.PlayerAction_PlayerActionNone:
-			m.l.Info("player sent empty action...")
+			m.l.Infof("[%v] player sent empty action...", playerName)
+
 		case proto.PlayerAction_PlayerActionRegister:
 			if err := m.addPlayer(in); err != nil {
 				m.l.Error(err)
+				break
 			}
 		case proto.PlayerAction_PlayerActionJoinTable:
-			if err := m.joinTable(in); err != nil {
+			var pos int
+			var err error
+			var tableID id.TableID
+			if tableID, pos, err = m.joinTable(in); err != nil {
 				m.l.Error(err)
+				break
 			}
+			m.l.Infof("[%v] joined table [%v] at position [%v]", playerName, tableID, pos)
 		default:
-			m.l.Infof("Doing action: %v", in.Data.PlayerAction.String())
+			// m.l.Infof("[%v] Doing action: %v", playerName, playerAction.String())
 		}
 
 	default:
 	}
 }
 
-func (m *Manager) joinTable(in actions.PlayerAction) error {
+func (m *Manager) joinTable(in actions.PlayerAction) (tableID id.TableID, pos int, err error) {
+	var t *table.Table
+
 	// find available table
-	t, err := m.firstAvailableTable()
+	// TODO: Handle joining a specific table (in.TableID)
+	t, err = m.firstAvailableTable()
 	if err != nil {
-		return err
+		return
 	}
 
-	id := id.PlayerID(in.Data.PlayerID)
+	playerID := id.PlayerID(in.Data.PlayerID)
 	var p *player.Player
 	var ok bool
-	if p, ok = m.players[id]; !ok {
-		return fmt.Errorf("must register first")
+	if p, ok = m.players[playerID]; !ok {
+		return "", -1, fmt.Errorf("must register first")
 	}
-	return t.AddPlayer(p)
+
+	pos, err = t.AddPlayer(p)
+	return t.ID, pos, err
 }
 
 func (m *Manager) firstAvailableTable() (*table.Table, error) {
 	for _, t := range m.tables {
-		if t.State == table.TableStateWaitingPlayers {
+		if t.AvailableToJoin() {
 			return t, nil
 		}
 	}
@@ -173,12 +177,17 @@ func (m *Manager) firstAvailableTable() (*table.Table, error) {
 // TODO: In the future this can pull players from a data store with proper auth
 func (m *Manager) addPlayer(in actions.PlayerAction) error {
 	id := id.PlayerID(in.Data.PlayerID)
+	playerName := in.Data.PlayerName
 
 	if _, ok := m.players[id]; !ok {
-		m.l.Infof("Adding player to manager: %v (%v)", in.Data.PlayerName, in.Data.PlayerID)
-		p := player.New(in.Data.PlayerName, in.ToManagerChan)
+		m.l.Infof("[%v] Adding player to manager (id: %v)", playerName, id)
+		if in.ToManagerChan == nil {
+			log.Fatalf("[%v] null manager channel for player", playerName)
+		}
+		p := player.New(playerName, in.ToManagerChan)
 		m.players[id] = p
+		return nil
 	}
 
-	return nil
+	return fmt.Errorf("[%v] player with id %v already registered", playerName, id)
 }

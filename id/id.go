@@ -11,7 +11,7 @@ func NewTableID() TableID {
 }
 
 func (id TableID) String() string {
-	return id.String()
+	return string(id)
 }
 
 // PlayerID is a unique id for a player
@@ -23,7 +23,7 @@ func NewPlayerID() PlayerID {
 }
 
 func (id PlayerID) String() string {
-	return id.String()
+	return string(id)
 }
 
 // RoundID is a unique id for a round
@@ -35,5 +35,5 @@ func NewRoundID() RoundID {
 }
 
 func (id RoundID) String() string {
-	return id.String()
+	return string(id)
 }

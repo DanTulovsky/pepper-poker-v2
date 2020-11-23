@@ -3,11 +3,13 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"io"
 	"math/rand"
 	"time"
 
 	"github.com/DanTulovsky/logger"
+	"github.com/Pallinder/go-randomdata"
 
 	"github.com/fatih/color"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -22,10 +24,13 @@ var (
 	grpcCrt    = flag.String("grpc_crt", "../../cert/server.crt", "file containg certificate")
 	httpPort   = flag.String("http_port", "", "port to listen on, random if empty")
 	serverAddr = flag.String("server_address", "localhost:8082", "tls server address and port")
+
+	name = flag.String("name", randomdata.SillyName(), "player name")
 )
 
 func main() {
 
+	rand.Seed(time.Now().UnixNano())
 	flag.Parse()
 	logg := logger.New("client", color.New(color.FgBlue))
 
@@ -75,11 +80,12 @@ func main() {
 		}
 	}()
 
+	playerID := rand.Int63n(1000)
 	// register
 	logg.Info("Registering...")
 	req := &ppb.ClientData{
-		PlayerID:     "1",
-		PlayerName:   "Bob",
+		PlayerID:     fmt.Sprint(playerID),
+		PlayerName:   *name,
 		PlayerAction: ppb.PlayerAction_PlayerActionRegister,
 	}
 	if err := stream.Send(req); err != nil {
@@ -89,8 +95,8 @@ func main() {
 	// join table
 	logg.Info("Joining table...")
 	req = &ppb.ClientData{
-		PlayerID:     "1",
-		PlayerName:   "Bob",
+		PlayerID:     fmt.Sprint(playerID),
+		PlayerName:   *name,
 		PlayerAction: ppb.PlayerAction_PlayerActionJoinTable,
 	}
 	if err := stream.Send(req); err != nil {
@@ -101,6 +107,8 @@ func main() {
 	logg.Info("Feeding data...")
 	for {
 		req := &ppb.ClientData{
+			PlayerID:     fmt.Sprint(playerID),
+			PlayerName:   *name,
 			Input:        rand.Int63n(200) + 100,
 			PlayerAction: ppb.PlayerAction_PlayerActionRandomInt,
 		}
@@ -108,6 +116,6 @@ func main() {
 			logg.Fatal(err)
 		}
 
-		time.Sleep(time.Second * 3)
+		time.Sleep(time.Second * 30)
 	}
 }

@@ -3,28 +3,13 @@ package table
 import (
 	"fmt"
 	"math/rand"
+	"time"
 
 	"github.com/DanTulovsky/logger"
 	"github.com/DanTulovsky/pepper-poker-v2/actions"
 	"github.com/DanTulovsky/pepper-poker-v2/id"
 	"github.com/DanTulovsky/pepper-poker-v2/server/player"
 	"github.com/fatih/color"
-)
-
-// State is the current state of the table
-type State int
-
-const (
-	// TableStateNotReady ...
-	TableStateNotReady State = iota
-	// TableStateWaitingPlayers ...
-	TableStateWaitingPlayers
-	// TableStateReady ..
-	TableStateReady
-	// TableStatePlaying ...
-	TableStatePlaying
-	// TableStateDone ...
-	TableStateDone
 )
 
 // Table hosts a game and allows playing multiple rounds
@@ -35,54 +20,188 @@ type Table struct {
 	tableAction       chan actions.TableActionRequest
 	tableActionResult chan actions.TableActionResult
 
-	players    map[id.PlayerID]*player.Player
+	// table positions
+	positions []*player.Player
+
 	maxPlayers int
 	minPlayers int
 
-	State State
+	waitingPlayersState state
+	initializingState   state
+	readyToStartState   state
+
+	playingSmallBlindState state
+	playingBigBlindState   state
+	playingPreFlopState    state
+	playingFlopState       state
+	playingTurnState       state
+	playingRiverState      state
+	playingDoneState       state
+	finishedState          state
+
+	State state
+
+	// how long to wait for player to make a move
+	playerTimeout time.Duration
+	// how long to wait after game ends before starting a new one
+	gameEndDelay time.Duration
+	// how long to wait between state transitions
+	stateAdvanceDelay time.Duration
+	// how long to wait after the last payer is added before starting the game
+	gameWaitTimeout time.Duration
+
+	gameStartsInTime time.Duration
 
 	l *logger.Logger
 }
 
 // New creates a new table
 func New(tableAction chan actions.TableActionRequest, tableActionResult chan actions.TableActionResult) *Table {
-	return &Table{
+	t := &Table{
 		ID:                id.NewTableID(),
 		tableAction:       tableAction,
 		tableActionResult: tableActionResult,
 		l:                 logger.New("table", color.New(color.FgYellow)),
-		players:           make(map[id.PlayerID]*player.Player),
-		maxPlayers:        7,
-		minPlayers:        1,
-		State:             TableStateWaitingPlayers,
+
+		maxPlayers: 7,
+		minPlayers: 2,
+
+		playerTimeout:     time.Second * 120,
+		gameEndDelay:      time.Second * 10,
+		gameWaitTimeout:   time.Second * 5,
+		stateAdvanceDelay: time.Second * 2,
 	}
+
+	t.positions = make([]*player.Player, t.maxPlayers)
+
+	t.waitingPlayersState = &waitingPlayersState{
+		baseState:       newBaseState("waitingPlayers", t),
+		gameWaitTimeout: t.gameWaitTimeout,
+	}
+	t.initializingState = &initializingState{
+		baseState: newBaseState("initializing", t),
+	}
+	t.readyToStartState = &gameReadyToStartState{
+		baseState:     newBaseState("readyToStart", t),
+		delay:         t.stateAdvanceDelay,
+		playerTimeout: t.playerTimeout,
+	}
+	// t.playingState = &gamePlayingState{
+	// 	baseState: newBaseState("gamePlaying", t),
+	// 	delay:     stateAdvanceDelay,
+	// 	mu:        &sync.Mutex{},
+	// }
+	t.finishedState = &finishedState{
+		baseState:    newBaseState("gameFinished", t),
+		gameEndDelay: t.gameEndDelay,
+	}
+
+	t.State = t.waitingPlayersState
+
+	return t
 }
 
 // Tick ticks the table
-func (t *Table) Tick() {
-	t.l.Info("Tick()")
+func (t *Table) Tick() error {
+	t.l.Debug("Tick()")
 
-	if len(t.players) < t.minPlayers {
-		return
+	if err := t.State.Tick(); err != nil {
+		return err
 	}
 
 	t.sendUpdateToPlayers()
+	return nil
+}
 
+// AvailableToJoin returns true if the table has empty positions
+func (t *Table) AvailableToJoin() bool {
+	return t.State.AvailableToJoin()
+}
+
+// setState sets the state of the table
+func (t *Table) setState(s state) {
+	var from, to string = "nil", "nil"
+	from = t.State.Name()
+	to = s.Name()
+
+	t.l.Infof(color.GreenString("Changing State (%v): %v -> %v"), t.stateAdvanceDelay, from, to)
+	// TODO: This blocks all processing
+	time.Sleep(t.stateAdvanceDelay)
+	t.State = s
+}
+
+// ActivePlayers returns the players at the table
+func (t *Table) ActivePlayers() []*player.Player {
+	players := []*player.Player{}
+
+	for _, p := range t.positions {
+		if p != nil {
+			players = append(players, p)
+		}
+	}
+
+	return players
+}
+
+// numActivePlayers returns the number of players at the table
+func (t *Table) numActivePlayers() int {
+	return len(t.ActivePlayers())
+}
+
+// PlayerPosition returns the position of the player
+func (t *Table) PlayerPosition(p *player.Player) (int, error) {
+
+	for i, pos := range t.positions {
+		if p == pos {
+			return i, nil
+		}
+	}
+
+	return -1, fmt.Errorf("no such player at this table: %v", p.ID)
+}
+
+// playerAtTable returns true if the player is at this table
+func (t *Table) playerAtTable(p *player.Player) bool {
+
+	for _, pos := range t.positions {
+		if p == pos {
+			return true
+		}
+	}
+	return false
+}
+
+// AddPlayer tries to add a player to the table and returns the position if successfull
+func (t *Table) AddPlayer(p *player.Player) (int, error) {
+	return t.State.AddPlayer(p)
 }
 
 // AddPlayer adds a player to the table
-func (t *Table) AddPlayer(p *player.Player) error {
+func (t *Table) addPlayer(p *player.Player) (int, error) {
 
-	if t.State != TableStateWaitingPlayers {
-		return fmt.Errorf("table state not ok for adding players: %v", t.State)
+	if t.State != t.waitingPlayersState {
+		return -1, fmt.Errorf("table state not ok for adding players: %v", t.State)
 	}
 
-	if _, ok := t.players[p.ID]; !ok {
-		t.players[p.ID] = p
-		return nil
+	if t.numActivePlayers() == t.maxPlayers {
+		return -1, fmt.Errorf("no available positions at table")
 	}
 
-	return fmt.Errorf("player already at the table: %v (%v)", p.Name, p.ID)
+	if !t.playerAtTable(p) {
+		t.positions[t.nextAvailablePosition()] = p
+		return t.PlayerPosition(p)
+	}
+
+	return -1, fmt.Errorf("player already at the table: %v (%v)", p.Name, p.ID)
+}
+
+func (t *Table) nextAvailablePosition() int {
+	for i, p := range t.positions {
+		if p == nil {
+			return i
+		}
+	}
+	return -1
 }
 
 // sendUpdateToPlayers sends updates to players as needed
@@ -91,7 +210,7 @@ func (t *Table) sendUpdateToPlayers() {
 
 	t.l.Info("Sending updates to players...")
 
-	for _, p := range t.players {
+	for _, p := range t.ActivePlayers() {
 		action := actions.NewManagerAction(rand.Int63n(200))
 		// TODO: This should not block for when clients drop
 		p.CommChannel <- action
