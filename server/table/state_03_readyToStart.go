@@ -7,13 +7,12 @@ import (
 	"github.com/DanTulovsky/pepper-poker-v2/server/player"
 )
 
-type gameReadyToStartState struct {
+type readyToStartState struct {
 	baseState
-	delay         time.Duration
 	playerTimeout time.Duration
 }
 
-func (i *gameReadyToStartState) StartGame() error {
+func (i *readyToStartState) StartGame() error {
 	i.l.Info("Starting new game with players...")
 
 	i.l.Info("Dealings cards to players...")
@@ -43,7 +42,7 @@ func (i *gameReadyToStartState) StartGame() error {
 	return nil
 }
 
-func (i *gameReadyToStartState) Tick() error {
+func (i *readyToStartState) Tick() error {
 	i.l.Debugf("Tick(%v)", i.Name())
 
 	if err := i.StartGame(); err != nil {
@@ -59,11 +58,11 @@ func (i *gameReadyToStartState) Tick() error {
 	return nil
 }
 
-func (i *gameReadyToStartState) AddPlayer(player *player.Player) (pos int, err error) {
+func (i *readyToStartState) AddPlayer(player *player.Player) (pos int, err error) {
 	return -1, fmt.Errorf("game already started, wait for next round")
 }
 
 // WhoseTurn returns the player whose turn it is.
-func (i *gameReadyToStartState) WhoseTurn() *player.Player {
+func (i *readyToStartState) WhoseTurn() *player.Player {
 	return nil
 }

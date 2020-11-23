@@ -9,6 +9,7 @@ import (
 	"github.com/DanTulovsky/pepper-poker-v2/actions"
 	"github.com/DanTulovsky/pepper-poker-v2/id"
 	"github.com/DanTulovsky/pepper-poker-v2/server/player"
+	"github.com/Pallinder/go-randomdata"
 	"github.com/fatih/color"
 )
 
@@ -59,17 +60,18 @@ type Table struct {
 func New(tableAction chan actions.TableActionRequest, tableActionResult chan actions.TableActionResult) *Table {
 	t := &Table{
 		ID:                id.NewTableID(),
+		Name:              randomdata.SillyName(),
 		tableAction:       tableAction,
 		tableActionResult: tableActionResult,
 		l:                 logger.New("table", color.New(color.FgYellow)),
 
 		maxPlayers: 7,
-		minPlayers: 2,
+		minPlayers: 1,
 
 		playerTimeout:     time.Second * 120,
 		gameEndDelay:      time.Second * 10,
 		gameWaitTimeout:   time.Second * 5,
-		stateAdvanceDelay: time.Second * 2,
+		stateAdvanceDelay: time.Second * 1,
 	}
 
 	t.positions = make([]*player.Player, t.maxPlayers)
@@ -81,16 +83,31 @@ func New(tableAction chan actions.TableActionRequest, tableActionResult chan act
 	t.initializingState = &initializingState{
 		baseState: newBaseState("initializing", t),
 	}
-	t.readyToStartState = &gameReadyToStartState{
+	t.readyToStartState = &readyToStartState{
 		baseState:     newBaseState("readyToStart", t),
-		delay:         t.stateAdvanceDelay,
 		playerTimeout: t.playerTimeout,
 	}
-	// t.playingState = &gamePlayingState{
-	// 	baseState: newBaseState("gamePlaying", t),
-	// 	delay:     stateAdvanceDelay,
-	// 	mu:        &sync.Mutex{},
-	// }
+	t.playingSmallBlindState = &playingSmallBlindState{
+		baseState: newBaseState("playingSmallBlindState", t),
+	}
+	t.playingBigBlindState = &playingBigBlindState{
+		baseState: newBaseState("playingBigBlindState", t),
+	}
+	t.playingPreFlopState = &playingPreFlopState{
+		baseState: newBaseState("playingPreFlopState", t),
+	}
+	t.playingFlopState = &playingFlopState{
+		baseState: newBaseState("playingFlopState", t),
+	}
+	t.playingTurnState = &playingTurnState{
+		baseState: newBaseState("playingTurnState", t),
+	}
+	t.playingRiverState = &playingRiverState{
+		baseState: newBaseState("playingRiverState", t),
+	}
+	t.playingDoneState = &playingDoneState{
+		baseState: newBaseState("playingDoneState", t),
+	}
 	t.finishedState = &finishedState{
 		baseState:    newBaseState("gameFinished", t),
 		gameEndDelay: t.gameEndDelay,
@@ -99,6 +116,17 @@ func New(tableAction chan actions.TableActionRequest, tableActionResult chan act
 	t.State = t.waitingPlayersState
 
 	return t
+}
+
+// Run runs the table
+func (t *Table) Run() error {
+	for {
+		if err := t.Tick(); err != nil {
+			return err
+		}
+		time.Sleep(time.Second)
+	}
+
 }
 
 // Tick ticks the table
@@ -128,6 +156,8 @@ func (t *Table) setState(s state) {
 	// TODO: This blocks all processing
 	time.Sleep(t.stateAdvanceDelay)
 	t.State = s
+
+	s.Init()
 }
 
 // ActivePlayers returns the players at the table
@@ -208,7 +238,7 @@ func (t *Table) nextAvailablePosition() int {
 func (t *Table) sendUpdateToPlayers() {
 	// TODO: read from a channel that has updates
 
-	t.l.Info("Sending updates to players...")
+	t.l.Debug("Sending updates to players...")
 
 	for _, p := range t.ActivePlayers() {
 		action := actions.NewManagerAction(rand.Int63n(200))

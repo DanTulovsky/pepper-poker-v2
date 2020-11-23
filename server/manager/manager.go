@@ -47,12 +47,20 @@ func New() *Manager {
 func (m *Manager) Run(ctx context.Context) error {
 	m.startServers(ctx, m.fromGrpcServerChan)
 	m.createTables()
+	m.startTables()
 
 	m.l.Info("Starting manager loop...")
 	for {
 		if err := m.tick(); err != nil {
 			return err
 		}
+	}
+}
+
+func (m *Manager) startTables() {
+	for _, t := range m.tables {
+		m.l.Infof("Starting table [%v]", t.Name)
+		go t.Run()
 	}
 }
 
@@ -87,11 +95,7 @@ func (m *Manager) tick() error {
 
 	m.processPlayerRequests()
 
-	if err := m.tickTables(); err != nil {
-		return err
-	}
-
-	time.Sleep(time.Second)
+	time.Sleep(time.Millisecond * 500)
 
 	return nil
 }

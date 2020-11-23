@@ -51,8 +51,6 @@ func (i *waitingPlayersState) Tick() error {
 		i.cache = status
 	}
 
-	time.Sleep(time.Second * 2)
-
 	return nil
 }
 

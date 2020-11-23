@@ -67,7 +67,7 @@ func (i *playingTurnState) Tick() error {
 	// if !i.round.players[i.round.currentTurn].actionRequiredThisRound {
 	// 	i.round.advancePlayer()
 	// }
-
 	i.table.setState(i.table.playingRiverState)
+
 	return nil
 }

@@ -25,7 +25,10 @@ func (i *finishedState) StartGame() error {
 
 func (i *finishedState) Tick() error {
 
-	if time.Now().Sub(i.start) > i.gameEndDelay {
+	delay := i.gameEndDelay - time.Now().Sub(i.start)
+	i.l.Infof("Waiting %v before starting new game...", delay.Truncate(time.Second))
+
+	if delay <= 0 {
 		i.table.setState(i.table.waitingPlayersState)
 	}
 

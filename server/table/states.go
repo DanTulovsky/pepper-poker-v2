@@ -1,6 +1,8 @@
 package table
 
 import (
+	"fmt"
+
 	"github.com/DanTulovsky/logger"
 	"github.com/DanTulovsky/pepper-poker-v2/server/player"
 	"github.com/fatih/color"
@@ -43,6 +45,12 @@ func (i *baseState) Init() {
 
 }
 
+// StartGame starts the game
+func (i *baseState) StartGame() error {
+	return fmt.Errorf("unable to start game right now")
+
+}
+
 // Name returns the name
 func (i *baseState) Name() string {
 	return i.name
@@ -60,4 +68,8 @@ func (i *baseState) WhoseTurn() *player.Player {
 // AvailableToJoin returns true if the table has empty positions
 func (i *baseState) AvailableToJoin() bool {
 	return false
+}
+
+func (i *baseState) AddPlayer(player *player.Player) (pos int, err error) {
+	return -1, fmt.Errorf("cannot add player right now")
 }
