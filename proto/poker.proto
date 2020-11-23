@@ -1,0 +1,34 @@
+syntax = "proto3";
+package poker;
+
+option go_package = "github.com/DanTuovsky/pepper-poker-v2/proto";
+// go
+// protoc -I proto proto/poker.proto --go_out=plugins=grpc:.
+// --go_opt=module=github.com/DanTuovsky/pepper-poker-v2
+
+// c#
+// protoc -I proto proto/poker.proto --csharp_out=client/grpc
+// --grpc_out=client/grpc
+// --plugin=protoc-gen-grpc=/usr/local/bin/grpc_csharp_plugin
+
+service PokerServer {
+  rpc Play(stream ClientData) returns(stream GameData) {}
+}
+
+enum PlayerAction {
+  PlayerActionNone = 0; PlayerActionRegister = 1; PlayerActionRandomInt = 2;
+  PlayerActionJoinTable = 3;
+}
+
+// ClientData is sent by the client during the game
+message ClientData {
+  int64 input = 10;
+  string playerID = 20;
+  string playerName = 30;
+  string tableID = 40;
+  PlayerAction playerAction = 50;
+}
+
+// GameData is sent to the client, it tells the client when it's their turn and
+// provides the current state
+message GameData { int64 output = 20; }

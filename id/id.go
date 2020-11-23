@@ -1,0 +1,39 @@
+package id
+
+import "github.com/google/uuid"
+
+// TableID is a unique id for table
+type TableID string
+
+// NewTableID creates a new id for the table
+func NewTableID() TableID {
+	return TableID(uuid.New().String())
+}
+
+func (id TableID) String() string {
+	return id.String()
+}
+
+// PlayerID is a unique id for a player
+type PlayerID string
+
+// NewPlayerID creates a new id for a player
+func NewPlayerID() PlayerID {
+	return PlayerID(uuid.New().String())
+}
+
+func (id PlayerID) String() string {
+	return id.String()
+}
+
+// RoundID is a unique id for a round
+type RoundID string
+
+// NewRoundID creates a new id for the round
+func NewRoundID() RoundID {
+	return RoundID(uuid.New().String())
+}
+
+func (id RoundID) String() string {
+	return id.String()
+}
