@@ -57,13 +57,6 @@ func (m *Manager) Run(ctx context.Context) error {
 	}
 }
 
-func (m *Manager) startTables() {
-	for _, t := range m.tables {
-		m.l.Infof("Starting table [%v]", t.Name)
-		go t.Run()
-	}
-}
-
 func (m *Manager) createTables() {
 	m.l.Infof("Creating %v tables...", numTables)
 	for i := 0; i < numTables; i++ {
@@ -75,6 +68,13 @@ func (m *Manager) createTables() {
 func (m *Manager) createTable() *table.Table {
 	ta := make(chan table.ActionRequest)
 	return table.New(ta)
+}
+
+func (m *Manager) startTables() {
+	for _, t := range m.tables {
+		m.l.Infof("Starting table [%v]", t.Name)
+		go t.Run()
+	}
 }
 
 // startServers start grpc and http servers
@@ -96,16 +96,6 @@ func (m *Manager) tick() error {
 
 	time.Sleep(time.Millisecond * 500)
 
-	return nil
-}
-
-func (m *Manager) tickTables() error {
-	for _, t := range m.tables {
-		// TODO: This stops the entire manager due to one broken table
-		if err := t.Tick(); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
@@ -182,7 +172,19 @@ func (m *Manager) joinTable(in actions.PlayerAction) (tableID id.TableID, pos in
 
 func (m *Manager) firstAvailableTable() (*table.Table, error) {
 	for _, t := range m.tables {
-		if t.AvailableToJoin() {
+
+		result := make(chan table.ActionResult)
+		req := table.NewTableAction(table.ActionInfo, result, nil, nil)
+		t.TableAction <- req
+
+		res := <-result
+		err := res.Err
+		if err != nil {
+			return nil, err
+		}
+
+		r := res.Result.(table.ActionInfoResult)
+		if r.AvailableToJoin {
 			return t, nil
 		}
 	}

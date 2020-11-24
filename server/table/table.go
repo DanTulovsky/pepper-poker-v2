@@ -143,7 +143,7 @@ func (t *Table) Run() error {
 func (t *Table) Tick() error {
 	t.l.Debug("Tick()")
 
-	t.processPlayerActions()
+	t.processManagerActions()
 
 	if err := t.State.Tick(); err != nil {
 		return err
@@ -153,19 +153,19 @@ func (t *Table) Tick() error {
 	return nil
 }
 
-// processPlayerActions checks the channel from the manager for any player actions
-func (t *Table) processPlayerActions() error {
+// processManagerActions checks the channel from the manager for any player actions
+func (t *Table) processManagerActions() error {
 	select {
 	case in := <-t.TableAction:
 		t.l.Infof("Received table action: %v", in.Action)
-		t.processPlayerAction(in)
+		t.processManagerAction(in)
 	default:
 	}
 
 	return nil
 }
 
-func (t *Table) processPlayerAction(in ActionRequest) {
+func (t *Table) processManagerAction(in ActionRequest) {
 	var res ActionResult
 
 	switch in.Action {
@@ -179,8 +179,25 @@ func (t *Table) processPlayerAction(in ActionRequest) {
 		default:
 			res = NewTableActionResult(err, nil)
 		}
-		in.resultChan <- res
+
+	case ActionInfo:
+		i := t.info()
+		res = NewTableActionResult(nil, i)
+
 	}
+	// send reply back to manager
+	in.resultChan <- res
+}
+
+// info returns table info
+func (t *Table) info() ActionInfoResult {
+	return ActionInfoResult{
+		AvailableToJoin: t.AvailableToJoin(),
+		Name:            t.Name,
+		MaxPlayers:      t.maxPlayers,
+		MinPlayers:      t.minPlayers,
+	}
+
 }
 
 // advancePlayer advances t.currentPlayer to the next player
@@ -216,7 +233,7 @@ func (t *Table) setState(s state) {
 	to = s.Name()
 
 	t.l.Infof(color.GreenString("Changing State (%v): %v -> %v"), t.stateAdvanceDelay, from, to)
-	// TODO: This blocks all processing
+	// TODO: This blocks all processing and is really not needed
 	time.Sleep(t.stateAdvanceDelay)
 	t.State = s
 

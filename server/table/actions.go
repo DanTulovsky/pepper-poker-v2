@@ -10,11 +10,21 @@ type Action int
 const (
 	// ActionAddPlayer adds a new player to the table
 	ActionAddPlayer Action = iota
+
+	// ActionInfo returns various information about the table
+	ActionInfo
 )
 
 // ActionAddPlayerResult is the result of an AddPlayer action
 type ActionAddPlayerResult struct {
 	Position int
+}
+
+// ActionInfoResult is the result of an ActioInfo action
+type ActionInfoResult struct {
+	AvailableToJoin        bool
+	Name                   string
+	MaxPlayers, MinPlayers int
 }
 
 // ActionRequest is sent to the table
