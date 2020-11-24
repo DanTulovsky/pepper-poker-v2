@@ -168,10 +168,10 @@ func (ps *pokerServer) Play(in *ppb.PlayRequest, stream ppb.PokerServer_PlayServ
 
 	// Create a channel that the game can send data back to the client on
 	// it is read in the goroutine started below
-	fromManagerChan := make(chan actions.GameData)
+	toPlayerC := make(chan actions.GameData)
 
 	resultc := make(chan actions.PlayerActionResult)
-	action := actions.NewPlayerAction(in.GetPlayerAction(), nil, in.GetClientInfo(), fromManagerChan, resultc)
+	action := actions.NewPlayerAction(ppb.PlayerAction_PlayerActionPlay, nil, in.GetClientInfo(), toPlayerC, resultc)
 
 	// Send request to manager
 	ps.managerChan <- action
@@ -185,14 +185,11 @@ func (ps *pokerServer) Play(in *ppb.PlayRequest, stream ppb.PokerServer_PlayServ
 	// start a goroutine to send data back to client
 	// the fromManagerChan get attached to the player itself and allows
 	// anything that has access to the player object to send updates
-	go func() {
-		for {
-			select {
-			case in := <-fromManagerChan:
-				ps.l.Debugf("Sending data to client: %#v", in.Data.WaitTurnID)
-				stream.Send(in.Data)
-			}
+	for {
+		select {
+		case in := <-toPlayerC:
+			ps.l.Debugf("Sending data to client: %#v", in.Data.WaitTurnID)
+			stream.Send(in.Data)
 		}
-	}()
-	return nil
+	}
 }

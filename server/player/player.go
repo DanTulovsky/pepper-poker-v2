@@ -33,11 +33,10 @@ type Player struct {
 }
 
 // New creates a new player
-func New(name string, cc chan actions.GameData) *Player {
+func New(name string) *Player {
 	return &Player{
-		ID:          id.NewPlayerID(),
-		Name:        name,
-		CommChannel: cc,
+		ID:   id.NewPlayerID(),
+		Name: name,
 	}
 }
 

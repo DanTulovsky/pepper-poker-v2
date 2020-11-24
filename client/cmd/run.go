@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"io"
 	"math/rand"
 	"time"
@@ -35,7 +36,7 @@ func main() {
 
 	rand.Seed(time.Now().UnixNano())
 	flag.Parse()
-	logg := logger.New("client", color.New(color.FgBlue))
+	logg := logger.New(fmt.Sprintf("client [%v]", *name), color.New(color.FgBlue))
 
 	logg.Info("Starting client...")
 
@@ -80,8 +81,9 @@ func main() {
 	logg.Info("Joining table...")
 	reqJT := &ppb.JoinTableRequest{
 		ClientInfo: &ppb.ClientInfo{
-			PlayerID: playerID.String(),
-			TableID:  tableID.String(),
+			PlayerName: *name,
+			PlayerID:   playerID.String(),
+			TableID:    tableID.String(),
 		},
 		PlayerAction: ppb.PlayerAction_PlayerActionJoinTable,
 	}
@@ -91,12 +93,14 @@ func main() {
 		logg.Fatal(err)
 	}
 	tableID = id.TableID(resJT.GetTableID())
+	logg.Debugf("tableID: %v", tableID)
 
 	// Subscribe to GameData from the server after joing table
 	reqPlay := &ppb.PlayRequest{
 		ClientInfo: &ppb.ClientInfo{
-			PlayerID: playerID.String(),
-			TableID:  tableID.String(),
+			PlayerName: *name,
+			PlayerID:   playerID.String(),
+			TableID:    tableID.String(),
 		},
 		PlayerAction: ppb.PlayerAction_PlayerActionRegister,
 	}
@@ -108,10 +112,13 @@ func main() {
 	// send server response on this channel to process in the main thread
 	datac := make(chan *ppb.GameData)
 	// receive server messages
-	go func(datac chan *ppb.GameData) {
+	go func() {
 		for {
+			logg.Debug("waiting for server data...")
 			in, err := stream.Recv()
+			logg.Debug("received server data...")
 			if err == io.EOF {
+				logg.Debugf("EOF received from server, exiting GameData thread")
 				return
 			}
 			if err != nil {
@@ -119,22 +126,23 @@ func main() {
 				logg.Fatal("error receiving from server")
 			}
 			// send the server message to main thread for processing
-			logg.Info(in.WaitTurnID)
+			logg.Debug("sending server data to main thread...")
 			datac <- in
 		}
-	}(datac)
+	}()
 
 	// Receive GameData on datac channel and act on it
 	for {
 		logg.Debug("Waiting for GameData...")
 		// process server messages if any (on datac channel)
 		in := <-datac
+		logg.Debug("received game data in main thread")
 
 		if playerID != id.PlayerID(in.PlayerID) {
 			logg.Fatal("Mismatch in playerID; expected: %v; got: %v", playerID, id.PlayerID(in.PlayerID))
 		}
 		if tableID != id.TableID(in.GetInfo().GetTableID()) {
-			logg.Fatal("Mismatch in tableID; expected: %v; got: %v", playerID, id.TableID(in.GetInfo().GetTableID()))
+			logg.Fatalf("Mismatch in tableID; expected: %v; got: %v", tableID, id.TableID(in.GetInfo().GetTableID()))
 		}
 
 		waitID := id.PlayerID(in.WaitTurnID)
@@ -143,12 +151,13 @@ func main() {
 
 		if playerID == waitID {
 			action := ppb.PlayerAction_PlayerActionCheck
-			logg.Infof("Taking Turn: %v")
+			logg.Infof("Taking Turn: %v", action)
 
 			req := &ppb.TakeTurnRequest{
 				ClientInfo: &ppb.ClientInfo{
-					PlayerID: playerID.String(),
-					TableID:  tableID.String(),
+					PlayerName: *name,
+					PlayerID:   playerID.String(),
+					TableID:    tableID.String(),
 				},
 				PlayerAction: action,
 			}

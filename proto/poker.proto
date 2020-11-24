@@ -27,10 +27,11 @@ service PokerServer {
 
 enum PlayerAction {
   PlayerActionNone = 0; PlayerActionRegister = 1; PlayerActionJoinTable = 2;
-  PlayerActionCall = 3;
-  PlayerActionCheck = 4;
-  PlayerActionBet = 5;
-  PlayerActionFold = 6;
+  PlayerActionPlay = 3;
+  PlayerActionCall = 4;
+  PlayerActionCheck = 5;
+  PlayerActionBet = 6;
+  PlayerActionFold = 7;
 }
 
 message ActionOpts {

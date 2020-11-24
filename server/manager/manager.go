@@ -3,7 +3,6 @@ package manager
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/DanTulovsky/logger"
@@ -134,13 +133,13 @@ func (m *Manager) processPlayerRequests() {
 
 		case proto.PlayerAction_PlayerActionJoinTable:
 			var pos int
-			var tableID id.TableID
-			if tableID, pos, err = m.joinTable(in); err != nil {
+			tableID := id.TableID(in.ClientInfo.GetTableID())
+			if p, err = m.playerByID(playerID); err != nil {
 				m.l.Error(err)
 				in.ResultC <- actions.NewPlayerActionError(err)
 				break
 			}
-			if p, err = m.playerByID(playerID); err != nil {
+			if tableID, pos, err = m.joinTable(p, tableID); err != nil {
 				m.l.Error(err)
 				in.ResultC <- actions.NewPlayerActionError(err)
 				break
@@ -149,6 +148,20 @@ func (m *Manager) processPlayerRequests() {
 				TableID:  tableID.String(),
 				Position: int64(pos),
 			})
+			in.ResultC <- result
+
+		case proto.PlayerAction_PlayerActionPlay:
+			if p, err = m.playerByID(playerID); err != nil {
+				m.l.Error(err)
+				in.ResultC <- actions.NewPlayerActionError(err)
+				break
+			}
+			if err := m.registerPlayerCC(p, tableID, in.ToClientChan); err != nil {
+				m.l.Error(err)
+				in.ResultC <- actions.NewPlayerActionError(err)
+				break
+			}
+			result := actions.NewPlayerActionResult(err, &ppb.JoinTableResponse{})
 			in.ResultC <- result
 
 		case proto.PlayerAction_PlayerActionCheck:
@@ -166,6 +179,34 @@ func (m *Manager) processPlayerRequests() {
 
 	default:
 	}
+}
+
+// registerPlayerCC registers the player channel and starts streaming game data to it
+func (m *Manager) registerPlayerCC(p *player.Player, tableID id.TableID, cc chan actions.GameData) error {
+	// Table response comes back over this channel
+	result := make(chan table.ActionResult)
+	req := table.NewTableAction(table.ActionRegisterPlayerCC, result, p, cc)
+
+	var t *table.Table
+	var err error
+
+	if t, err = m.tableByID(tableID); err != nil {
+		return err
+	}
+
+	t.TableAction <- req
+
+	// block(!?) until table responds
+	res := <-result
+	return res.Err
+}
+
+// tableByID returns the table with the given id
+func (m *Manager) tableByID(tableID id.TableID) (*table.Table, error) {
+	if t, ok := m.tables[tableID]; ok {
+		return t, nil
+	}
+	return nil, fmt.Errorf("cannot find table with id [%v]", tableID)
 }
 
 // playerByID returns the player by ID
@@ -192,7 +233,7 @@ func (m *Manager) playerCheck(playerID id.PlayerID, tableID id.TableID) error {
 }
 
 // jointable attempts to join a table
-func (m *Manager) joinTable(in actions.PlayerAction) (tableID id.TableID, pos int, err error) {
+func (m *Manager) joinTable(p *player.Player, wantTableID id.TableID) (tableID id.TableID, pos int, err error) {
 	var t *table.Table
 	pos = -1
 
@@ -200,14 +241,6 @@ func (m *Manager) joinTable(in actions.PlayerAction) (tableID id.TableID, pos in
 	// TODO: Handle joining a specific table (in.TableID)
 	t, err = m.firstAvailableTable()
 	if err != nil {
-		return
-	}
-
-	playerID := id.PlayerID(in.ClientInfo.PlayerID)
-	var p *player.Player
-	var ok bool
-	if p, ok = m.players[playerID]; !ok {
-		err = fmt.Errorf("must register first")
 		return
 	}
 
@@ -252,18 +285,23 @@ func (m *Manager) firstAvailableTable() (*table.Table, error) {
 
 // addPlayer add the player to the manager instance and make them available for playing games
 func (m *Manager) addPlayer(in actions.PlayerAction) (*player.Player, error) {
-	id := id.NewPlayerID()
 	playerName := in.ClientInfo.PlayerName
-
-	if _, ok := m.players[id]; !ok {
-		m.l.Infof("[%v] Adding player to manager (id: %v)", playerName, id)
-		if in.ToManagerChan == nil {
-			log.Fatalf("[%v] null manager channel for player", playerName)
-		}
-		p := player.New(playerName, in.ToManagerChan)
-		m.players[id] = p
-		return p, nil
+	if m.havePlayerName(playerName) {
+		return nil, fmt.Errorf("already have player with name [%v]", playerName)
 	}
 
-	return nil, fmt.Errorf("[%v] player with id %v already registered", playerName, id)
+	m.l.Infof("[%v] Adding player to manager...", playerName)
+	p := player.New(playerName)
+	m.players[p.ID] = p
+	return p, nil
+}
+
+// havePlayerName returns true if there is a player with the given name
+func (m *Manager) havePlayerName(name string) bool {
+	for _, p := range m.players {
+		if p.Name == name {
+			return true
+		}
+	}
+	return false
 }

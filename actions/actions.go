@@ -11,7 +11,7 @@ type PlayerAction struct {
 	Opts       *ppb.ActionOpts
 
 	// use this channel to send back game data to the client
-	ToManagerChan chan GameData
+	ToClientChan chan GameData
 
 	// use this channel to send back and error to the grpc server on the initial subscription
 	ResultC chan PlayerActionResult
@@ -20,11 +20,11 @@ type PlayerAction struct {
 // NewPlayerAction makes a new playeraction
 func NewPlayerAction(action ppb.PlayerAction, opts *ppb.ActionOpts, ci *ppb.ClientInfo, managerChan chan GameData, resultc chan PlayerActionResult) PlayerAction {
 	return PlayerAction{
-		Action:        action,
-		Opts:          opts,
-		ClientInfo:    ci,
-		ToManagerChan: managerChan,
-		ResultC:       resultc,
+		Action:       action,
+		Opts:         opts,
+		ClientInfo:   ci,
+		ToClientChan: managerChan,
+		ResultC:      resultc,
 	}
 }
 

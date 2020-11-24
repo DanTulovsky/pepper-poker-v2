@@ -131,7 +131,7 @@ func New(tableAction chan ActionRequest) *Table {
 
 // Run runs the table
 func (t *Table) Run() error {
-	t.l.Info("Table [%v] starting run loop...", t.Name)
+	t.l.Infof("Table [%v] starting run loop...", t.Name)
 	for {
 		if err := t.Tick(); err != nil {
 			return err
@@ -159,7 +159,7 @@ func (t *Table) Tick() error {
 func (t *Table) processManagerActions() error {
 	select {
 	case in := <-t.TableAction:
-		t.l.Infof("Received table action: %v", in.Action)
+		t.l.Debugf("Received table action: %v", in.Action)
 		t.processManagerAction(in)
 	default:
 	}
@@ -182,6 +182,11 @@ func (t *Table) processManagerAction(in ActionRequest) {
 			res = NewTableActionResult(err, nil)
 		}
 
+	case ActionRegisterPlayerCC:
+		cc := in.Opts.(chan actions.GameData)
+		err := t.registerPlayerCC(in.Player, cc)
+		res = NewTableActionResult(err, nil)
+
 	case ActionInfo:
 		i := t.info()
 		res = NewTableActionResult(nil, i)
@@ -192,6 +197,16 @@ func (t *Table) processManagerAction(in ActionRequest) {
 	}
 	// send reply back to manager
 	in.resultChan <- res
+}
+
+func (t *Table) registerPlayerCC(p *player.Player, cc chan actions.GameData) error {
+
+	if cc == nil {
+		return fmt.Errorf("nil comm channel for player")
+	}
+	p.CommChannel = cc
+
+	return nil
 }
 
 // info returns table info
@@ -210,6 +225,7 @@ func (t *Table) infoproto() *ppb.GameInfo {
 	i := t.info()
 	gi := &ppb.GameInfo{
 		TableName:  i.Name,
+		TableID:    t.ID.String(),
 		MaxPlayers: int64(i.MaxPlayers),
 		MinPlayers: int64(i.MinPlayers),
 	}
@@ -355,7 +371,20 @@ func (t *Table) sendUpdateToPlayers() {
 		in := t.gameDataProto(p)
 		action := actions.NewGameData(in)
 		// TODO: This should not block for when clients drop
+		if p.CommChannel == nil {
+			t.l.Debugf("player [%v] has nil comm channel", p.Name)
+			continue
+		}
 		p.CommChannel <- action
 	}
+}
 
+// playersReady returns true if all players are ready
+func (t *Table) playersReady() bool {
+	for _, p := range t.ActivePlayers() {
+		if p.CommChannel == nil {
+			return false
+		}
+	}
+	return true
 }

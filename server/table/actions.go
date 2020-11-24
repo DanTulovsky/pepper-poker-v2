@@ -11,6 +11,9 @@ const (
 	// ActionAddPlayer adds a new player to the table
 	ActionAddPlayer Action = iota
 
+	// ActionRegisterPlayerCC adds the player comm channel for sending updates
+	ActionRegisterPlayerCC
+
 	// ActionInfo returns various information about the table
 	ActionInfo
 

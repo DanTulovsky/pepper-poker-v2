@@ -19,7 +19,7 @@ func (i *playingTurnState) Tick() error {
 	i.l.Debugf("Tick(%v)", i.Name())
 
 	if i.table.canAdvanceState() {
-		i.table.setState(i.table.playingFlopState)
+		i.table.setState(i.table.playingRiverState)
 		return nil
 	}
 
