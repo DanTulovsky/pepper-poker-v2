@@ -29,11 +29,11 @@ type Player struct {
 	Name     string
 	HandInfo *handInfo
 
-	CommChannel chan actions.ManagerAction
+	CommChannel chan actions.GameData
 }
 
 // New creates a new player
-func New(name string, cc chan actions.ManagerAction) *Player {
+func New(name string, cc chan actions.GameData) *Player {
 	return &Player{
 		ID:          id.NewPlayerID(),
 		Name:        name,

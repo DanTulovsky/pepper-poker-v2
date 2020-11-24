@@ -1,8 +1,9 @@
 package server
 
 import (
+	"context"
 	"crypto/tls"
-	"io"
+	"fmt"
 
 	"github.com/fatih/color"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -103,12 +104,87 @@ type pokerServer struct {
 	l *logger.Logger
 }
 
-func (ps *pokerServer) Play(stream ppb.PokerServer_PlayServer) error {
+// Register registers with the server
+func (ps *pokerServer) Register(ctx context.Context, in *ppb.RegisterRequest) (*ppb.RegisterResponse, error) {
 
-	// Create a channel for manager to send updates on
-	fromManagerChan := make(chan actions.ManagerAction)
+	resultc := make(chan actions.PlayerActionResult)
+	action := actions.NewPlayerAction(ppb.PlayerAction_PlayerActionRegister, nil, in.GetClientInfo(), nil, resultc)
+
+	// Send request to manager
+	ps.managerChan <- action
+
+	// block on response, an error here means we failed to subscribe and should exit
+	res := <-resultc
+	if res.Err != nil {
+		return nil, fmt.Errorf("invalid request: %v", res.Err)
+	}
+
+	out := res.Result.(*ppb.RegisterResponse)
+
+	return out, nil
+}
+
+// JoinTable joins a table
+func (ps *pokerServer) JoinTable(ctx context.Context, in *ppb.JoinTableRequest) (*ppb.JoinTableResponse, error) {
+
+	resultc := make(chan actions.PlayerActionResult)
+	action := actions.NewPlayerAction(ppb.PlayerAction_PlayerActionJoinTable, nil, in.GetClientInfo(), nil, resultc)
+
+	// Send request to manager
+	ps.managerChan <- action
+
+	// block on response, an error here means we failed to subscribe and should exit
+	res := <-resultc
+	if res.Err != nil {
+		return nil, fmt.Errorf("invalid request: %v", res.Err)
+	}
+
+	out := res.Result.(*ppb.JoinTableResponse)
+
+	return out, nil
+}
+
+// TakeTurn takes a single poker turn
+func (ps *pokerServer) TakeTurn(ctx context.Context, in *ppb.TakeTurnRequest) (*ppb.TakeTurnResponse, error) {
+
+	resultc := make(chan actions.PlayerActionResult)
+	action := actions.NewPlayerAction(in.GetPlayerAction(), in.GetActionOpts(), in.GetClientInfo(), nil, resultc)
+
+	// Send request to manager
+	ps.managerChan <- action
+
+	// block on response, an error here means we failed to subscribe and should exit
+	res := <-resultc
+	if res.Err != nil {
+		return nil, fmt.Errorf("invalid request: %v", res.Err)
+	}
+
+	out := res.Result.(*ppb.TakeTurnResponse)
+	return out, nil
+}
+
+// Play is a server streaming RPC that us used to send GameData back to the client as needed
+func (ps *pokerServer) Play(in *ppb.PlayRequest, stream ppb.PokerServer_PlayServer) error {
+
+	// Create a channel that the game can send data back to the client on
+	// it is read in the goroutine started below
+	fromManagerChan := make(chan actions.GameData)
+
+	resultc := make(chan actions.PlayerActionResult)
+	action := actions.NewPlayerAction(in.GetPlayerAction(), nil, in.GetClientInfo(), fromManagerChan, resultc)
+
+	// Send request to manager
+	ps.managerChan <- action
+
+	// block on response, an error here means we failed to subscribe and should exit
+	res := <-resultc
+	if res.Err != nil {
+		return fmt.Errorf("invalid request: %v", res.Err)
+	}
 
 	// start a goroutine to send data back to client
+	// the fromManagerChan get attached to the player itself and allows
+	// anything that has access to the player object to send updates
 	go func() {
 		for {
 			select {
@@ -118,18 +194,5 @@ func (ps *pokerServer) Play(stream ppb.PokerServer_PlayServer) error {
 			}
 		}
 	}()
-
-	for {
-		in, err := stream.Recv()
-		if err == io.EOF {
-			return nil
-		}
-		if err != nil {
-			return err
-		}
-
-		action := actions.NewPlayerAction(in, fromManagerChan)
-
-		ps.managerChan <- action
-	}
+	return nil
 }

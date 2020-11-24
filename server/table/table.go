@@ -131,6 +131,7 @@ func New(tableAction chan ActionRequest) *Table {
 
 // Run runs the table
 func (t *Table) Run() error {
+	t.l.Info("Table [%v] starting run loop...", t.Name)
 	for {
 		if err := t.Tick(); err != nil {
 			return err
@@ -352,7 +353,7 @@ func (t *Table) SetPlayersActionRequired() {
 func (t *Table) sendUpdateToPlayers() {
 	for _, p := range t.ActivePlayers() {
 		in := t.gameDataProto(p)
-		action := actions.NewManagerAction(in)
+		action := actions.NewGameData(in)
 		// TODO: This should not block for when clients drop
 		p.CommChannel <- action
 	}

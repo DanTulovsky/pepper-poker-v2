@@ -26,6 +26,9 @@ var (
 	serverAddr = flag.String("server_address", "localhost:8082", "tls server address and port")
 
 	name = flag.String("name", randomdata.SillyName(), "player name")
+
+	playerID id.PlayerID
+	tableID  id.TableID
 )
 
 func main() {
@@ -58,19 +61,57 @@ func main() {
 
 	ctxCancel, cancel := context.WithCancel(ctx)
 
-	stream, err := client.Play(ctxCancel)
+	// register
+	logg.Info("Registering...")
+	req := &ppb.RegisterRequest{
+		ClientInfo: &ppb.ClientInfo{
+			PlayerName: *name,
+		},
+		PlayerAction: ppb.PlayerAction_PlayerActionRegister,
+	}
+	var res *ppb.RegisterResponse
+	if res, err = client.Register(ctx, req); err != nil {
+		logg.Fatal(err)
+	}
+	playerID = id.PlayerID(res.GetPlayerID())
+	logg.Debugf("playerID: %v", playerID)
+
+	// join table
+	logg.Info("Joining table...")
+	reqJT := &ppb.JoinTableRequest{
+		ClientInfo: &ppb.ClientInfo{
+			PlayerID: playerID.String(),
+			TableID:  tableID.String(),
+		},
+		PlayerAction: ppb.PlayerAction_PlayerActionJoinTable,
+	}
+
+	var resJT *ppb.JoinTableResponse
+	if resJT, err = client.JoinTable(ctx, reqJT); err != nil {
+		logg.Fatal(err)
+	}
+	tableID = id.TableID(resJT.GetTableID())
+
+	// Subscribe to GameData from the server after joing table
+	reqPlay := &ppb.PlayRequest{
+		ClientInfo: &ppb.ClientInfo{
+			PlayerID: playerID.String(),
+			TableID:  tableID.String(),
+		},
+		PlayerAction: ppb.PlayerAction_PlayerActionRegister,
+	}
+	stream, err := client.Play(ctxCancel, reqPlay)
 	if err != nil {
 		logg.Fatal(err)
 	}
 
-	waitc := make(chan bool)
+	// send server response on this channel to process in the main thread
 	datac := make(chan *ppb.GameData)
 	// receive server messages
 	go func(datac chan *ppb.GameData) {
 		for {
 			in, err := stream.Recv()
 			if err == io.EOF {
-				close(waitc)
 				return
 			}
 			if err != nil {
@@ -83,48 +124,39 @@ func main() {
 		}
 	}(datac)
 
-	// register
-	logg.Info("Registering...")
-	req := &ppb.ClientData{
-		PlayerName:   *name,
-		PlayerAction: ppb.PlayerAction_PlayerActionRegister,
-	}
-	if err := stream.Send(req); err != nil {
-		logg.Fatal(err)
-	}
-
-	// join table
-	logg.Info("Joining table...")
-	req = &ppb.ClientData{
-		PlayerName:   *name,
-		PlayerAction: ppb.PlayerAction_PlayerActionJoinTable,
-	}
-	if err := stream.Send(req); err != nil {
-		logg.Fatal(err)
-	}
-
-	// send data after
-	logg.Info("Feeding data...")
+	// Receive GameData on datac channel and act on it
 	for {
+		logg.Debug("Waiting for GameData...")
 		// process server messages if any (on datac channel)
 		in := <-datac
-		playerID := id.PlayerID(in.PlayerID)
+
+		if playerID != id.PlayerID(in.PlayerID) {
+			logg.Fatal("Mismatch in playerID; expected: %v; got: %v", playerID, id.PlayerID(in.PlayerID))
+		}
+		if tableID != id.TableID(in.GetInfo().GetTableID()) {
+			logg.Fatal("Mismatch in tableID; expected: %v; got: %v", playerID, id.TableID(in.GetInfo().GetTableID()))
+		}
+
 		waitID := id.PlayerID(in.WaitTurnID)
+
 		logg.Infof("Current Turn playerID: %v", in.WaitTurnID)
 
 		if playerID == waitID {
-			logg.Info("It's my turn, taking it!")
+			action := ppb.PlayerAction_PlayerActionCheck
+			logg.Infof("Taking Turn: %v")
 
-			req := &ppb.ClientData{
-				PlayerID:     playerID.String(),
-				PlayerName:   *name,
-				PlayerAction: ppb.PlayerAction_PlayerActionCheck,
+			req := &ppb.TakeTurnRequest{
+				ClientInfo: &ppb.ClientInfo{
+					PlayerID: playerID.String(),
+					TableID:  tableID.String(),
+				},
+				PlayerAction: action,
 			}
-			if err := stream.Send(req); err != nil {
-				logg.Fatal(err)
+			_, err := client.TakeTurn(ctx, req)
+			if err != nil {
+				logg.Error(err)
 			}
-			// time.Sleep(time.Second * 1)
+			time.Sleep(time.Second * 1)
 		}
-
 	}
 }

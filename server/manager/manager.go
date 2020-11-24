@@ -14,6 +14,8 @@ import (
 	"github.com/DanTulovsky/pepper-poker-v2/server/server"
 	"github.com/DanTulovsky/pepper-poker-v2/server/table"
 	"github.com/fatih/color"
+
+	ppb "github.com/DanTulovsky/pepper-poker-v2/proto"
 )
 
 var (
@@ -101,40 +103,62 @@ func (m *Manager) tick() error {
 
 // processPlayerRequests processes requests sent from the player via the grpc server
 func (m *Manager) processPlayerRequests() {
+
+	var p *player.Player
+	var err error
+
 	select {
 	case in := <-m.fromGrpcServerChan:
-		playerName := in.Data.PlayerName
-		playerID := id.PlayerID(in.Data.PlayerID)
-		tableID := id.TableID(in.Data.TableID)
-		playerAction := in.Data.PlayerAction
+		playerName := in.ClientInfo.PlayerName
+		playerID := id.PlayerID(in.ClientInfo.PlayerID)
+		tableID := id.TableID(in.ClientInfo.TableID)
+		playerAction := in.Action
 
 		m.l.Infof("[%v] Received request from player: %#v", playerName, playerAction.String())
 
-		switch in.Data.PlayerAction {
+		switch playerAction {
 		case proto.PlayerAction_PlayerActionNone:
 			m.l.Infof("[%v] player sent empty action...", playerName)
+			break
 
 		case proto.PlayerAction_PlayerActionRegister:
-			if err := m.addPlayer(in); err != nil {
+			if p, err = m.addPlayer(in); err != nil {
 				m.l.Error(err)
+				in.ResultC <- actions.NewPlayerActionError(err)
 				break
 			}
+			result := actions.NewPlayerActionResult(err, &ppb.RegisterResponse{
+				PlayerID: p.ID.String(),
+			})
+			in.ResultC <- result
 
 		case proto.PlayerAction_PlayerActionJoinTable:
 			var pos int
-			var err error
 			var tableID id.TableID
 			if tableID, pos, err = m.joinTable(in); err != nil {
 				m.l.Error(err)
+				in.ResultC <- actions.NewPlayerActionError(err)
 				break
 			}
-			m.l.Infof("[%v] joined table [%v] at position [%v]", playerName, tableID, pos)
+			if p, err = m.playerByID(playerID); err != nil {
+				m.l.Error(err)
+				in.ResultC <- actions.NewPlayerActionError(err)
+				break
+			}
+			result := actions.NewPlayerActionResult(err, &ppb.JoinTableResponse{
+				TableID:  tableID.String(),
+				Position: int64(pos),
+			})
+			in.ResultC <- result
 
 		case proto.PlayerAction_PlayerActionCheck:
 			if err := m.playerCheck(playerID, tableID); err != nil {
 				m.l.Error(err)
+				in.ResultC <- actions.NewPlayerActionError(err)
 				break
 			}
+			result := actions.NewPlayerActionResult(err, &ppb.TakeTurnResponse{})
+			in.ResultC <- result
 
 		default:
 			// m.l.Infof("[%v] Doing action: %v", playerName, playerAction.String())
@@ -142,6 +166,14 @@ func (m *Manager) processPlayerRequests() {
 
 	default:
 	}
+}
+
+// playerByID returns the player by ID
+func (m *Manager) playerByID(playerID id.PlayerID) (*player.Player, error) {
+	if p, ok := m.players[playerID]; ok {
+		return p, nil
+	}
+	return nil, fmt.Errorf("player with id [%v] not found", playerID)
 }
 
 // playerCheck sends the Check action to the table
@@ -171,7 +203,7 @@ func (m *Manager) joinTable(in actions.PlayerAction) (tableID id.TableID, pos in
 		return
 	}
 
-	playerID := id.PlayerID(in.Data.PlayerID)
+	playerID := id.PlayerID(in.ClientInfo.PlayerID)
 	var p *player.Player
 	var ok bool
 	if p, ok = m.players[playerID]; !ok {
@@ -219,9 +251,9 @@ func (m *Manager) firstAvailableTable() (*table.Table, error) {
 }
 
 // addPlayer add the player to the manager instance and make them available for playing games
-func (m *Manager) addPlayer(in actions.PlayerAction) error {
-	id := id.PlayerID(in.Data.PlayerID)
-	playerName := in.Data.PlayerName
+func (m *Manager) addPlayer(in actions.PlayerAction) (*player.Player, error) {
+	id := id.NewPlayerID()
+	playerName := in.ClientInfo.PlayerName
 
 	if _, ok := m.players[id]; !ok {
 		m.l.Infof("[%v] Adding player to manager (id: %v)", playerName, id)
@@ -230,8 +262,8 @@ func (m *Manager) addPlayer(in actions.PlayerAction) error {
 		}
 		p := player.New(playerName, in.ToManagerChan)
 		m.players[id] = p
-		return nil
+		return p, nil
 	}
 
-	return fmt.Errorf("[%v] player with id %v already registered", playerName, id)
+	return nil, fmt.Errorf("[%v] player with id %v already registered", playerName, id)
 }

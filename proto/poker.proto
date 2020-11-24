@@ -12,7 +12,17 @@ option go_package = "github.com/DanTuovsky/pepper-poker-v2/proto";
 // --plugin=protoc-gen-grpc=/usr/local/bin/grpc_csharp_plugin
 
 service PokerServer {
-  rpc Play(stream ClientData) returns(stream GameData) {}
+  // JoinTable joins a table once authenticated
+  rpc JoinTable(JoinTableRequest) returns(JoinTableResponse) {}
+
+  // Play subscribes the client to updates after joining a table
+  rpc Play(PlayRequest) returns(stream GameData) {}
+
+  // Register registers with the server
+  rpc Register(RegisterRequest) returns(RegisterResponse) {}
+
+  // TakeTurn sends a Poker game turn request
+  rpc TakeTurn(TakeTurnRequest) returns(TakeTurnResponse) {}
 }
 
 enum PlayerAction {
@@ -23,19 +33,58 @@ enum PlayerAction {
   PlayerActionFold = 6;
 }
 
-// ClientData is sent by the client during the game
-message ClientData {
-  string playerID = 20;
-  string playerName = 30;
-  string tableID = 40;
+message ActionOpts {
+  // Bet options
+  int64 betAmount = 10;
+}
+
+message RegisterRequest {
+  ClientInfo clientInfo = 10;
+  PlayerAction playerAction = 20;
+}
+message RegisterResponse {
+  string playerID = 10;
+  string message = 20;
+}
+
+message JoinTableRequest {
+  ClientInfo clientInfo = 10;
+  PlayerAction playerAction = 20;
+  string tableID = 30;
+}
+message JoinTableResponse {
+  string tableID = 10;
+  int64 position = 20;
+  string message = 30;
+}
+
+message TakeTurnRequest {
+  ClientInfo clientInfo = 10;
+  PlayerAction playerAction = 20;
+  ActionOpts actionOpts = 30;
+}
+message TakeTurnResponse { string message = 20; }
+
+// PlayRequest is sent to register for the GameData streaming response
+message PlayRequest {
+  ClientInfo clientInfo = 10;
   PlayerAction playerAction = 50;
+}
+
+// ClientInfo is sent to the server with every RPC request, contains common data
+// Not all fields are filled in for all requests
+message ClientInfo {
+  string playerID = 10;
+  string playerName = 20;
+  string tableID = 30;
 }
 
 // GameInfo contains all the game info
 message GameInfo {
   string tableName = 10;
-  int64 maxPlayers = 20;
-  int64 minPlayers = 30;
+  string tableID = 20;
+  int64 maxPlayers = 30;
+  int64 minPlayers = 40;
 }
 
 // GameData is sent to the client, it tells the client when it's their turn and
