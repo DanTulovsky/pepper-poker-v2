@@ -6,6 +6,8 @@ import (
 	"github.com/DanTulovsky/logger"
 	"github.com/DanTulovsky/pepper-poker-v2/server/player"
 	"github.com/fatih/color"
+
+	ppb "github.com/DanTulovsky/pepper-poker-v2/proto"
 )
 
 // state is the state machine for the table
@@ -19,7 +21,7 @@ type state interface {
 	Fold(*player.Player) error
 
 	Init()
-	Name() string
+	Name() ppb.GameState
 	Reset()
 	StartGame() error
 	Tick() error
@@ -28,20 +30,20 @@ type state interface {
 
 // baseState for common functions
 type baseState struct {
-	name  string
+	name  ppb.GameState
 	table *Table
 
 	l *logger.Logger
 }
 
 // newBaseState returns a new base state
-func newBaseState(name string, table *Table) baseState {
+func newBaseState(name ppb.GameState, table *Table) baseState {
 	r := baseState{
 		name:  name,
 		table: table,
 	}
 
-	r.l = logger.New(name, color.New(color.FgGreen))
+	r.l = logger.New(name.String(), color.New(color.FgGreen))
 
 	return r
 }
@@ -58,7 +60,7 @@ func (i *baseState) StartGame() error {
 }
 
 // Name returns the name
-func (i *baseState) Name() string {
+func (i *baseState) Name() ppb.GameState {
 	return i.name
 }
 

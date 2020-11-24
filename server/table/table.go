@@ -88,39 +88,39 @@ func New(tableAction chan ActionRequest) *Table {
 	t.positions = make([]*player.Player, t.maxPlayers)
 
 	t.waitingPlayersState = &waitingPlayersState{
-		baseState:       newBaseState("waitingPlayers", t),
+		baseState:       newBaseState(ppb.GameState_GameStateWaitingPlayers, t),
 		gameWaitTimeout: t.gameWaitTimeout,
 	}
 	t.initializingState = &initializingState{
-		baseState: newBaseState("initializing", t),
+		baseState: newBaseState(ppb.GameState_GameStateInitializing, t),
 	}
 	t.readyToStartState = &readyToStartState{
-		baseState:     newBaseState("readyToStart", t),
+		baseState:     newBaseState(ppb.GameState_GameStateReadyToStart, t),
 		playerTimeout: t.playerTimeout,
 	}
 	t.playingSmallBlindState = &playingSmallBlindState{
-		baseState: newBaseState("playingSmallBlindState", t),
+		baseState: newBaseState(ppb.GameState_GameStatePlayingSmallBlind, t),
 	}
 	t.playingBigBlindState = &playingBigBlindState{
-		baseState: newBaseState("playingBigBlindState", t),
+		baseState: newBaseState(ppb.GameState_GameStatePlayingBigBlind, t),
 	}
 	t.playingPreFlopState = &playingPreFlopState{
-		baseState: newBaseState("playingPreFlopState", t),
+		baseState: newBaseState(ppb.GameState_GameStatePlayingPreFlop, t),
 	}
 	t.playingFlopState = &playingFlopState{
-		baseState: newBaseState("playingFlopState", t),
+		baseState: newBaseState(ppb.GameState_GameStatePlayingFlop, t),
 	}
 	t.playingTurnState = &playingTurnState{
-		baseState: newBaseState("playingTurnState", t),
+		baseState: newBaseState(ppb.GameState_GameStatePlayingTurn, t),
 	}
 	t.playingRiverState = &playingRiverState{
-		baseState: newBaseState("playingRiverState", t),
+		baseState: newBaseState(ppb.GameState_GameStatePlayingRiver, t),
 	}
 	t.playingDoneState = &playingDoneState{
-		baseState: newBaseState("playingDoneState", t),
+		baseState: newBaseState(ppb.GameState_GameStatePlayingDone, t),
 	}
 	t.finishedState = &finishedState{
-		baseState:    newBaseState("gameFinished", t),
+		baseState:    newBaseState(ppb.GameState_GameStateFinished, t),
 		gameEndDelay: t.gameEndDelay,
 	}
 
@@ -224,8 +224,10 @@ func (t *Table) info() ActionInfoResult {
 func (t *Table) infoproto() *ppb.GameInfo {
 	i := t.info()
 	gi := &ppb.GameInfo{
-		TableName:  i.Name,
-		TableID:    t.ID.String(),
+		TableName: i.Name,
+		TableID:   t.ID.String(),
+
+		GameState:  t.State.Name(),
 		MaxPlayers: int64(i.MaxPlayers),
 		MinPlayers: int64(i.MinPlayers),
 	}
@@ -290,8 +292,8 @@ func (t *Table) canAdvanceState() bool {
 // setState sets the state of the table
 func (t *Table) setState(s state) {
 	var from, to string = "nil", "nil"
-	from = t.State.Name()
-	to = s.Name()
+	from = t.State.Name().String()
+	to = s.Name().String()
 
 	t.l.Infof(color.GreenString("Changing State (%v): %v -> %v"), t.stateAdvanceDelay, from, to)
 	// TODO: This blocks all processing and is really not needed

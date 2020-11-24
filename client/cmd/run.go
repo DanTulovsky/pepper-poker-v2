@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
+	"os"
 	"time"
 
 	"github.com/DanTulovsky/logger"
@@ -28,8 +29,9 @@ var (
 
 	name = flag.String("name", randomdata.SillyName(), "player name")
 
-	playerID id.PlayerID
-	tableID  id.TableID
+	playerID  id.PlayerID
+	tableID   id.TableID
+	gameState ppb.GameState
 )
 
 func main() {
@@ -146,8 +148,15 @@ func main() {
 		}
 
 		waitID := id.PlayerID(in.WaitTurnID)
+		gameState = in.GetInfo().GetGameState()
 
 		logg.Infof("Current Turn playerID: %v", in.WaitTurnID)
+		logg.Infof("Current State: %v", gameState)
+
+		if gameState == ppb.GameState_GameStateFinished {
+			logg.Info("Game Finished!")
+			os.Exit(0)
+		}
 
 		if playerID == waitID {
 			action := ppb.PlayerAction_PlayerActionCheck

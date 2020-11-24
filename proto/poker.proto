@@ -80,12 +80,27 @@ message ClientInfo {
   string tableID = 30;
 }
 
+enum GameState {
+  GameStateWaitingPlayers = 0; GameStateInitializing = 1;
+  GameStateReadyToStart = 2;
+  GameStatePlayingSmallBlind = 3;
+  GameStatePlayingBigBlind = 4;
+  GameStatePlayingPreFlop = 5;
+  GameStatePlayingFlop = 6;
+  GameStatePlayingTurn = 7;
+  GameStatePlayingRiver = 8;
+  GameStatePlayingDone = 9;
+  GameStateFinished = 10;
+}
+
 // GameInfo contains all the game info
 message GameInfo {
   string tableName = 10;
   string tableID = 20;
-  int64 maxPlayers = 30;
-  int64 minPlayers = 40;
+  GameState gameState = 30;
+
+  int64 maxPlayers = 100;
+  int64 minPlayers = 110;
 }
 
 // GameData is sent to the client, it tells the client when it's their turn and
