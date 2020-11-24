@@ -73,9 +73,8 @@ func (m *Manager) createTables() {
 }
 
 func (m *Manager) createTable() *table.Table {
-	ta := make(chan actions.TableActionRequest)
-	tar := make(chan actions.TableActionResult)
-	return table.New(ta, tar)
+	ta := make(chan table.ActionRequest)
+	return table.New(ta)
 }
 
 // startServers start grpc and http servers
@@ -148,6 +147,7 @@ func (m *Manager) processPlayerRequests() {
 
 func (m *Manager) joinTable(in actions.PlayerAction) (tableID id.TableID, pos int, err error) {
 	var t *table.Table
+	pos = -1
 
 	// find available table
 	// TODO: Handle joining a specific table (in.TableID)
@@ -160,11 +160,24 @@ func (m *Manager) joinTable(in actions.PlayerAction) (tableID id.TableID, pos in
 	var p *player.Player
 	var ok bool
 	if p, ok = m.players[playerID]; !ok {
-		return "", -1, fmt.Errorf("must register first")
+		err = fmt.Errorf("must register first")
+		return
 	}
 
-	pos, err = t.AddPlayer(p)
-	return t.ID, pos, err
+	// Table response comes back over this channel
+	result := make(chan table.ActionResult)
+	req := table.NewTableAction(table.ActionAddPlayer, result, p, nil)
+	t.TableAction <- req
+
+	// block(!?) until table responds
+	res := <-result
+	err = res.Err
+	if err != nil {
+		return
+	}
+
+	r := res.Result.(table.ActionAddPlayerResult)
+	return t.ID, r.Position, err
 }
 
 func (m *Manager) firstAvailableTable() (*table.Table, error) {

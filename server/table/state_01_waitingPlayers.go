@@ -60,10 +60,20 @@ func (i *waitingPlayersState) AvailableToJoin() bool {
 }
 
 // AddPlayer adds the player to the table and returns the position at the table
-func (i *waitingPlayersState) AddPlayer(player *player.Player) (pos int, err error) {
+func (i *waitingPlayersState) AddPlayer(p *player.Player) (pos int, err error) {
 	i.lastPlayerAddedTime = time.Now()
 
-	return i.table.addPlayer(player)
+	if i.table.numActivePlayers() == i.table.maxPlayers {
+		return -1, fmt.Errorf("no available positions at table")
+	}
+
+	if !i.table.playerAtTable(p) {
+		i.l.Infof("Addting player [%v] to table [%v]", p.Name, i.table.Name)
+		i.table.positions[i.table.nextAvailablePosition()] = p
+		return i.table.PlayerPosition(p)
+	}
+
+	return -1, fmt.Errorf("player already at the table: %v (%v)", p.Name, p.ID)
 }
 
 // Reset resets for next roung

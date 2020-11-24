@@ -25,6 +25,7 @@ func (i *playingRiverState) fold(p *player.Player) error {
 }
 
 func (i *playingRiverState) Init() {
+	i.table.SetPlayersActionRequired()
 	i.l.Info("Dealing the river...")
 }
 

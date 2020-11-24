@@ -25,6 +25,7 @@ func (i *playingTurnState) fold(p *player.Player) error {
 }
 
 func (i *playingTurnState) Init() {
+	i.table.SetPlayersActionRequired()
 	i.l.Info("Dealing the turn...")
 }
 

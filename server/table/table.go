@@ -18,8 +18,8 @@ type Table struct {
 	Name string
 	ID   id.TableID
 
-	tableAction       chan actions.TableActionRequest
-	tableActionResult chan actions.TableActionResult
+	// Table listens to manager actions on this channel
+	TableAction chan ActionRequest
 
 	// table positions
 	positions []*player.Player
@@ -42,6 +42,13 @@ type Table struct {
 
 	State state
 
+	// index into the positions array
+	currentTurn int
+	// the current button, index into positions array
+	button               int
+	bigBlind, smallblind int64
+	minBetThisRound      int64
+
 	// how long to wait for player to make a move
 	playerTimeout time.Duration
 	// how long to wait after game ends before starting a new one
@@ -57,16 +64,19 @@ type Table struct {
 }
 
 // New creates a new table
-func New(tableAction chan actions.TableActionRequest, tableActionResult chan actions.TableActionResult) *Table {
+func New(tableAction chan ActionRequest) *Table {
 	t := &Table{
-		ID:                id.NewTableID(),
-		Name:              randomdata.SillyName(),
-		tableAction:       tableAction,
-		tableActionResult: tableActionResult,
-		l:                 logger.New("table", color.New(color.FgYellow)),
+		ID:          id.NewTableID(),
+		Name:        randomdata.SillyName(),
+		TableAction: tableAction,
+		l:           logger.New("table", color.New(color.FgYellow)),
 
 		maxPlayers: 7,
-		minPlayers: 1,
+		minPlayers: 2,
+
+		button:     -1,
+		smallblind: 5,
+		bigBlind:   10,
 
 		playerTimeout:     time.Second * 120,
 		gameEndDelay:      time.Second * 10,
@@ -133,6 +143,8 @@ func (t *Table) Run() error {
 func (t *Table) Tick() error {
 	t.l.Debug("Tick()")
 
+	t.processPlayerActions()
+
 	if err := t.State.Tick(); err != nil {
 		return err
 	}
@@ -141,9 +153,60 @@ func (t *Table) Tick() error {
 	return nil
 }
 
+// processPlayerActions checks the channel from the manager for any player actions
+func (t *Table) processPlayerActions() error {
+	select {
+	case in := <-t.TableAction:
+		t.l.Infof("Received table action: %v", in.Action)
+		t.processPlayerAction(in)
+	default:
+	}
+
+	return nil
+}
+
+func (t *Table) processPlayerAction(in ActionRequest) {
+	var res ActionResult
+
+	switch in.Action {
+	case ActionAddPlayer:
+		pos, err := t.addPlayer(in.Player)
+		switch err {
+		case nil:
+			res = NewTableActionResult(nil, ActionAddPlayerResult{
+				Position: pos,
+			})
+		default:
+			res = NewTableActionResult(err, nil)
+		}
+		in.resultChan <- res
+	}
+}
+
+// advancePlayer advances t.currentPlayer to the next player
+func (t *Table) advancePlayer() {
+	next := t.playerAfter(t.currentTurn)
+	from := t.positions[t.currentTurn].Name
+	to := t.positions[next].Name
+
+	t.l.Infof("Advancing player: %v -> %v", from, to)
+	t.currentTurn = next
+}
+
 // AvailableToJoin returns true if the table has empty positions
 func (t *Table) AvailableToJoin() bool {
 	return t.State.AvailableToJoin()
+}
+
+// playerAfter returns the index of the first non-empty chair after index.
+func (t *Table) playerAfter(index int) int {
+	for i := 0; i < t.maxPlayers; i++ {
+		index = (index + 1) % t.maxPlayers
+		if t.positions[index] != nil {
+			break
+		}
+	}
+	return index
 }
 
 // setState sets the state of the table
@@ -201,28 +264,9 @@ func (t *Table) playerAtTable(p *player.Player) bool {
 	return false
 }
 
-// AddPlayer tries to add a player to the table and returns the position if successfull
-func (t *Table) AddPlayer(p *player.Player) (int, error) {
-	return t.State.AddPlayer(p)
-}
-
-// AddPlayer adds a player to the table
+// addPlayer adds a player to the table
 func (t *Table) addPlayer(p *player.Player) (int, error) {
-
-	if t.State != t.waitingPlayersState {
-		return -1, fmt.Errorf("table state not ok for adding players: %v", t.State)
-	}
-
-	if t.numActivePlayers() == t.maxPlayers {
-		return -1, fmt.Errorf("no available positions at table")
-	}
-
-	if !t.playerAtTable(p) {
-		t.positions[t.nextAvailablePosition()] = p
-		return t.PlayerPosition(p)
-	}
-
-	return -1, fmt.Errorf("player already at the table: %v (%v)", p.Name, p.ID)
+	return t.State.AddPlayer(p)
 }
 
 func (t *Table) nextAvailablePosition() int {
@@ -234,11 +278,20 @@ func (t *Table) nextAvailablePosition() int {
 	return -1
 }
 
+// SetPlayersActionRequired resets the actionRequired attribute on players before each state
+func (t *Table) SetPlayersActionRequired() {
+	for _, p := range t.ActivePlayers() {
+		if !p.AllIn() && !p.Folded() {
+			p.SetActionRequired(true)
+		}
+	}
+}
+
 // sendUpdateToPlayers sends updates to players as needed
 func (t *Table) sendUpdateToPlayers() {
 	// TODO: read from a channel that has updates
 
-	t.l.Debug("Sending updates to players...")
+	// t.l.Debug("Sending updates to players...")
 
 	for _, p := range t.ActivePlayers() {
 		action := actions.NewManagerAction(rand.Int63n(200))

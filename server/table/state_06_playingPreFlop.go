@@ -22,6 +22,10 @@ func (i *playingPreFlopState) fold(p *player.Player) error {
 	return i.table.fold(p)
 }
 
+func (i *playingPreFlopState) Init() {
+	i.table.SetPlayersActionRequired()
+}
+
 func (i *playingPreFlopState) Tick() error {
 	i.l.Debugf("Tick(%v)", i.Name())
 

@@ -115,7 +115,7 @@ func (ps *pokerServer) Play(stream ppb.PokerServer_PlayServer) error {
 		for {
 			select {
 			case in := <-fromManagerChan:
-				ps.l.Debugf("Sending data to client: %v", in)
+				// ps.l.Debugf("Sending data to client: %v", in)
 				res := &ppb.GameData{
 					Output: in.Result,
 				}

@@ -24,6 +24,13 @@ func (i *playingSmallBlindState) Fold(id string) error {
 	return fmt.Errorf("cannot fold during this round")
 }
 
+func (i *playingSmallBlindState) Init() {
+	smallBlind := i.table.positions[i.table.currentTurn]
+	i.l.Infof("[%v] putting in small blind...", smallBlind.Name)
+
+	i.table.advancePlayer()
+}
+
 func (i *playingSmallBlindState) Tick() error {
 	i.l.Debugf("Tick(%v)", i.Name())
 

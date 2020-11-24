@@ -25,6 +25,7 @@ func (i *playingFlopState) fold(p *player.Player) error {
 }
 
 func (i *playingFlopState) Init() {
+	i.table.SetPlayersActionRequired()
 	i.l.Info("Dealing the flop...")
 }
 

@@ -14,11 +14,23 @@ func (i *initializingState) StartGame() error {
 	return fmt.Errorf("game not ready to start yet")
 }
 
+func (i *initializingState) Init() {
+	i.l.Info("Initializing table...")
+	i.table.button = i.table.playerAfter(i.table.button)
+	i.table.currentTurn = i.table.playerAfter(i.table.button)
+
+	i.l.Infof("button: %v", i.table.positions[i.table.button].Name)
+	i.l.Infof("currentTurn: %v", i.table.positions[i.table.currentTurn].Name)
+
+	i.l.Info("Initializing player information for the hand...")
+	for _, p := range i.table.ActivePlayers() {
+		p.InitHand()
+	}
+}
+
 func (i *initializingState) Tick() error {
 	i.l.Debugf("Tick(%v)", i.Name())
-	// Nothing to do...
 
-	i.l.Info("Initializing table...")
 	i.table.setState(i.table.readyToStartState)
 
 	return nil
