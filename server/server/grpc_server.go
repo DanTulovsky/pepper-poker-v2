@@ -110,16 +110,11 @@ func (ps *pokerServer) Play(stream ppb.PokerServer_PlayServer) error {
 
 	// start a goroutine to send data back to client
 	go func() {
-
-		ps.l.Info("This will listen and send data back to client")
 		for {
 			select {
 			case in := <-fromManagerChan:
-				// ps.l.Debugf("Sending data to client: %v", in)
-				res := &ppb.GameData{
-					Output: in.Result,
-				}
-				stream.Send(res)
+				ps.l.Debugf("Sending data to client: %#v", in.Data.WaitTurnID)
+				stream.Send(in.Data)
 			}
 		}
 	}()

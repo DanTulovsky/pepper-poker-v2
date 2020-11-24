@@ -104,7 +104,8 @@ func (m *Manager) processPlayerRequests() {
 	select {
 	case in := <-m.fromGrpcServerChan:
 		playerName := in.Data.PlayerName
-		// playerID := in.Data.PlayerID
+		playerID := id.PlayerID(in.Data.PlayerID)
+		tableID := id.TableID(in.Data.TableID)
 		playerAction := in.Data.PlayerAction
 
 		m.l.Infof("[%v] Received request from player: %#v", playerName, playerAction.String())
@@ -118,6 +119,7 @@ func (m *Manager) processPlayerRequests() {
 				m.l.Error(err)
 				break
 			}
+
 		case proto.PlayerAction_PlayerActionJoinTable:
 			var pos int
 			var err error
@@ -127,6 +129,13 @@ func (m *Manager) processPlayerRequests() {
 				break
 			}
 			m.l.Infof("[%v] joined table [%v] at position [%v]", playerName, tableID, pos)
+
+		case proto.PlayerAction_PlayerActionCheck:
+			if err := m.playerCheck(playerID, tableID); err != nil {
+				m.l.Error(err)
+				break
+			}
+
 		default:
 			// m.l.Infof("[%v] Doing action: %v", playerName, playerAction.String())
 		}
@@ -135,6 +144,22 @@ func (m *Manager) processPlayerRequests() {
 	}
 }
 
+// playerCheck sends the Check action to the table
+func (m *Manager) playerCheck(playerID id.PlayerID, tableID id.TableID) error {
+	t := m.tables[tableID]
+	p := m.players[playerID]
+
+	result := make(chan table.ActionResult)
+	req := table.NewTableAction(table.ActionCheck, result, p, nil)
+	t.TableAction <- req
+
+	// block until response
+	res := <-result
+
+	return res.Err
+}
+
+// jointable attempts to join a table
 func (m *Manager) joinTable(in actions.PlayerAction) (tableID id.TableID, pos int, err error) {
 	var t *table.Table
 	pos = -1
@@ -170,6 +195,7 @@ func (m *Manager) joinTable(in actions.PlayerAction) (tableID id.TableID, pos in
 	return t.ID, r.Position, err
 }
 
+// firstAvailableTable returns the first table with an empty spot for the player
 func (m *Manager) firstAvailableTable() (*table.Table, error) {
 	for _, t := range m.tables {
 
@@ -193,7 +219,6 @@ func (m *Manager) firstAvailableTable() (*table.Table, error) {
 }
 
 // addPlayer add the player to the manager instance and make them available for playing games
-// TODO: In the future this can pull players from a data store with proper auth
 func (m *Manager) addPlayer(in actions.PlayerAction) error {
 	id := id.PlayerID(in.Data.PlayerID)
 	playerName := in.Data.PlayerName

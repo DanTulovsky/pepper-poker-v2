@@ -12,12 +12,18 @@ import (
 type state interface {
 	AddPlayer(player *player.Player) (pos int, err error)
 	AvailableToJoin() bool
+
+	Bet(p *player.Player, bet int64) error
+	Check(p *player.Player) error
+	Call(p *player.Player) error
+	Fold(*player.Player) error
+
 	Init()
 	Name() string
 	Reset()
 	StartGame() error
 	Tick() error
-	WhoseTurn() *player.Player
+	WaitingTurnPlayer() *player.Player
 }
 
 // baseState for common functions
@@ -60,8 +66,14 @@ func (i *baseState) Name() string {
 func (i *baseState) Reset() {
 }
 
-// WhoseTurn returns the player whose turn it is.
-func (i *baseState) WhoseTurn() *player.Player {
+// WaitingTurnPlayer returns the player whose turn it is.
+func (i *baseState) WaitingTurnPlayer() *player.Player {
+	p := i.table.positions[i.table.currentTurn]
+
+	if p != nil && p.ActionRequired() {
+		return p
+	}
+
 	return nil
 }
 
@@ -72,4 +84,24 @@ func (i *baseState) AvailableToJoin() bool {
 
 func (i *baseState) AddPlayer(player *player.Player) (pos int, err error) {
 	return -1, fmt.Errorf("cannot add player right now")
+}
+
+// Bet processes the bet request
+func (i *baseState) Bet(p *player.Player, bet int64) error {
+	return i.table.bet(p, bet)
+}
+
+// Check process the check request
+func (i *baseState) Check(p *player.Player) error {
+	return i.table.check(p)
+}
+
+// Call process the call request
+func (i *baseState) Call(p *player.Player) error {
+	return i.table.call(p)
+}
+
+// Fold processes the fold request
+func (i *baseState) Fold(p *player.Player) error {
+	return i.table.fold(p)
 }

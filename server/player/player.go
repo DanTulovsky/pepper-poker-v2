@@ -53,7 +53,14 @@ func (p *Player) SetActionRequired(a bool) {
 
 // ActionRequired returns true if player action is required
 func (p *Player) ActionRequired() bool {
-	return p.HandInfo.actionRequired
+	switch {
+	case p.HandInfo.allin:
+		return false
+	case p.HandInfo.folded:
+		return false
+	default:
+		return p.HandInfo.actionRequired
+	}
 }
 
 // Folded returns the fold state of the player

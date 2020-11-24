@@ -80,3 +80,7 @@ func (i *waitingPlayersState) AddPlayer(p *player.Player) (pos int, err error) {
 func (i *waitingPlayersState) Reset() {
 	i.lastPlayerAddedTime = time.Now()
 }
+
+func (i *waitingPlayersState) WaitingTurnPlayer() *player.Player {
+	return nil
+}

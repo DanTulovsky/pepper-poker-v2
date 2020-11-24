@@ -16,19 +16,32 @@ service PokerServer {
 }
 
 enum PlayerAction {
-  PlayerActionNone = 0; PlayerActionRegister = 1; PlayerActionRandomInt = 2;
-  PlayerActionJoinTable = 3;
+  PlayerActionNone = 0; PlayerActionRegister = 1; PlayerActionJoinTable = 2;
+  PlayerActionCall = 3;
+  PlayerActionCheck = 4;
+  PlayerActionBet = 5;
+  PlayerActionFold = 6;
 }
 
 // ClientData is sent by the client during the game
 message ClientData {
-  int64 input = 10;
   string playerID = 20;
   string playerName = 30;
   string tableID = 40;
   PlayerAction playerAction = 50;
 }
 
+// GameInfo contains all the game info
+message GameInfo {
+  string tableName = 10;
+  int64 maxPlayers = 20;
+  int64 minPlayers = 30;
+}
+
 // GameData is sent to the client, it tells the client when it's their turn and
 // provides the current state
-message GameData { int64 output = 20; }
+message GameData {
+  GameInfo info = 10;
+  string waitTurnID = 20; // the ID of the player whose turn it is
+  string playerID = 30;   // the ID of the calling player
+}

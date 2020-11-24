@@ -13,6 +13,9 @@ const (
 
 	// ActionInfo returns various information about the table
 	ActionInfo
+
+	// ActionCheck checks
+	ActionCheck
 )
 
 // ActionAddPlayerResult is the result of an AddPlayer action

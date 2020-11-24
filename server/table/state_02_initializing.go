@@ -20,7 +20,6 @@ func (i *initializingState) Init() {
 	i.table.currentTurn = i.table.playerAfter(i.table.button)
 
 	i.l.Infof("button: %v", i.table.positions[i.table.button].Name)
-	i.l.Infof("currentTurn: %v", i.table.positions[i.table.currentTurn].Name)
 
 	i.l.Info("Initializing player information for the hand...")
 	for _, p := range i.table.ActivePlayers() {
@@ -42,5 +41,9 @@ func (i *initializingState) AddPlayer(player *player.Player) (pos int, err error
 
 // WhoseTurn returns the player whose turn it is.
 func (i *initializingState) WhoseTurn() *player.Player {
+	return nil
+}
+
+func (i *initializingState) WaitingTurnPlayer() *player.Player {
 	return nil
 }

@@ -2,7 +2,6 @@ package table
 
 import (
 	"fmt"
-	"math/rand"
 	"time"
 
 	"github.com/DanTulovsky/logger"
@@ -11,6 +10,8 @@ import (
 	"github.com/DanTulovsky/pepper-poker-v2/server/player"
 	"github.com/Pallinder/go-randomdata"
 	"github.com/fatih/color"
+
+	ppb "github.com/DanTulovsky/pepper-poker-v2/proto"
 )
 
 // Table hosts a game and allows playing multiple rounds
@@ -184,6 +185,9 @@ func (t *Table) processManagerAction(in ActionRequest) {
 		i := t.info()
 		res = NewTableActionResult(nil, i)
 
+	case ActionCheck:
+		t.State.Check(in.Player)
+
 	}
 	// send reply back to manager
 	in.resultChan <- res
@@ -198,6 +202,36 @@ func (t *Table) info() ActionInfoResult {
 		MinPlayers:      t.minPlayers,
 	}
 
+}
+
+// infoproto returns t.info() in a proto to send to the client
+func (t *Table) infoproto() *ppb.GameInfo {
+	i := t.info()
+	gi := &ppb.GameInfo{
+		TableName:  i.Name,
+		MaxPlayers: int64(i.MaxPlayers),
+		MinPlayers: int64(i.MinPlayers),
+	}
+
+	return gi
+}
+
+// infoProto returns the ppb.GameData proto filled in from t.info()
+func (t *Table) gameDataProto(p *player.Player) *ppb.GameData {
+
+	// p is the player the info is being sent to
+	current := t.State.WaitingTurnPlayer()
+
+	d := &ppb.GameData{
+		Info:     t.infoproto(),
+		PlayerID: p.ID.String(),
+	}
+
+	if current != nil {
+		d.WaitTurnID = current.ID.String()
+	}
+
+	return d
 }
 
 // advancePlayer advances t.currentPlayer to the next player
@@ -224,6 +258,16 @@ func (t *Table) playerAfter(index int) int {
 		}
 	}
 	return index
+}
+
+// canAdvanceState returns true if the state can advance
+func (t *Table) canAdvanceState() bool {
+	for _, p := range t.ActivePlayers() {
+		if p.ActionRequired() {
+			return false
+		}
+	}
+	return true
 }
 
 // setState sets the state of the table
@@ -306,12 +350,9 @@ func (t *Table) SetPlayersActionRequired() {
 
 // sendUpdateToPlayers sends updates to players as needed
 func (t *Table) sendUpdateToPlayers() {
-	// TODO: read from a channel that has updates
-
-	// t.l.Debug("Sending updates to players...")
-
 	for _, p := range t.ActivePlayers() {
-		action := actions.NewManagerAction(rand.Int63n(200))
+		in := t.gameDataProto(p)
+		action := actions.NewManagerAction(in)
 		// TODO: This should not block for when clients drop
 		p.CommChannel <- action
 	}

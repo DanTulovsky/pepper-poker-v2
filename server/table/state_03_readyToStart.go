@@ -66,3 +66,7 @@ func (i *readyToStartState) AddPlayer(player *player.Player) (pos int, err error
 func (i *readyToStartState) WhoseTurn() *player.Player {
 	return nil
 }
+
+func (i *readyToStartState) WaitingTurnPlayer() *player.Player {
+	return nil
+}

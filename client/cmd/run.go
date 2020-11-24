@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"io"
 	"math/rand"
 	"time"
@@ -17,6 +16,7 @@ import (
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"google.golang.org/grpc"
 
+	"github.com/DanTulovsky/pepper-poker-v2/id"
 	ppb "github.com/DanTulovsky/pepper-poker-v2/proto"
 )
 
@@ -64,8 +64,9 @@ func main() {
 	}
 
 	waitc := make(chan bool)
+	datac := make(chan *ppb.GameData)
 	// receive server messages
-	go func() {
+	go func(datac chan *ppb.GameData) {
 		for {
 			in, err := stream.Recv()
 			if err == io.EOF {
@@ -76,15 +77,15 @@ func main() {
 				cancel()
 				logg.Fatal("error receiving from server")
 			}
-			logg.Infof("Received from server: %v", in.Output)
+			// send the server message to main thread for processing
+			logg.Info(in.WaitTurnID)
+			datac <- in
 		}
-	}()
+	}(datac)
 
-	playerID := rand.Int63n(1000)
 	// register
 	logg.Info("Registering...")
 	req := &ppb.ClientData{
-		PlayerID:     fmt.Sprint(playerID),
 		PlayerName:   *name,
 		PlayerAction: ppb.PlayerAction_PlayerActionRegister,
 	}
@@ -95,7 +96,6 @@ func main() {
 	// join table
 	logg.Info("Joining table...")
 	req = &ppb.ClientData{
-		PlayerID:     fmt.Sprint(playerID),
 		PlayerName:   *name,
 		PlayerAction: ppb.PlayerAction_PlayerActionJoinTable,
 	}
@@ -106,16 +106,25 @@ func main() {
 	// send data after
 	logg.Info("Feeding data...")
 	for {
-		req := &ppb.ClientData{
-			PlayerID:     fmt.Sprint(playerID),
-			PlayerName:   *name,
-			Input:        rand.Int63n(200) + 100,
-			PlayerAction: ppb.PlayerAction_PlayerActionRandomInt,
-		}
-		if err := stream.Send(req); err != nil {
-			logg.Fatal(err)
+		// process server messages if any (on datac channel)
+		in := <-datac
+		playerID := id.PlayerID(in.PlayerID)
+		waitID := id.PlayerID(in.WaitTurnID)
+		logg.Infof("Current Turn playerID: %v", in.WaitTurnID)
+
+		if playerID == waitID {
+			logg.Info("It's my turn, taking it!")
+
+			req := &ppb.ClientData{
+				PlayerID:     playerID.String(),
+				PlayerName:   *name,
+				PlayerAction: ppb.PlayerAction_PlayerActionCheck,
+			}
+			if err := stream.Send(req); err != nil {
+				logg.Fatal(err)
+			}
+			// time.Sleep(time.Second * 1)
 		}
 
-		time.Sleep(time.Second * 30)
 	}
 }

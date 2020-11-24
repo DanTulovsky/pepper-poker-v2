@@ -20,12 +20,12 @@ func NewPlayerAction(in *ppb.ClientData, managerChan chan ManagerAction) PlayerA
 
 // ManagerAction encodes response back to the player
 type ManagerAction struct {
-	Result int64
+	Data *ppb.GameData
 }
 
 // NewManagerAction makes a new ManagerAction
-func NewManagerAction(in int64) ManagerAction {
+func NewManagerAction(in *ppb.GameData) ManagerAction {
 	return ManagerAction{
-		Result: in,
+		Data: in,
 	}
 }

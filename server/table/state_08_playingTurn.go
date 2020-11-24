@@ -1,37 +1,33 @@
 package table
 
-import (
-	"github.com/DanTulovsky/pepper-poker-v2/server/player"
-)
-
 type playingTurnState struct {
 	baseState
-}
-
-func (i *playingTurnState) bet(p *player.Player, bet int64) error {
-	return i.table.bet(p, bet)
-}
-
-func (i *playingTurnState) call(p *player.Player) error {
-	return i.table.call(p)
-}
-
-func (i *playingTurnState) check(p *player.Player) error {
-	return i.table.check(p)
-}
-
-func (i *playingTurnState) fold(p *player.Player) error {
-	return i.table.fold(p)
 }
 
 func (i *playingTurnState) Init() {
 	i.table.SetPlayersActionRequired()
 	i.l.Info("Dealing the turn...")
+
+	// next available player after the button goes first
+	i.table.currentTurn = i.table.playerAfter(i.table.button)
+
+	current := i.table.positions[i.table.currentTurn]
+	i.l.Infof("Player %s (%d) goes first", current.Name, i.table.currentTurn)
 }
 
 func (i *playingTurnState) Tick() error {
 	i.l.Debugf("Tick(%v)", i.Name())
 
+	if i.table.canAdvanceState() {
+		i.table.setState(i.table.playingFlopState)
+		return nil
+	}
+
+	current := i.table.positions[i.table.currentTurn]
+	if !current.ActionRequired() {
+		i.table.advancePlayer()
+		return nil
+	}
 	// if !i.dealt {
 	// 	i.logger.Info("Dealing the Turn...")
 	// 	// Burn one.

@@ -2,25 +2,27 @@ package table
 
 import (
 	"fmt"
+
+	"github.com/DanTulovsky/pepper-poker-v2/server/player"
 )
 
 type playingSmallBlindState struct {
 	baseState
 }
 
-func (i *playingSmallBlindState) Bet(id string, bet int64) error {
+func (i *playingSmallBlindState) Bet(p *player.Player, bet int64) error {
 	return fmt.Errorf("only small blind bets")
 }
 
-func (i *playingSmallBlindState) Call(id string) error {
+func (i *playingSmallBlindState) Call(p *player.Player) error {
 	return fmt.Errorf("cannot call during this round")
 }
 
-func (i *playingSmallBlindState) Check(id string) error {
+func (i *playingSmallBlindState) Check(p *player.Player) error {
 	return fmt.Errorf("cannot call during this round")
 }
 
-func (i *playingSmallBlindState) Fold(id string) error {
+func (i *playingSmallBlindState) Fold(p *player.Player) error {
 	return fmt.Errorf("cannot fold during this round")
 }
 
@@ -55,5 +57,9 @@ func (i *playingSmallBlindState) Tick() error {
 	// i.round.SetMinBetThisRound(i.round.bigBlind)
 
 	i.table.setState(i.table.playingBigBlindState)
+	return nil
+}
+
+func (i *playingSmallBlindState) WaitingTurnPlayer() *player.Player {
 	return nil
 }
