@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
-	"os"
 	"time"
 
 	"github.com/DanTulovsky/logger"
@@ -113,6 +112,7 @@ func main() {
 
 	// send server response on this channel to process in the main thread
 	datac := make(chan *ppb.GameData)
+	donec := make(chan bool)
 	// receive server messages
 	go func() {
 		for {
@@ -134,47 +134,54 @@ func main() {
 	}()
 
 	// Receive GameData on datac channel and act on it
+OUTER:
 	for {
 		logg.Debug("Waiting for GameData...")
 		// process server messages if any (on datac channel)
-		in := <-datac
-		logg.Debug("received game data in main thread")
+		select {
+		case in := <-datac:
+			logg.Debug("received game data in main thread")
 
-		if playerID != id.PlayerID(in.PlayerID) {
-			logg.Fatal("Mismatch in playerID; expected: %v; got: %v", playerID, id.PlayerID(in.PlayerID))
-		}
-		if tableID != id.TableID(in.GetInfo().GetTableID()) {
-			logg.Fatalf("Mismatch in tableID; expected: %v; got: %v", tableID, id.TableID(in.GetInfo().GetTableID()))
-		}
-
-		waitID := id.PlayerID(in.WaitTurnID)
-		gameState = in.GetInfo().GetGameState()
-
-		logg.Infof("Current Turn playerID: %v", in.WaitTurnID)
-		logg.Infof("Current State: %v", gameState)
-
-		if gameState == ppb.GameState_GameStateFinished {
-			logg.Info("Game Finished!")
-			os.Exit(0)
-		}
-
-		if playerID == waitID {
-			action := ppb.PlayerAction_PlayerActionCheck
-			logg.Infof("Taking Turn: %v", action)
-
-			req := &ppb.TakeTurnRequest{
-				ClientInfo: &ppb.ClientInfo{
-					PlayerName: *name,
-					PlayerID:   playerID.String(),
-					TableID:    tableID.String(),
-				},
-				PlayerAction: action,
+			if playerID != id.PlayerID(in.PlayerID) {
+				logg.Fatal("Mismatch in playerID; expected: %v; got: %v", playerID, id.PlayerID(in.PlayerID))
 			}
-			_, err := client.TakeTurn(ctx, req)
-			if err != nil {
-				logg.Error(err)
+			if tableID != id.TableID(in.GetInfo().GetTableID()) {
+				logg.Fatalf("Mismatch in tableID; expected: %v; got: %v", tableID, id.TableID(in.GetInfo().GetTableID()))
 			}
-			time.Sleep(time.Second * 1)
+
+			waitID := id.PlayerID(in.WaitTurnID)
+			gameState = in.GetInfo().GetGameState()
+
+			logg.Infof("Current Turn playerID: %v", in.WaitTurnID)
+			logg.Infof("Current State: %v", gameState)
+
+			if gameState == ppb.GameState_GameStateFinished {
+				logg.Info("Game Finished!")
+				donec <- true
+				conn.Close()
+			}
+
+			if playerID == waitID {
+				action := ppb.PlayerAction_PlayerActionCheck
+				logg.Infof("Taking Turn: %v", action)
+
+				req := &ppb.TakeTurnRequest{
+					ClientInfo: &ppb.ClientInfo{
+						PlayerName: *name,
+						PlayerID:   playerID.String(),
+						TableID:    tableID.String(),
+					},
+					PlayerAction: action,
+				}
+				_, err := client.TakeTurn(ctx, req)
+				if err != nil {
+					logg.Error(err)
+				}
+				time.Sleep(time.Second * 1)
+			}
+		case <-donec:
+			logg.Info("Exiting server data receiver as requested...")
+			break OUTER
 		}
 	}
 }

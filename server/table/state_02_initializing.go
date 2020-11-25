@@ -3,15 +3,14 @@ package table
 import (
 	"fmt"
 
+	"github.com/DanTulovsky/pepper-poker-v2/acks"
 	"github.com/DanTulovsky/pepper-poker-v2/server/player"
 )
 
 type initializingState struct {
 	baseState
-}
 
-func (i *initializingState) StartGame() error {
-	return fmt.Errorf("game not ready to start yet")
+	token *acks.Token
 }
 
 func (i *initializingState) Init() {
@@ -25,12 +24,33 @@ func (i *initializingState) Init() {
 	for _, p := range i.table.ActivePlayers() {
 		p.InitHand()
 	}
+
+	// reset any existing acks
+	i.table.clearAckToken()
+
+	// Used to get an ack before game starts
+	i.token = acks.New(i.table.ActivePlayers(), i.table.defaultAckTimeout)
+	i.token.StartTime()
+	i.table.setAckToken(i.token)
+}
+
+func (i *initializingState) StartGame() error {
+	return fmt.Errorf("game not ready to start yet")
 }
 
 func (i *initializingState) Tick() error {
 	i.l.Debugf("Tick(%v)", i.Name())
 
-	i.table.setState(i.table.readyToStartState)
+	// TODO: Handle players that failed to ack
+
+	if i.token.AllAcked() {
+		i.table.clearAckToken()
+		i.token = nil
+		i.table.setState(i.table.readyToStartState)
+		return nil
+	}
+
+	i.l.Infof("Waiting for %d players to ack...", i.token.NumStillToAck())
 
 	return nil
 }

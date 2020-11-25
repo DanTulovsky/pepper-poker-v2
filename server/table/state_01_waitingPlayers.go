@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/DanTulovsky/pepper-poker-v2/acks"
 	"github.com/DanTulovsky/pepper-poker-v2/server/player"
 )
 
@@ -17,6 +18,8 @@ type waitingPlayersState struct {
 
 	// the time when the last player was added
 	lastPlayerAddedTime time.Time
+
+	token *acks.Token
 }
 
 func (i *waitingPlayersState) StartGame() error {

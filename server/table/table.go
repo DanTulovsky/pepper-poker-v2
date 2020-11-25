@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/DanTulovsky/logger"
+	"github.com/DanTulovsky/pepper-poker-v2/acks"
 	"github.com/DanTulovsky/pepper-poker-v2/actions"
 	"github.com/DanTulovsky/pepper-poker-v2/id"
 	"github.com/DanTulovsky/pepper-poker-v2/server/player"
@@ -43,6 +44,10 @@ type Table struct {
 
 	State state
 
+	// acks are used to get clients to ack at specific points in time (e.g. game start)
+	currentAckToken   *acks.Token
+	defaultAckTimeout time.Duration
+
 	// index into the positions array
 	currentTurn int
 	// the current button, index into positions array
@@ -79,6 +84,7 @@ func New(tableAction chan ActionRequest) *Table {
 		smallblind: 5,
 		bigBlind:   10,
 
+		defaultAckTimeout: time.Second * 10,
 		playerTimeout:     time.Second * 120,
 		gameEndDelay:      time.Second * 10,
 		gameWaitTimeout:   time.Second * 5,
@@ -155,6 +161,18 @@ func (t *Table) Tick() error {
 	return nil
 }
 
+// setAckToken sets an ack for the table
+func (t *Table) setAckToken(tok *acks.Token) {
+	t.currentAckToken = tok
+
+}
+
+// clearAckToken clears the ack
+func (t *Table) clearAckToken() {
+	t.currentAckToken = nil
+
+}
+
 // processManagerActions checks the channel from the manager for any player actions
 func (t *Table) processManagerActions() error {
 	select {
@@ -191,12 +209,26 @@ func (t *Table) processManagerAction(in ActionRequest) {
 		i := t.info()
 		res = NewTableActionResult(nil, i)
 
+	case ActionAckToken:
+		token := in.Opts.(string)
+		err := t.ackToken(in.Player, token)
+		res = NewTableActionResult(err, nil)
+
 	case ActionCheck:
 		t.State.Check(in.Player)
 
 	}
 	// send reply back to manager
 	in.resultChan <- res
+}
+
+func (t *Table) ackToken(p *player.Player, token string) error {
+
+	if t.currentAckToken.String() != token {
+		return fmt.Errorf("current token is [%v], sent token is [%v]", t.currentAckToken, token)
+	}
+
+	return t.currentAckToken.Ack(p)
 }
 
 func (t *Table) registerPlayerCC(p *player.Player, cc chan actions.GameData) error {
@@ -227,9 +259,14 @@ func (t *Table) infoproto() *ppb.GameInfo {
 		TableName: i.Name,
 		TableID:   t.ID.String(),
 
-		GameState:  t.State.Name(),
+		GameState: t.State.Name(),
+
 		MaxPlayers: int64(i.MaxPlayers),
 		MinPlayers: int64(i.MinPlayers),
+	}
+
+	if t.currentAckToken != nil {
+		gi.AckToken = t.currentAckToken.String()
 	}
 
 	return gi
@@ -372,12 +409,14 @@ func (t *Table) sendUpdateToPlayers() {
 	for _, p := range t.ActivePlayers() {
 		in := t.gameDataProto(p)
 		action := actions.NewGameData(in)
-		// TODO: This should not block for when clients drop
 		if p.CommChannel == nil {
 			t.l.Debugf("player [%v] has nil comm channel", p.Name)
 			continue
 		}
-		p.CommChannel <- action
+		select {
+		case p.CommChannel <- action:
+		default:
+		}
 	}
 }
 

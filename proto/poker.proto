@@ -12,6 +12,9 @@ option go_package = "github.com/DanTuovsky/pepper-poker-v2/proto";
 // --plugin=protoc-gen-grpc=/usr/local/bin/grpc_csharp_plugin
 
 service PokerServer {
+  // AckToken acks an ack token
+  rpc AckToken(AckTokenRequest) returns(AckTokenResponse) {}
+
   // JoinTable joins a table once authenticated
   rpc JoinTable(JoinTableRequest) returns(JoinTableResponse) {}
 
@@ -25,6 +28,12 @@ service PokerServer {
   rpc TakeTurn(TakeTurnRequest) returns(TakeTurnResponse) {}
 }
 
+message AckTokenRequest {
+  ClientInfo clientInfo = 10;
+  string token = 20;
+}
+message AckTokenResponse {}
+
 enum PlayerAction {
   PlayerActionNone = 0; PlayerActionRegister = 1; PlayerActionJoinTable = 2;
   PlayerActionPlay = 3;
@@ -32,11 +41,15 @@ enum PlayerAction {
   PlayerActionCheck = 5;
   PlayerActionBet = 6;
   PlayerActionFold = 7;
+  PlayerActionAckToken = 8;
 }
 
 message ActionOpts {
   // Bet options
   int64 betAmount = 10;
+
+  // Ack options
+  string ackToken = 20;
 }
 
 message RegisterRequest {
@@ -98,6 +111,7 @@ message GameInfo {
   string tableName = 10;
   string tableID = 20;
   GameState gameState = 30;
+  string ackToken = 40;
 
   int64 maxPlayers = 100;
   int64 minPlayers = 110;

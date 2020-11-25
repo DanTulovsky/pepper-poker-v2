@@ -113,7 +113,7 @@ func (ps *pokerServer) Register(ctx context.Context, in *ppb.RegisterRequest) (*
 	// Send request to manager
 	ps.managerChan <- action
 
-	// block on response, an error here means we failed to subscribe and should exit
+	// block on response
 	res := <-resultc
 	if res.Err != nil {
 		return nil, fmt.Errorf("invalid request: %v", res.Err)
@@ -133,7 +133,7 @@ func (ps *pokerServer) JoinTable(ctx context.Context, in *ppb.JoinTableRequest) 
 	// Send request to manager
 	ps.managerChan <- action
 
-	// block on response, an error here means we failed to subscribe and should exit
+	// block on response
 	res := <-resultc
 	if res.Err != nil {
 		return nil, fmt.Errorf("invalid request: %v", res.Err)
@@ -153,13 +153,33 @@ func (ps *pokerServer) TakeTurn(ctx context.Context, in *ppb.TakeTurnRequest) (*
 	// Send request to manager
 	ps.managerChan <- action
 
-	// block on response, an error here means we failed to subscribe and should exit
+	// block on response
 	res := <-resultc
 	if res.Err != nil {
 		return nil, fmt.Errorf("invalid request: %v", res.Err)
 	}
 
 	out := res.Result.(*ppb.TakeTurnResponse)
+	return out, nil
+}
+
+func (ps *pokerServer) AckToken(ctx context.Context, in *ppb.AckTokenRequest) (*ppb.AckTokenResponse, error) {
+	resultc := make(chan actions.PlayerActionResult)
+	opts := &ppb.ActionOpts{
+		AckToken: in.GetToken(),
+	}
+	action := actions.NewPlayerAction(ppb.PlayerAction_PlayerActionAckToken, opts, in.GetClientInfo(), nil, resultc)
+
+	// Send request to manager
+	ps.managerChan <- action
+
+	// block on response
+	res := <-resultc
+	if res.Err != nil {
+		return nil, fmt.Errorf("invalid request: %v", res.Err)
+	}
+
+	out := res.Result.(*ppb.AckTokenResponse)
 	return out, nil
 }
 
@@ -187,9 +207,12 @@ func (ps *pokerServer) Play(in *ppb.PlayRequest, stream ppb.PokerServer_PlayServ
 	// anything that has access to the player object to send updates
 	for {
 		select {
-		case in := <-toPlayerC:
-			ps.l.Debugf("Sending data to client: %#v", in.Data.WaitTurnID)
-			stream.Send(in.Data)
+		case input := <-toPlayerC:
+			ps.l.Debugf("Sending data to client: %#v", input.Data.WaitTurnID)
+			if err := stream.Send(input.Data); err != nil {
+				ps.l.Infof("client connection to %v lost", in.ClientInfo.PlayerName)
+				return nil
+			}
 		}
 	}
 }

@@ -104,6 +104,7 @@ func (m *Manager) tick() error {
 func (m *Manager) processPlayerRequests() {
 
 	var p *player.Player
+	var t *table.Table
 	var err error
 
 	select {
@@ -112,6 +113,23 @@ func (m *Manager) processPlayerRequests() {
 		playerID := id.PlayerID(in.ClientInfo.PlayerID)
 		tableID := id.TableID(in.ClientInfo.TableID)
 		playerAction := in.Action
+
+		if playerID != "" {
+			if p, err = m.playerByID(playerID); err != nil {
+				m.l.Error(err)
+				in.ResultC <- actions.NewPlayerActionError(err)
+				return
+			}
+		}
+
+		if tableID != "" {
+			if t, err = m.tableByID(tableID); err != nil {
+				m.l.Error(err)
+				in.ResultC <- actions.NewPlayerActionError(err)
+				return
+
+			}
+		}
 
 		m.l.Infof("[%v] Received request from player: %#v", playerName, playerAction.String())
 
@@ -133,13 +151,7 @@ func (m *Manager) processPlayerRequests() {
 
 		case proto.PlayerAction_PlayerActionJoinTable:
 			var pos int
-			tableID := id.TableID(in.ClientInfo.GetTableID())
-			if p, err = m.playerByID(playerID); err != nil {
-				m.l.Error(err)
-				in.ResultC <- actions.NewPlayerActionError(err)
-				break
-			}
-			if tableID, pos, err = m.joinTable(p, tableID); err != nil {
+			if tableID, pos, err = m.joinTable(p, t); err != nil {
 				m.l.Error(err)
 				in.ResultC <- actions.NewPlayerActionError(err)
 				break
@@ -151,12 +163,7 @@ func (m *Manager) processPlayerRequests() {
 			in.ResultC <- result
 
 		case proto.PlayerAction_PlayerActionPlay:
-			if p, err = m.playerByID(playerID); err != nil {
-				m.l.Error(err)
-				in.ResultC <- actions.NewPlayerActionError(err)
-				break
-			}
-			if err := m.registerPlayerCC(p, tableID, in.ToClientChan); err != nil {
+			if err := m.registerPlayerCC(p, t, in.ToClientChan); err != nil {
 				m.l.Error(err)
 				in.ResultC <- actions.NewPlayerActionError(err)
 				break
@@ -164,8 +171,15 @@ func (m *Manager) processPlayerRequests() {
 			result := actions.NewPlayerActionResult(err, &ppb.JoinTableResponse{})
 			in.ResultC <- result
 
+		case proto.PlayerAction_PlayerActionAckToken:
+			if err := m.playerAckToken(p, t, in.Opts.AckToken); err != nil {
+				m.l.Error(err)
+				in.ResultC <- actions.NewPlayerActionError(err)
+				break
+			}
+
 		case proto.PlayerAction_PlayerActionCheck:
-			if err := m.playerCheck(playerID, tableID); err != nil {
+			if err := m.playerCheck(p, tableID); err != nil {
 				m.l.Error(err)
 				in.ResultC <- actions.NewPlayerActionError(err)
 				break
@@ -181,18 +195,24 @@ func (m *Manager) processPlayerRequests() {
 	}
 }
 
+// playerAckToken acks the token for the player at the table
+func (m *Manager) playerAckToken(p *player.Player, t *table.Table, token string) error {
+	// Table response comes back over this channel
+	result := make(chan table.ActionResult)
+	req := table.NewTableAction(table.ActionAckToken, result, p, token)
+
+	t.TableAction <- req
+
+	// block(!?) until table responds
+	res := <-result
+	return res.Err
+}
+
 // registerPlayerCC registers the player channel and starts streaming game data to it
-func (m *Manager) registerPlayerCC(p *player.Player, tableID id.TableID, cc chan actions.GameData) error {
+func (m *Manager) registerPlayerCC(p *player.Player, t *table.Table, cc chan actions.GameData) error {
 	// Table response comes back over this channel
 	result := make(chan table.ActionResult)
 	req := table.NewTableAction(table.ActionRegisterPlayerCC, result, p, cc)
-
-	var t *table.Table
-	var err error
-
-	if t, err = m.tableByID(tableID); err != nil {
-		return err
-	}
 
 	t.TableAction <- req
 
@@ -218,9 +238,8 @@ func (m *Manager) playerByID(playerID id.PlayerID) (*player.Player, error) {
 }
 
 // playerCheck sends the Check action to the table
-func (m *Manager) playerCheck(playerID id.PlayerID, tableID id.TableID) error {
+func (m *Manager) playerCheck(p *player.Player, tableID id.TableID) error {
 	t := m.tables[tableID]
-	p := m.players[playerID]
 
 	result := make(chan table.ActionResult)
 	req := table.NewTableAction(table.ActionCheck, result, p, nil)
@@ -233,15 +252,15 @@ func (m *Manager) playerCheck(playerID id.PlayerID, tableID id.TableID) error {
 }
 
 // jointable attempts to join a table
-func (m *Manager) joinTable(p *player.Player, wantTableID id.TableID) (tableID id.TableID, pos int, err error) {
-	var t *table.Table
+func (m *Manager) joinTable(p *player.Player, t *table.Table) (tableID id.TableID, pos int, err error) {
 	pos = -1
 
 	// find available table
-	// TODO: Handle joining a specific table (in.TableID)
-	t, err = m.firstAvailableTable()
-	if err != nil {
-		return
+	if t == nil {
+		t, err = m.firstAvailableTable()
+		if err != nil {
+			return
+		}
 	}
 
 	// Table response comes back over this channel

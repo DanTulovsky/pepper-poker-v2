@@ -17,6 +17,9 @@ const (
 	// ActionInfo returns various information about the table
 	ActionInfo
 
+	// ActionAckToken acks a token
+	ActionAckToken
+
 	// ActionCheck checks
 	ActionCheck
 )
