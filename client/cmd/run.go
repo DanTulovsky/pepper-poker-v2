@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
+	"os"
 	"time"
 
 	"github.com/DanTulovsky/logger"
@@ -110,6 +111,8 @@ func main() {
 		logg.Fatal(err)
 	}
 
+	var lastAckedToken string
+
 	// send server response on this channel to process in the main thread
 	datac := make(chan *ppb.GameData)
 	donec := make(chan bool)
@@ -151,14 +154,37 @@ OUTER:
 
 			waitID := id.PlayerID(in.WaitTurnID)
 			gameState = in.GetInfo().GetGameState()
+			ackToken := in.GetInfo().GetAckToken()
 
 			logg.Infof("Current Turn playerID: %v", in.WaitTurnID)
 			logg.Infof("Current State: %v", gameState)
 
 			if gameState == ppb.GameState_GameStateFinished {
 				logg.Info("Game Finished!")
-				donec <- true
 				conn.Close()
+				time.Sleep(time.Second * 2)
+				os.Exit(0)
+			}
+
+			if ackToken != lastAckedToken && ackToken != "" {
+				logg.Infof("Acking [%v]", ackToken)
+
+				req := &ppb.AckTokenRequest{
+					ClientInfo: &ppb.ClientInfo{
+						PlayerName: *name,
+						PlayerID:   playerID.String(),
+						TableID:    tableID.String(),
+					},
+					Token: ackToken,
+				}
+
+				_, err := client.AckToken(ctx, req)
+				if err != nil {
+					logg.Fatal(err)
+				} else {
+					logg.Infof("Acked [%v]", ackToken)
+					lastAckedToken = ackToken
+				}
 			}
 
 			if playerID == waitID {
@@ -179,9 +205,6 @@ OUTER:
 				}
 				time.Sleep(time.Second * 1)
 			}
-		case <-donec:
-			logg.Info("Exiting server data receiver as requested...")
-			break OUTER
 		}
 	}
 }

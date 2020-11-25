@@ -224,6 +224,10 @@ func (t *Table) processManagerAction(in ActionRequest) {
 
 func (t *Table) ackToken(p *player.Player, token string) error {
 
+	if t.currentAckToken == nil {
+		return fmt.Errorf("no token requires acking right now")
+	}
+
 	if t.currentAckToken.String() != token {
 		return fmt.Errorf("current token is [%v], sent token is [%v]", t.currentAckToken, token)
 	}

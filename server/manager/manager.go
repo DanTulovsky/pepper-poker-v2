@@ -177,6 +177,8 @@ func (m *Manager) processPlayerRequests() {
 				in.ResultC <- actions.NewPlayerActionError(err)
 				break
 			}
+			result := actions.NewPlayerActionResult(err, &ppb.AckTokenResponse{})
+			in.ResultC <- result
 
 		case proto.PlayerAction_PlayerActionCheck:
 			if err := m.playerCheck(p, tableID); err != nil {
