@@ -25,7 +25,6 @@ var (
 type Manager struct {
 	l                  *logger.Logger
 	fromGrpcServerChan chan actions.PlayerAction
-	// TODO: Rename string to "playerID" type
 
 	tables  map[id.TableID]*table.Table
 	players map[id.PlayerID]*player.Player

@@ -433,3 +433,15 @@ func (t *Table) playersReady() bool {
 	}
 	return true
 }
+
+// reset resets the table completely
+func (t *Table) reset() error {
+	t.l.Info("Table tesetting...")
+	for i := 0; i < len(t.positions); i++ {
+		t.positions[i] = nil
+
+	}
+
+	t.setState(t.waitingPlayersState)
+	return nil
+}

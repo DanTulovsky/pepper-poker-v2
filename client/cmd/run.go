@@ -115,7 +115,6 @@ func main() {
 
 	// send server response on this channel to process in the main thread
 	datac := make(chan *ppb.GameData)
-	donec := make(chan bool)
 	// receive server messages
 	go func() {
 		for {
@@ -137,7 +136,6 @@ func main() {
 	}()
 
 	// Receive GameData on datac channel and act on it
-OUTER:
 	for {
 		logg.Debug("Waiting for GameData...")
 		// process server messages if any (on datac channel)

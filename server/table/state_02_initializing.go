@@ -50,7 +50,15 @@ func (i *initializingState) Tick() error {
 		return nil
 	}
 
-	i.l.Infof("Waiting for %d players to ack...", i.token.NumStillToAck())
+	// token expired, we don't have all acks
+	if i.token.Expired() {
+		err := fmt.Errorf("some [%d] players failed to ack, resetting", i.token.NumStillToAck())
+		i.l.Info(err)
+		i.table.reset()
+		return err
+	}
+
+	i.l.Infof("Waiting (%v) for %d players to ack...", i.token.TimeRemaining(), i.token.NumStillToAck())
 
 	return nil
 }
