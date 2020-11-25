@@ -2,6 +2,7 @@ package table
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/DanTulovsky/pepper-poker-v2/acks"
 	"github.com/DanTulovsky/pepper-poker-v2/server/player"
@@ -52,13 +53,14 @@ func (i *initializingState) Tick() error {
 
 	// token expired, we don't have all acks
 	if i.token.Expired() {
-		err := fmt.Errorf("some [%d] players failed to ack, resetting", i.token.NumStillToAck())
-		i.l.Info(err)
+		i.l.Infof("some [%d] players failed to ack, resetting", i.token.NumStillToAck())
+
+		// TODO: Kick out only those players that failed to ack and then go back to beginning state
 		i.table.reset()
-		return err
+		return nil
 	}
 
-	i.l.Infof("Waiting (%v) for %d players to ack...", i.token.TimeRemaining(), i.token.NumStillToAck())
+	i.l.Infof("Waiting (%v) for %d players to ack...", i.token.TimeRemaining().Truncate(time.Second), i.token.NumStillToAck())
 
 	return nil
 }
@@ -74,4 +76,8 @@ func (i *initializingState) WhoseTurn() *player.Player {
 
 func (i *initializingState) WaitingTurnPlayer() *player.Player {
 	return nil
+}
+
+func (i *initializingState) Reset() {
+	i.token = nil
 }

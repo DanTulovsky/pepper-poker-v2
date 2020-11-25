@@ -150,11 +150,10 @@ func (pc *PokerClient) Reset() {
 	pc.l.Info("Resetting PokerClient for next game...")
 
 	pc.lastAckedToken = ""
-	pc.cancel() // TODO: Needed?
 }
 
 // Play is called after joining table to begin streaming GameData
-func (pc *PokerClient) Play(ctx context.Context, donec chan bool, handDone chan bool, errc chan error) {
+func (pc *PokerClient) Play(ctx context.Context, donec chan bool, errc chan error) {
 	pc.l.Info("Starting GameData streamer..")
 
 	ctxCancel, cancel := context.WithCancel(ctx)
@@ -175,21 +174,25 @@ func (pc *PokerClient) Play(ctx context.Context, donec chan bool, handDone chan 
 		return
 	}
 
-	go pc.receiveGameData(stream, donec)
-
-	if err := pc.processGameData(ctx); err != nil {
+	exitc := make(chan bool)
+	go pc.receiveGameData(stream, donec, exitc)
+	if err := pc.processGameData(ctx, exitc); err != nil {
 		errc <- err
 	}
 }
 
 // processGameData receives GameData on the channel and acts on it
-func (pc *PokerClient) processGameData(ctx context.Context) error {
-
+func (pc *PokerClient) processGameData(ctx context.Context, exitc chan bool) error {
+	var err error
 	// Receive GameData on datac channel and act on it
+OUTER:
 	for {
 		pc.l.Debug("Waiting for GameData...")
 		// process server messages if any (on datac channel)
 		select {
+		case <-exitc:
+			err = fmt.Errorf("processGameData exiting due to request")
+			break OUTER
 		case in := <-pc.datac:
 			pc.l.Debug("received game data in main thread")
 
@@ -204,14 +207,13 @@ func (pc *PokerClient) processGameData(ctx context.Context) error {
 			pc.gameState = in.GetInfo().GetGameState()
 			ackToken := in.GetInfo().GetAckToken()
 
-			pc.l.Infof("Current Turn playerID: %v", in.WaitTurnID)
+			pc.l.Infof("Current Turn Player: %v", in.WaitTurnName)
 			pc.l.Infof("Current State: %v", pc.gameState)
 
 			if pc.gameState == ppb.GameState_GameStateFinished {
 				pc.l.Info("Game Finished!")
-				pc.conn.Close()
-				time.Sleep(time.Second * 2)
-				os.Exit(0)
+				pc.PrintHandResults()
+				break
 			}
 
 			if ackToken != pc.lastAckedToken && ackToken != "" {
@@ -221,29 +223,15 @@ func (pc *PokerClient) processGameData(ctx context.Context) error {
 
 			if pc.PlayerID == waitID {
 				pc.TakeTurn(ctx, in)
-				// action := ppb.PlayerAction_PlayerActionCheck
-				// pc.logg.Infof("Taking Turn: %v", action)
-
-				// req := &ppb.TakeTurnRequest{
-				// 	ClientInfo: &ppb.ClientInfo{
-				// 		PlayerName: pc.Name,
-				// 		PlayerID:   pc.PlayerID.String(),
-				// 		TableID:    pc.TableID.String(),
-				// 	},
-				// 	PlayerAction: action,
-				// }
-				// _, err := pc.client.TakeTurn(ctx, req)
-				// if err != nil {
-				// 	pc.l.Error(err)
-				// }
-				// time.Sleep(timeSecond * 1)
 			}
+		default:
 		}
 	}
+	return err
 }
 
 // ReceiveGameData receives GameData from the server and sends it to the main thread over a channel
-func (pc *PokerClient) receiveGameData(stream ppb.PokerServer_PlayClient, donec chan bool) error {
+func (pc *PokerClient) receiveGameData(stream ppb.PokerServer_PlayClient, donec, exitc chan bool) error {
 	pc.l.Debug("Started eceive GameData thread...")
 
 OUTER:
@@ -252,6 +240,8 @@ OUTER:
 		case <-donec:
 			pc.l.Info("calling cancel on server stream (stop called)")
 			// cancel()
+			// tell the processGameData loop to exit
+			exitc <- true
 			break OUTER
 		default:
 		}
@@ -263,7 +253,6 @@ OUTER:
 			return fmt.Errorf("EOF received from server, exiting GameData thread")
 		}
 		if err != nil {
-			// pc.cancel()
 			pc.l.Fatal("error receiving from server")
 		}
 		// send the server message to main thread for processing
@@ -278,30 +267,6 @@ OUTER:
 func (pc *PokerClient) TakeTurn(ctx context.Context, in *ppb.GameData) error {
 	pc.l.Debug("Trying to take my turn...")
 
-	// if !pc.IsMyTurn() {
-	// 	next, err := pc.WhoseTurn()
-	// 	if err != nil {
-	// 		return err
-	// 	}
-
-	// 	if pc.TableReady() {
-	// 		left := pc.TurnLog.TurnTimeLeft()
-	// 		if pc.Name != next.GetName() {
-	// 			pc.l.Debugf("[%v] Waiting for %v to move... (%v)", pc.Name, next.GetName(), left)
-	// 		}
-	// 	} else {
-	// 		startIn := pc.TableInfo.GameStartsIn()
-	// 		pc.l.Debugf("[%v] Game starts in: %v", pc.Name, startIn)
-	// 	}
-	// 	return nil
-	// }
-
-	// pc.l.Infof("[%v] taking my turn...", pc.Name)
-	return pc.processTurn(ctx, in)
-}
-
-// processTurn executes this client's turn
-func (pc *PokerClient) processTurn(ctx context.Context, in *ppb.GameData) error {
 	// Show most up to date status from the server
 	// pc.showGameState()
 
@@ -577,30 +542,6 @@ func (pc *PokerClient) JoinTable(ctx context.Context, wantTableID id.TableID) er
 	pc.position = res.GetPosition()
 	pc.TableID = tableID
 
-	return nil
-}
-
-// PlayHand plays the round
-func (pc *PokerClient) PlayHand(ctx context.Context, handDone, doneLogStreaming chan bool) error {
-	// var cachedState string
-
-	// for !pc.roundFinished() {
-	// 	s := pc.getGameState()
-	// 	if s != cachedState {
-	// 		pc.showGameState()
-	// 		pc.showCards(append(pc.myCards(), deck.CardsFromProto(pc.TurnLog.CommunityCards().GetCard())...), true)
-	// 		cachedState = s
-	// 	}
-
-	// 	if err := pc.TakeTurn(ctx); err != nil {
-	// 		pc.l.Debugf("[%v] error taking turn: %v", pc.Name, err)
-	// 	}
-
-	// 	time.Sleep(time.Second * 1)
-	// }
-
-	// pc.l.Info("Hand finished, getting results...")
-	// handDone <- true
 	return nil
 }
 

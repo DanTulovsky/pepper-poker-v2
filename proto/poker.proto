@@ -122,8 +122,9 @@ message GameInfo {
 // provides the current state
 message GameData {
   GameInfo info = 10;
-  string waitTurnID = 20; // the ID of the player whose turn it is
-  string playerID = 30;   // the ID of the calling player
+  string waitTurnID = 20;   // the ID of the player whose turn it is
+  string waitTurnName = 30; // the name of the player whose turn it is
+  string playerID = 40;     // the ID of the calling player
 }
 
 // Cards

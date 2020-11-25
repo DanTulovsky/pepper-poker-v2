@@ -45,7 +45,7 @@ func (t *Token) Ack(p *player.Player) error {
 
 // TimeRemaining returns time left until token expires
 func (t *Token) TimeRemaining() time.Duration {
-	return time.Now().Sub(t.start) - t.mustackin
+	return -(time.Now().Sub(t.start) - t.mustackin)
 }
 
 // NumStillToAck returns the number of players that still need to ack the token
@@ -75,7 +75,7 @@ func (t *Token) AllAcked() bool {
 
 // Expired returns true when the token is expired
 func (t *Token) Expired() bool {
-	if t.TimeRemaining() < 0 {
+	if t.TimeRemaining() > 0 {
 		return false
 	}
 	return true

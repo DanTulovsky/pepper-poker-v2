@@ -22,6 +22,18 @@ const (
 
 	// ActionCheck checks
 	ActionCheck
+
+	// ActionCall calls
+	ActionCall
+
+	// ActionFold folds
+	ActionFold
+
+	// ActionBet bets
+	ActionBet
+
+	// ActionAllIn bets all available money
+	ActionAllIn
 )
 
 // ActionAddPlayerResult is the result of an AddPlayer action

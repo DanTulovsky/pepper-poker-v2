@@ -71,9 +71,13 @@ func (m *Manager) createTable() *table.Table {
 }
 
 func (m *Manager) startTables() {
-	for _, t := range m.tables {
+	for i, t := range m.tables {
 		m.l.Infof("Starting table [%v]", t.Name)
-		go t.Run()
+		go func(t *table.Table, i id.TableID) {
+			if err := t.Run(); err != nil {
+				m.l.Errorf("Table [%v] returned error: %v", i, err)
+			}
+		}(t, i)
 	}
 }
 
@@ -180,7 +184,7 @@ func (m *Manager) processPlayerRequests() {
 			in.ResultC <- result
 
 		case proto.PlayerAction_PlayerActionCheck:
-			if err := m.playerCheck(p, tableID); err != nil {
+			if err := m.playerCheck(p, t); err != nil {
 				m.l.Error(err)
 				in.ResultC <- actions.NewPlayerActionError(err)
 				break
@@ -188,6 +192,43 @@ func (m *Manager) processPlayerRequests() {
 			result := actions.NewPlayerActionResult(err, &ppb.TakeTurnResponse{})
 			in.ResultC <- result
 
+		case proto.PlayerAction_PlayerActionFold:
+			if err := m.playerFold(p, t); err != nil {
+				m.l.Error(err)
+				in.ResultC <- actions.NewPlayerActionError(err)
+				break
+			}
+			result := actions.NewPlayerActionResult(err, &ppb.TakeTurnResponse{})
+			m.l.Info("Sending reply back to player")
+			in.ResultC <- result
+
+		case proto.PlayerAction_PlayerActionCall:
+			if err := m.playerCall(p, t); err != nil {
+				m.l.Error(err)
+				in.ResultC <- actions.NewPlayerActionError(err)
+				break
+			}
+			result := actions.NewPlayerActionResult(err, &ppb.TakeTurnResponse{})
+			in.ResultC <- result
+
+		case proto.PlayerAction_PlayerActionAllIn:
+			if err := m.playerAllIn(p, t); err != nil {
+				m.l.Error(err)
+				in.ResultC <- actions.NewPlayerActionError(err)
+				break
+			}
+			result := actions.NewPlayerActionResult(err, &ppb.TakeTurnResponse{})
+			in.ResultC <- result
+
+		case proto.PlayerAction_PlayerActionBet:
+			amount := in.Opts.GetBetAmount()
+			if err := m.playerBet(p, t, amount); err != nil {
+				m.l.Error(err)
+				in.ResultC <- actions.NewPlayerActionError(err)
+				break
+			}
+			result := actions.NewPlayerActionResult(err, &ppb.TakeTurnResponse{})
+			in.ResultC <- result
 		default:
 			// m.l.Infof("[%v] Doing action: %v", playerName, playerAction.String())
 		}
@@ -239,11 +280,57 @@ func (m *Manager) playerByID(playerID id.PlayerID) (*player.Player, error) {
 }
 
 // playerCheck sends the Check action to the table
-func (m *Manager) playerCheck(p *player.Player, tableID id.TableID) error {
-	t := m.tables[tableID]
-
+func (m *Manager) playerCheck(p *player.Player, t *table.Table) error {
 	result := make(chan table.ActionResult)
 	req := table.NewTableAction(table.ActionCheck, result, p, nil)
+	t.TableAction <- req
+
+	// block until response
+	res := <-result
+
+	return res.Err
+}
+
+// playerFold sends the Fold action to the table
+func (m *Manager) playerFold(p *player.Player, t *table.Table) error {
+	result := make(chan table.ActionResult)
+	req := table.NewTableAction(table.ActionFold, result, p, nil)
+	t.TableAction <- req
+
+	// block until response
+	res := <-result
+
+	return res.Err
+}
+
+// playerCall sends the Call action to the table
+func (m *Manager) playerCall(p *player.Player, t *table.Table) error {
+	result := make(chan table.ActionResult)
+	req := table.NewTableAction(table.ActionCall, result, p, nil)
+	t.TableAction <- req
+
+	// block until response
+	res := <-result
+
+	return res.Err
+}
+
+// playerAllIn sends the AllIn action to the table
+func (m *Manager) playerAllIn(p *player.Player, t *table.Table) error {
+	result := make(chan table.ActionResult)
+	req := table.NewTableAction(table.ActionAllIn, result, p, nil)
+	t.TableAction <- req
+
+	// block until response
+	res := <-result
+
+	return res.Err
+}
+
+// playerBet sends the Bet action to the table
+func (m *Manager) playerBet(p *player.Player, t *table.Table, amount int64) error {
+	result := make(chan table.ActionResult)
+	req := table.NewTableAction(table.ActionBet, result, p, amount)
 	t.TableAction <- req
 
 	// block until response

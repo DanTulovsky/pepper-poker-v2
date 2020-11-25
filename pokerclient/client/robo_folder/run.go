@@ -7,6 +7,9 @@ import (
 	"flag"
 	"fmt"
 	"math/rand"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/Pallinder/go-randomdata"
@@ -22,10 +25,9 @@ import (
 )
 
 var (
-	name            = flag.String("name", fmt.Sprintf("[robot_folder]-%v", randomdata.SillyName()), "player name")
-	insecure        = flag.Bool("insecure", false, "if true, use insecure connection to server")
-	roundStartDelay = flag.Duration("round_start_delay", time.Second, "delay between rounds")
-	logg            *logger.Logger
+	name     = flag.String("name", fmt.Sprintf("[robot_folder]-%v", randomdata.SillyName()), "player name")
+	insecure = flag.Bool("insecure", false, "if true, use insecure connection to server")
+	logg     *logger.Logger
 )
 
 const (
@@ -54,17 +56,15 @@ func main() {
 		logg.Fatal(err)
 	}
 
-	// Now play round until done
-	for {
-		logg.Info("Playing a game...")
-		if err := r.PlayGame(ctx, cc); err != nil {
-			logg.Error(err)
-		}
-		r.PokerClient.Reset()
+	// Now play game until quit
+	logg.Info("Playing a game...")
+	donec := make(chan bool)
+	SetupCloseHandler(donec)
 
-		logg.Infof("Sleeping for %v", roundStartDelay)
-		time.Sleep(*roundStartDelay)
+	if err := r.PlayGame(ctx, cc, donec); err != nil {
+		logg.Error(err)
 	}
+
 }
 
 // decideOnAction decides what to do based on tableInfo state
@@ -76,4 +76,18 @@ func decideOnAction(pc *pokerclient.PokerClient) (*actions.PlayerAction, error) 
 
 	logg.Infof("Taking action: %v", paction.String())
 	return playerAction, nil
+}
+
+// SetupCloseHandler creates a 'listener' on a new goroutine which will notify the
+// program if it receives an interrupt from the OS. We then handle this by calling
+// our clean up procedure and exiting the program.
+func SetupCloseHandler(donec chan bool) {
+	c := make(chan os.Signal)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c
+		fmt.Println("\r- Ctrl+C pressed in Terminal")
+		donec <- true
+		// os.Exit(0)
+	}()
 }

@@ -144,7 +144,6 @@ func (t *Table) Run() error {
 		}
 		time.Sleep(time.Second)
 	}
-
 }
 
 // Tick ticks the table
@@ -215,7 +214,22 @@ func (t *Table) processManagerAction(in ActionRequest) {
 		res = NewTableActionResult(err, nil)
 
 	case ActionCheck:
-		t.State.Check(in.Player)
+		err := t.State.Check(in.Player)
+		res = NewTableActionResult(err, nil)
+
+	case ActionFold:
+		err := t.State.Fold(in.Player)
+		res = NewTableActionResult(err, nil)
+
+	case ActionAllIn:
+		amount := int64(0) // TODO: Get from player money when available
+		err := t.State.Bet(in.Player, amount)
+		res = NewTableActionResult(err, nil)
+
+	case ActionCall:
+		amount := in.Opts.(int64)
+		err := t.State.Bet(in.Player, amount)
+		res = NewTableActionResult(err, nil)
 
 	}
 	// send reply back to manager
@@ -289,6 +303,7 @@ func (t *Table) gameDataProto(p *player.Player) *ppb.GameData {
 
 	if current != nil {
 		d.WaitTurnID = current.ID.String()
+		d.WaitTurnName = current.Name
 	}
 
 	return d
@@ -436,12 +451,41 @@ func (t *Table) playersReady() bool {
 
 // reset resets the table completely
 func (t *Table) reset() error {
-	t.l.Info("Table tesetting...")
+	t.l.Info("Table resetting...")
+
+	for _, p := range t.ActivePlayers() {
+
+		if p.CommChannel != nil {
+			close(p.CommChannel)
+		}
+	}
+
 	for i := 0; i < len(t.positions); i++ {
 		t.positions[i] = nil
 
 	}
 
+	t.currentAckToken = nil
+	t.resetStates()
+
+	// Close channels to clients
+
 	t.setState(t.waitingPlayersState)
 	return nil
+}
+
+func (t *Table) resetStates() {
+
+	t.waitingPlayersState.Reset()
+	t.initializingState.Reset()
+	t.readyToStartState.Reset()
+	t.playingSmallBlindState.Reset()
+	t.playingBigBlindState.Reset()
+	t.playingPreFlopState.Reset()
+	t.playingFlopState.Reset()
+	t.playingTurnState.Reset()
+	t.playingRiverState.Reset()
+	t.playingDoneState.Reset()
+	t.finishedState.Reset()
+
 }

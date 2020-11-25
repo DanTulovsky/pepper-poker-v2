@@ -205,9 +205,13 @@ func (ps *pokerServer) Play(in *ppb.PlayRequest, stream ppb.PokerServer_PlayServ
 	// start a goroutine to send data back to client
 	// the fromManagerChan get attached to the player itself and allows
 	// anything that has access to the player object to send updates
+OUTER:
 	for {
 		select {
-		case input := <-toPlayerC:
+		case input, ok := <-toPlayerC:
+			if !ok {
+				break OUTER
+			}
 			ps.l.Debugf("Sending data to client: %#v", input.Data.WaitTurnID)
 			if err := stream.Send(input.Data); err != nil {
 				ps.l.Infof("client connection to %v lost", in.ClientInfo.PlayerName)
@@ -215,4 +219,6 @@ func (ps *pokerServer) Play(in *ppb.PlayRequest, stream ppb.PokerServer_PlayServ
 			}
 		}
 	}
+	ps.l.Info("Client channel closed, exiting thread...")
+	return fmt.Errorf("closing client connection")
 }

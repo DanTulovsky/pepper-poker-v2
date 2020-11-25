@@ -72,19 +72,18 @@ func (r *RoboClient) JoinGame(ctx context.Context) error {
 }
 
 // PlayGame plays the game
-func (r *RoboClient) PlayGame(ctx context.Context, cc *CommChannels) error {
+func (r *RoboClient) PlayGame(ctx context.Context, cc *CommChannels, donegamec chan bool) error {
 
-	errc := make(chan error)
-	donec := make(chan bool)    // used to cancel background server receiever thread
-	handDone := make(chan bool) // this receives when hand is done
+	errc := make(chan error) // used to get error from pokerclient thread
+	donec := make(chan bool) // used to cancel background server receiever thread
 
-	go r.PokerClient.Play(ctx, donec, handDone, errc)
+	go r.PokerClient.Play(ctx, donec, errc)
 
-	// Wait for round to end and handle input/output
+	// Play until donec channel receives data
 OUTER:
 	for {
 		select {
-		case <-handDone:
+		case <-donegamec: // allows client to exit, sent from main
 			r.l.Info("Game done...")
 			break OUTER
 		case err := <-errc:
@@ -107,11 +106,6 @@ OUTER:
 	default:
 	}
 
-	// print results
-	r.l.Info("Printing results...")
-	if err := r.PokerClient.PrintHandResults(); err != nil {
-		r.l.Error(err)
-	}
 	return nil
 }
 
