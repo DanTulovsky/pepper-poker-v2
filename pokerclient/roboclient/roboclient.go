@@ -9,10 +9,9 @@ import (
 	"github.com/fatih/color"
 
 	"github.com/DanTulovsky/logger"
-	"github.com/DanTulovsky/pepper-poker-v2/actions"
 	"github.com/DanTulovsky/pepper-poker-v2/id"
 	"github.com/DanTulovsky/pepper-poker-v2/pokerclient"
-	"github.com/DanTulovsky/pepper-poker/turnlog"
+	"github.com/DanTulovsky/pepper-poker-v2/pokerclient/actions"
 
 	ppb "github.com/DanTulovsky/pepper-poker-v2/proto"
 )
@@ -27,6 +26,7 @@ type RoboClient struct {
 	playerID  id.PlayerID
 	tableID   id.TableID
 	gameState ppb.GameState
+	gameData  *ppb.GameData
 
 	PokerClient *pokerclient.PokerClient
 	DeciderFunc DeciderFunc
@@ -55,14 +55,14 @@ func NewRoboClient(ctx context.Context, name string, df DeciderFunc, cc *CommCha
 func (r *RoboClient) JoinGame(ctx context.Context) error {
 
 	// First register the name with the server
-	r.l.Info("Saying hello to the server...")
-	if err := r.PokerClient.SayHello(ctx); err != nil {
-		return fmt.Errorf("failed to say hello to server: %v", err)
+	r.l.Info("Registering with the server...")
+	if err := r.PokerClient.Register(ctx); err != nil {
+		return fmt.Errorf("failed to register with server: %v", err)
 	}
 
 	// Second join the table
 	var err error
-	if r.TableID, err = r.PokerClient.JoinTable(ctx, ""); err != nil {
+	if err = r.PokerClient.JoinTable(ctx, id.TableID("")); err != nil {
 		return fmt.Errorf("failed to join game: %v", err)
 	}
 
@@ -74,26 +74,11 @@ func (r *RoboClient) JoinGame(ctx context.Context) error {
 // PlayGame plays the game
 func (r *RoboClient) PlayGame(ctx context.Context, cc *CommChannels) error {
 
-	r.PokerClient.RoundID = ""
-
-	r.l.Infof("Waiting for round to start...")
-	doneInfo := make(chan bool) // this stops the tableInfo goroutine
-	if err := r.PokerClient.WaitForRoundStart(ctx, doneInfo); err != nil {
-		r.l.Fatal(err)
-	}
-
-	r.l.Infof("Round [%v] has started, playing...", r.PokerClient.RoundID)
-
 	errc := make(chan error)
-	handDone := make(chan bool)         // this receives when hand is done
-	doneLogStreaming := make(chan bool) // this stops the logging stream goroutine
+	donec := make(chan bool)    // used to cancel background server receiever thread
+	handDone := make(chan bool) // this receives when hand is done
 
-	go func(ctx context.Context, errc chan error) {
-		r.l.Info("Playing hand...")
-		if err := r.PokerClient.PlayHand(ctx, handDone, doneLogStreaming); err != nil {
-			errc <- err
-		}
-	}(ctx, errc)
+	go r.PokerClient.Play(ctx, donec, handDone, errc)
 
 	// Wait for round to end and handle input/output
 OUTER:
@@ -107,10 +92,10 @@ OUTER:
 				r.l.Error(err)
 			}
 			break OUTER
-		// case r.TurnLog = <-cc.InputWanted:
-		// 	if err := r.takeTurn(cc.Paction, cc.Presult); err != nil {
-		// 		r.logger.Error(err)
-		// 	}
+		case r.gameData = <-cc.InputWanted:
+			if err := r.takeTurn(cc.Paction, cc.Presult); err != nil {
+				r.l.Error(err)
+			}
 		default:
 		}
 	}
@@ -118,13 +103,7 @@ OUTER:
 	// stop Info streaming
 	r.l.Info("Telling info thread to shut down")
 	select {
-	case doneInfo <- true:
-	default:
-	}
-
-	r.l.Info("Telling turnlog thread to shut down")
-	select {
-	case doneLogStreaming <- true:
+	case donec <- true:
 	default:
 	}
 
@@ -168,7 +147,7 @@ func (r *RoboClient) takeTurn(paction chan *actions.PlayerAction, presult chan *
 type CommChannels struct {
 	Paction     chan *actions.PlayerAction
 	Presult     chan *actions.PlayerActionResult
-	InputWanted chan *turnlog.TurnLog
+	InputWanted chan *ppb.GameData
 }
 
 // NewCommChannels returns a new commchannels
@@ -179,6 +158,6 @@ func NewCommChannels() *CommChannels {
 		Paction: make(chan *actions.PlayerAction),
 		Presult: make(chan *actions.PlayerActionResult),
 		// When the client needs input, it sends a message on this channel with the current TableInfo proto
-		InputWanted: make(chan *turnlog.TurnLog),
+		InputWanted: make(chan *ppb.GameData),
 	}
 }

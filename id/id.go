@@ -5,6 +5,14 @@ import "github.com/google/uuid"
 // TableID is a unique id for table
 type TableID string
 
+const (
+	// EmptyPlayerID is ...
+	EmptyPlayerID PlayerID = ""
+
+	// EmptyTableID is ...
+	EmptyTableID TableID = ""
+)
+
 // NewTableID creates a new id for the table
 func NewTableID() TableID {
 	return TableID(uuid.New().String())

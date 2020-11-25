@@ -13,10 +13,12 @@ import (
 	"github.com/fatih/color"
 
 	"github.com/DanTulovsky/logger"
-	"github.com/DanTulovsky/pepper-poker-v2/actions"
+	"github.com/DanTulovsky/pepper-poker-v2/id"
+	"github.com/DanTulovsky/pepper-poker-v2/pokerclient"
+	"github.com/DanTulovsky/pepper-poker-v2/pokerclient/actions"
+	"github.com/DanTulovsky/pepper-poker-v2/pokerclient/roboclient"
+
 	ppb "github.com/DanTulovsky/pepper-poker-v2/proto"
-	"github.com/DanTulovsky/pepper-poker-v2/roboclient"
-	"github.com/DanTulovsky/pepper-poker/pokerclient"
 )
 
 var (
@@ -67,10 +69,10 @@ func main() {
 
 // decideOnAction decides what to do based on tableInfo state
 func decideOnAction(pc *pokerclient.PokerClient) (*actions.PlayerAction, error) {
-	paction := ppb.Action_ActionFold
+	paction := ppb.PlayerAction_PlayerActionFold
 
 	// First three fields are not used and are set automatically by the client
-	playerAction := actions.NewPlayerAction("", "", "", paction, nil, nil)
+	playerAction := actions.NewPlayerAction(id.EmptyPlayerID, id.EmptyTableID, paction, nil, nil)
 
 	logg.Infof("Taking action: %v", paction.String())
 	return playerAction, nil

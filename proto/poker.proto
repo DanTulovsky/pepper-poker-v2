@@ -42,6 +42,7 @@ enum PlayerAction {
   PlayerActionBet = 6;
   PlayerActionFold = 7;
   PlayerActionAckToken = 8;
+  PlayerActionAllIn = 9;
 }
 
 message ActionOpts {
