@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/DanTulovsky/pepper-poker-v2/acks"
 	"github.com/DanTulovsky/pepper-poker-v2/server/player"
 )
 
@@ -11,7 +12,8 @@ type finishedState struct {
 	baseState
 
 	gameEndDelay time.Duration
-	start        time.Time
+
+	token *acks.Token
 }
 
 func (i *finishedState) Bet(p *player.Player, bet int64) error {
@@ -31,7 +33,14 @@ func (i *finishedState) Fold(p *player.Player) error {
 }
 
 func (i *finishedState) Init() {
-	i.start = time.Now()
+
+	// reset any existing acks
+	i.table.clearAckToken()
+
+	// Used to get an ack before game ends
+	i.token = acks.New(i.table.ActivePlayers(), i.table.defaultAckTimeout)
+	i.token.StartTime()
+	i.table.setAckToken(i.token)
 
 }
 
@@ -41,11 +50,12 @@ func (i *finishedState) StartGame() error {
 
 func (i *finishedState) Tick() error {
 
-	delay := i.gameEndDelay - time.Now().Sub(i.start)
-	i.l.Infof("Waiting %v before starting new game...", delay.Truncate(time.Second))
-
-	if delay <= 0 {
+	i.l.Infof("Waiting (%v) for %d players to ack...", i.token.TimeRemaining().Truncate(time.Second), i.token.NumStillToAck())
+	if i.token.AllAcked() || i.token.Expired() {
+		i.table.clearAckToken()
+		i.token = nil
 		i.table.setState(i.table.waitingPlayersState)
+		return nil
 	}
 
 	return nil

@@ -42,8 +42,6 @@ func (i *initializingState) StartGame() error {
 func (i *initializingState) Tick() error {
 	i.l.Debugf("Tick(%v)", i.Name())
 
-	// TODO: After resetting, the table isn't working for new players
-
 	if i.token.AllAcked() {
 		i.table.clearAckToken()
 		i.token = nil

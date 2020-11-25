@@ -63,6 +63,7 @@ type PokerClient struct {
 
 	// the last acked token
 	lastAckedToken string
+	handFinished   bool
 
 	gameState ppb.GameState
 
@@ -207,27 +208,41 @@ OUTER:
 			pc.gameState = in.GetInfo().GetGameState()
 			ackToken := in.GetInfo().GetAckToken()
 
-			pc.l.Infof("Current Turn Player: %v", in.WaitTurnName)
-			pc.l.Infof("Current State: %v", pc.gameState)
+			pc.l.Debugf("Current Turn Player: %v", in.WaitTurnName)
+			pc.l.Debugf("Current State: %v", pc.gameState)
 
-			if pc.gameState == ppb.GameState_GameStateFinished {
-				pc.l.Info("Game Finished!")
-				pc.PrintHandResults()
-				break
-			}
-
-			if ackToken != pc.lastAckedToken && ackToken != "" {
-				pc.l.Infof("Acking [%v]", ackToken)
-				pc.Ack(ctx, ackToken)
-			}
-
+			// Take turn
 			if pc.PlayerID == waitID {
+				pc.handFinished = false
 				pc.TakeTurn(ctx, in)
 			}
+
+			if pc.handIsFinished() && !pc.handFinished {
+				pc.l.Info("Game Finished!")
+
+				pc.handFinished = true
+				pc.PrintHandResults()
+			}
+
+			pc.ackIfNeeded(ctx, ackToken)
+
 		default:
 		}
 	}
 	return err
+}
+
+func (pc *PokerClient) handIsFinished() bool {
+	return pc.gameState == ppb.GameState_GameStateFinished
+}
+
+// ackIfNeeded acks a token if needed
+func (pc *PokerClient) ackIfNeeded(ctx context.Context, ackToken string) {
+
+	if ackToken != pc.lastAckedToken && ackToken != "" {
+		pc.l.Infof("Acking [%v]", ackToken)
+		pc.Ack(ctx, ackToken)
+	}
 }
 
 // ReceiveGameData receives GameData from the server and sends it to the main thread over a channel
