@@ -124,3 +124,22 @@ message GameData {
   string waitTurnID = 20; // the ID of the player whose turn it is
   string playerID = 30;   // the ID of the calling player
 }
+
+// Cards
+message CommunityCards { repeated Card card = 10; }
+
+enum CardSuit { Spade = 0; Club = 1; Diamond = 2; Heart = 3; }
+enum CardRank {
+  Two = 0; Three = 1; Four = 2; Five = 3; Six = 4; Seven = 5; Eight = 6;
+  Nine = 7;
+  Ten = 8;
+  Jack = 9;
+  Queen = 10;
+  King = 11;
+  Ace = 12;
+}
+
+message Card {
+  CardSuit suite = 10;
+  CardRank rank = 20;
+}

@@ -9,7 +9,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/DanTulovsky/logger"
 	"github.com/Pallinder/go-randomdata"
 
 	"github.com/fatih/color"
@@ -18,6 +17,7 @@ import (
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"google.golang.org/grpc"
 
+	"github.com/DanTulovsky/logger"
 	"github.com/DanTulovsky/pepper-poker-v2/id"
 	ppb "github.com/DanTulovsky/pepper-poker-v2/proto"
 )
