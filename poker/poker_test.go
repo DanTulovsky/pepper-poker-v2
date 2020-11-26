@@ -331,6 +331,7 @@ func Test_haveStraightFlush(t *testing.T) {
 	tests := []struct {
 		name    string
 		cards   []*deck.Card
+		flush   []*deck.Card
 		want    *Hand
 		wantErr bool
 	}{
@@ -345,18 +346,26 @@ func Test_haveStraightFlush(t *testing.T) {
 				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Five),
 				deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_King),
 			},
-			want: nil,
+			flush: []*deck.Card{},
+			want:  nil,
 		},
 		{
 			name: "Normal Straight Flush",
 			cards: []*deck.Card{
 				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Eight),
 				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Seven),
-				deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_Queen),
+				deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_King),
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Nine),
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Ten),
+				deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_Ace),
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Six),
+			},
+			flush: []*deck.Card{
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Eight),
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Seven),
 				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Nine),
 				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Ten),
 				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Six),
-				deck.NewCard(ppb.CardSuit_Spade, ppb.CardRank_Ace),
 			},
 			want: &Hand{
 				cards: []*deck.Card{
@@ -366,11 +375,77 @@ func Test_haveStraightFlush(t *testing.T) {
 					deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Seven),
 					deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Six),
 				},
-				combo: Straight,
+				combo: StraightFlush,
+			},
+		},
+		{
+			name: "Straight flush with a low straight",
+			flush: []*deck.Card{
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Four),
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Five),
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Six),
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Seven),
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Eight),
+			},
+			cards: []*deck.Card{
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Four),
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Five),
+				deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_Queen),
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Six),
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Seven),
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Eight),
+				deck.NewCard(ppb.CardSuit_Spade, ppb.CardRank_Nine),
+			},
+			want: &Hand{
+				cards: []*deck.Card{
+					deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Eight),
+					deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Seven),
+					deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Six),
+					deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Five),
+					deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Four),
+				},
+				combo: StraightFlush,
+			},
+		},
+		{
+			name: "Straight flush with a high flush",
+			flush: []*deck.Card{
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Four),
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Five),
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Six),
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Seven),
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Eight),
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_King),
+			},
+			cards: []*deck.Card{
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Four),
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Five),
+				deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_Queen),
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Six),
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Seven),
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Eight),
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_King),
+			},
+			want: &Hand{
+				cards: []*deck.Card{
+					deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Eight),
+					deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Seven),
+					deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Six),
+					deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Five),
+					deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Four),
+				},
+				combo: StraightFlush,
 			},
 		},
 		{
 			name: "Ace low Straight",
+			flush: []*deck.Card{
+				deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Four),
+				deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Five),
+				deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Two),
+				deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Ace),
+				deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Three),
+			},
 			cards: []*deck.Card{
 				deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Four),
 				deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Five),
@@ -388,13 +463,13 @@ func Test_haveStraightFlush(t *testing.T) {
 					deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Two),
 					deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Ace),
 				},
-				combo: Straight,
+				combo: StraightFlush,
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := haveStraight(tt.cards)
+			got := haveStraightFlush(tt.flush, tt.cards)
 
 			if got == nil && tt.want != nil {
 				t.Fatalf("haveStraight(%v) returned nil; expected: %v", tt.cards, tt.want)
@@ -405,7 +480,7 @@ func Test_haveStraightFlush(t *testing.T) {
 			}
 
 			if got != nil && tt.want != nil && got.combo != tt.want.combo {
-				t.Errorf("haveStraight(%v) returned combo: %v; expected: %v", tt.cards, ComboToString[got.combo], ComboToString[tt.want.combo])
+				t.Fatalf("haveStraight(%v) returned combo: %v; expected: %v", tt.cards, ComboToString[got.combo], ComboToString[tt.want.combo])
 			}
 
 			if got != nil {

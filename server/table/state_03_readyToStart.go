@@ -20,8 +20,6 @@ func (i *readyToStartState) Init() error {
 	for _, p := range i.table.ActivePlayers() {
 		// TODO: Assume the player buys in with all the money they have for now
 		i.table.BuyIn(p, p.Money().Bank())
-
-		i.l.Infof("  [%v ($%v)]: %v", p.Name, humanize.Comma(p.Money().Stack()), p.Hole())
 	}
 
 	i.l.Info("Dealings cards to players...")
@@ -34,6 +32,10 @@ func (i *readyToStartState) Init() error {
 
 			p.AddHoleCard(card)
 		}
+	}
+
+	for _, p := range i.table.ActivePlayers() {
+		i.l.Infof("  [%v ($%v)]: %v", p.Name, humanize.Comma(p.Money().Stack()), p.Hole())
 	}
 
 	return nil

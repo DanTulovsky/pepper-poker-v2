@@ -602,7 +602,7 @@ func (pc *PokerClient) getGameState(in *ppb.GameData) string {
 
 	if gameState >= ppb.GameState_GameStatePlayingSmallBlind {
 		state.WriteString(fmt.Sprintf("%v %v\n", color.RedString("Board:"), pc.protoToCards(in.GetInfo().GetCommunityCards().GetCard())))
-		state.WriteString(fmt.Sprintf("%v %v\n", color.RedString("Player Cards:"), mycards))
+		state.WriteString(fmt.Sprintf("%v %v\n", color.RedString("Player Cards:"), deck.CardsFromProto(mycards)))
 
 		if mymoney != nil {
 			state.WriteString(fmt.Sprintf("%v $%v\n", color.CyanString("Total Stack:"), humanize.Comma(mymoney.GetStack())))

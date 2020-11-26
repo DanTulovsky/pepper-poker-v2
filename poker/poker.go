@@ -66,6 +66,13 @@ type Hand struct {
 	combo Combo
 }
 
+// NewHand returns a new hand
+func NewHand() *Hand {
+	return &Hand{
+		cards: []*deck.Card{},
+	}
+}
+
 // Cards return h.cards
 func (h *Hand) Cards() []*deck.Card {
 	return h.cards
@@ -240,7 +247,7 @@ func BestCombo(cards ...*deck.Card) *Hand {
 	// must check after flush and straight
 	var straightFlush *Hand
 	if flush != nil && straight != nil {
-		straightFlush = haveStraightFlush(flush.cards, straight.cards)
+		straightFlush = haveStraightFlush(flush.cards, cards)
 	}
 
 	threeOfAKind := haveThreeOfAKind(cards)
@@ -262,21 +269,28 @@ func BestCombo(cards ...*deck.Card) *Hand {
 }
 
 // haveStraightFlash returns *Hand that makes up the straight flush, or nil
-// The input to this function should be the output of the haveFlush and haveStraight functions
-func haveStraightFlush(straight, flush []*deck.Card) *Hand {
-	if straight == nil || flush == nil {
+func haveStraightFlush(flush, cards []*deck.Card) *Hand {
+	if cards == nil || flush == nil || len(cards) == 0 || len(flush) == 0 {
 		return nil
 	}
 
-	var hand = new(Hand)
+	// get the suite of the flush
+	suit := flush[0].Card.Suite
 
-	if deck.CardsEqual(straight, flush) {
-		hand.cards = straight
-		hand.combo = StraightFlush
-		return hand
+	// get all the cards of this suit in cards
+	allsuitcards := []*deck.Card{}
+	for _, c := range cards {
+		if c.Card.Suite == suit {
+			allsuitcards = append(allsuitcards, c)
+		}
 	}
 
-	return nil
+	// check if there is a straight in allsuitcards
+	straight := haveStraight(allsuitcards)
+	if straight != nil {
+		straight.combo = StraightFlush
+	}
+	return straight
 }
 
 type fullHousePart struct {

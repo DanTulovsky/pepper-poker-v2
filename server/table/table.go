@@ -81,6 +81,8 @@ func New(tableAction chan ActionRequest) *Table {
 		Name:        randomdata.SillyName(),
 		TableAction: tableAction,
 		l:           logger.New("table", color.New(color.FgYellow)),
+		board:       poker.NewBoard(),
+		pot:         poker.NewPot(),
 
 		maxPlayers: 7,
 		minPlayers: 2,

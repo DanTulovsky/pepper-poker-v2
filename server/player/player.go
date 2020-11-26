@@ -27,6 +27,8 @@ func newHandInfo() *handInfo {
 		folded:         false,
 		allin:          false,
 		actionRequired: false,
+		Hole:           []*deck.Card{},
+		Hand:           poker.NewHand(),
 	}
 }
 
@@ -48,9 +50,10 @@ type Player struct {
 // New creates a new player
 func New(name string, bank int64) *Player {
 	return &Player{
-		ID:    id.NewPlayerID(),
-		Name:  name,
-		money: NewMoney(bank),
+		ID:       id.NewPlayerID(),
+		Name:     name,
+		money:    NewMoney(bank),
+		HandInfo: newHandInfo(),
 	}
 }
 
