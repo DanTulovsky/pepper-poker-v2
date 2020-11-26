@@ -293,12 +293,12 @@ func haveStraightFlush(flush, cards []*deck.Card) *Hand {
 	return straight
 }
 
-type fullHousePart struct {
+type rankCards struct {
 	r ppb.CardRank
 	c int
 }
 
-func (l fullHousePart) String() string {
+func (l rankCards) String() string {
 	return fmt.Sprintf("%v (%v)", ppb.CardRank(l.r), l.c)
 }
 
@@ -308,31 +308,40 @@ func haveFullHouse(cards []*deck.Card) *Hand {
 		log.Fatalf("need at least 5 cards for haveFullHouse, have %d", len(cards))
 	}
 
+	log.Println(cards)
 	var hand = new(Hand)
 
 	sort.Sort(sort.Reverse(deck.SortByCards(cards)))
 
 	byrank := deck.CountByRank(cards)
 
-	highest := fullHousePart{}
-	secondHeighest := fullHousePart{}
+	highest := rankCards{}
+	secondHeighest := rankCards{}
 
-	// find most card of one rank
+	// find the highest triplet of cards
 	for rank, count := range byrank {
-		if count > highest.c {
+		if count < 3 {
+			continue
+		}
+		if count >= highest.c && rank >= highest.r {
 			highest.r = rank
 			highest.c = count
 		}
 	}
 	delete(byrank, highest.r)
 
-	// find second most kind of the second rank
+	// find the highest tuple
 	for rank, count := range byrank {
-		if count > secondHeighest.c {
+		if count < 2 {
+			continue
+		}
+		if count >= secondHeighest.c && rank >= secondHeighest.r {
 			secondHeighest.r = rank
 			secondHeighest.c = count
 		}
 	}
+	// log.Printf("highest: %v", highest)
+	// log.Printf("secondHighest: %v", secondHeighest)
 
 	// need at lest 3 of highest and at least 2 of second highest
 	if highest.c > 2 && secondHeighest.c > 1 {
@@ -596,24 +605,37 @@ func havePair(cards []*deck.Card) *Hand {
 
 	byrank := deck.CountByRank(cards)
 
-	// only check for the first pair, haveTwoPair would have checked for two pairs
+	highest := rankCards{}
+
+	// find the highest tuple of cards
 	for rank, count := range byrank {
-		if count == 2 {
-			for _, c := range cards {
-				if c.GetRank() == rank {
-					hand.cards = append(hand.cards, c)
-				}
-			}
-			hand.combo = Pair
-			// Add 5 more cards
-			for _, c := range cards {
-				if len(hand.cards) == 5 {
-					return hand
-				}
-				if !deck.CardInList(c, hand.cards) {
-					hand.cards = append(hand.cards, c)
-				}
-			}
+		if count < 2 {
+			continue
+		}
+		if count >= highest.c && rank >= highest.r {
+			highest.r = rank
+			highest.c = count
+		}
+	}
+
+	for _, c := range cards {
+		if c.GetRank() == highest.r {
+			hand.cards = append(hand.cards, c)
+		}
+	}
+
+	if len(hand.cards) < 2 {
+		return nil
+	}
+
+	hand.combo = Pair
+	// Add 5 more cards
+	for _, c := range cards {
+		if len(hand.cards) == 5 {
+			return hand
+		}
+		if !deck.CardInList(c, hand.cards) {
+			hand.cards = append(hand.cards, c)
 		}
 	}
 

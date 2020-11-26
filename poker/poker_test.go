@@ -489,6 +489,94 @@ func Test_haveStraightFlush(t *testing.T) {
 		})
 	}
 }
+func Test_haveFullHouse(t *testing.T) {
+
+	tests := []struct {
+		name    string
+		cards   []*deck.Card
+		want    *Hand
+		wantErr bool
+	}{
+		{
+			name: "HighCard",
+			cards: []*deck.Card{
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Eight),
+				deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Ace),
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Three),
+				deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_Queen),
+				deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Seven),
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Five),
+				deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_King),
+			},
+			want: nil,
+		},
+		{
+			name: "2 three of a kind",
+			cards: []*deck.Card{
+				deck.NewCard(ppb.CardSuit_Spade, ppb.CardRank_Two),
+				deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Two),
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Two),
+				deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Queen),
+				deck.NewCard(ppb.CardSuit_Spade, ppb.CardRank_Ten),
+				deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Ten),
+				deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_Ten),
+			},
+			want: &Hand{
+				cards: []*deck.Card{
+					deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Ten),
+					deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_Ten),
+					deck.NewCard(ppb.CardSuit_Spade, ppb.CardRank_Ten),
+					deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Two),
+					deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Two),
+				},
+				combo: FullHouse,
+			},
+		},
+		{
+			name: "2 three of a kind (2)",
+			cards: []*deck.Card{
+				deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Queen),
+				deck.NewCard(ppb.CardSuit_Spade, ppb.CardRank_Ten),
+				deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Ten),
+				deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_Ten),
+				deck.NewCard(ppb.CardSuit_Spade, ppb.CardRank_Two),
+				deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Two),
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Two),
+			},
+			want: &Hand{
+				cards: []*deck.Card{
+					deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Ten),
+					deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_Ten),
+					deck.NewCard(ppb.CardSuit_Spade, ppb.CardRank_Ten),
+					deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Two),
+					deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Two),
+				},
+				combo: FullHouse,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := haveFullHouse(tt.cards)
+
+			if got == nil && tt.want != nil {
+				t.Fatalf("haveFullHouse(%v) returned nil; expected: %v", tt.cards, tt.want)
+			}
+
+			if got != nil && tt.want == nil {
+				t.Fatalf("haveFullHouse(%v) did not return nil; expected: %v", tt.cards, tt.want)
+			}
+
+			if got != nil && tt.want != nil && got.combo != tt.want.combo {
+				t.Fatalf("haveFullHouse(%v) returned combo: %v; expected: %v", tt.cards, ComboToString[got.combo], ComboToString[tt.want.combo])
+			}
+
+			if got != nil {
+				checkCardMatch(t, tt.want.cards, got.cards)
+			}
+		})
+	}
+}
 func Test_haveFlush(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -664,38 +752,125 @@ func Test_haveStraight(t *testing.T) {
 		})
 	}
 }
+func Test_haveTwoPair(t *testing.T) {
+	tests := []struct {
+		name    string
+		cards   []*deck.Card
+		want    *Hand
+		wantErr bool
+	}{
+		{
+			name: "HighCard",
+			cards: []*deck.Card{
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Eight),
+				deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Ace),
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Three),
+				deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_Queen),
+				deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Seven),
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Five),
+				deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_King),
+			},
+			want: nil,
+		},
+		{
+			name: "two pairs",
+			cards: []*deck.Card{
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Eight),
+				deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Seven),
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Queen),
+				deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_Eight),
+				deck.NewCard(ppb.CardSuit_Spade, ppb.CardRank_Ten),
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Seven),
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Ace),
+			},
+			want: &Hand{
+				cards: []*deck.Card{
+					deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_Eight),
+					deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Eight),
+					deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Seven),
+					deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Seven),
+					deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Ace),
+				},
+				combo: TwoPair,
+			},
+		},
+		{
+			name: "three pairs",
+			cards: []*deck.Card{
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Eight),
+				deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Seven),
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Queen),
+				deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_Eight),
+				deck.NewCard(ppb.CardSuit_Spade, ppb.CardRank_Queen),
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Seven),
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Ace),
+			},
+			want: &Hand{
+				cards: []*deck.Card{
+					deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Queen),
+					deck.NewCard(ppb.CardSuit_Spade, ppb.CardRank_Queen),
+					deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_Eight),
+					deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Eight),
+					deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Ace),
+				},
+				combo: TwoPair,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := haveTwoPair(tt.cards)
+
+			if got == nil && tt.want != nil {
+				t.Fatalf("haveStraight(%v) returned nil; expected: %v", tt.cards, tt.want)
+			}
+
+			if got != nil && tt.want == nil {
+				t.Fatalf("haveStraight(%v) did not return nil; expected: %v", tt.cards, tt.want)
+			}
+
+			if got != nil && tt.want != nil && got.combo != tt.want.combo {
+				t.Errorf("haveStraight(%v) returned combo: %v; expected: %v", tt.cards, ComboToString[got.combo], ComboToString[tt.want.combo])
+			}
+
+			if got != nil {
+				checkCardMatch(t, tt.cards, got.cards)
+			}
+		})
+	}
+}
 func TestBestHand(t *testing.T) {
 	tests := []struct {
 		name        string
 		playerHands []*PlayerHand
 		want        [][]int // list of levels of index of player that will win
 	}{
-		// {
-		// 	name: "test1",
-		// 	playerHands: []*PlayerHand{
-		// 		{
-		// 			Cards: randomFlush(),
-		// 			ID:    uuid.New().String(),
-		// 		},
-		// 		{
-		// 			Cards: randomFullHouse(),
-		// 			ID:    uuid.New().String(),
-		// 		},
-		// 		{
-		// 			Cards: randomHighCard(),
-		// 			ID:    uuid.New().String(),
-		// 		},
-		// 		{
-		// 			Cards: randomPair(),
-		// 			ID:    uuid.New().String(),
-		// 		},
-		// 		{
-		// 			Cards: randomTwoPair(),
-		// 			ID:    uuid.New().String(),
-		// 		},
-		// 	},
-		// 	want: [][]int{{1}, {0}, {4}, {3}, {2}},
-		// },
+		{
+			name: "test1",
+			playerHands: []*PlayerHand{
+				{
+					Cards: randomFlush(),
+					ID:    uuid.New().String(),
+				},
+				{
+					Cards: randomFullHouse(),
+					ID:    uuid.New().String(),
+				},
+				{
+					Cards: randomHighCard(),
+					ID:    uuid.New().String(),
+				},
+				{
+					Cards: randomPair(),
+					ID:    uuid.New().String(),
+				},
+				{
+					Cards: randomTwoPair(),
+					ID:    uuid.New().String(),
+				},
+			},
+			want: [][]int{{1}, {0}, {4}, {3}, {2}},
+		},
 		{
 			name: "test1.1",
 			playerHands: []*PlayerHand{
@@ -722,108 +897,108 @@ func TestBestHand(t *testing.T) {
 			},
 			want: [][]int{{2}, {1}, {0}, {4}, {3}},
 		},
-		// {
-		// 	name: "test2",
-		// 	playerHands: []*PlayerHand{
-		// 		{
-		// 			Cards: randomHighCard(),
-		// 			ID:    uuid.New().String(),
-		// 		},
-		// 		{
-		// 			Cards: []*deck.Card{
-		// 				deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Ace),
-		// 				deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_Ace),
-		// 				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Jack),
-		// 				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Eight),
-		// 				deck.NewCard(ppb.CardSuit_Spade, ppb.CardRank_Eight),
-		// 			},
-		// 			ID: uuid.New().String(),
-		// 		},
-		// 		{
-		// 			Cards: []*deck.Card{
-		// 				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Ace),
-		// 				deck.NewCard(ppb.CardSuit_Spade, ppb.CardRank_Ace),
-		// 				deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Jack),
-		// 				deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Eight),
-		// 				deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_Eight),
-		// 			},
-		// 			ID: uuid.New().String(),
-		// 		},
-		// 		{
-		// 			Cards: randomPair(),
-		// 			ID:    uuid.New().String(),
-		// 		},
-		// 	},
-		// 	want: [][]int{{2, 1}, {3}, {0}},
-		// },
-		// {
-		// 	name: "test3",
-		// 	playerHands: []*PlayerHand{
-		// 		{
-		// 			Cards: randomHighCard(),
-		// 			ID:    uuid.New().String(),
-		// 		},
-		// 		{
-		// 			Cards: []*deck.Card{
-		// 				deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Ace),
-		// 				deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_Ace),
-		// 				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Queen),
-		// 				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Eight),
-		// 				deck.NewCard(ppb.CardSuit_Spade, ppb.CardRank_Eight),
-		// 			},
-		// 			ID: uuid.New().String(),
-		// 		},
-		// 		{
-		// 			Cards: randomPair(),
-		// 			ID:    uuid.New().String(),
-		// 		},
-		// 		{
-		// 			Cards: []*deck.Card{
-		// 				deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Ace),
-		// 				deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_Ace),
-		// 				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_King),
-		// 				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Eight),
-		// 				deck.NewCard(ppb.CardSuit_Spade, ppb.CardRank_Eight),
-		// 			},
-		// 			ID: uuid.New().String(),
-		// 		},
-		// 	},
-		// 	want: [][]int{{3}, {1}, {2}, {0}},
-		// },
-		// {
-		// 	name: "test4",
-		// 	playerHands: []*PlayerHand{
-		// 		{
-		// 			Cards: randomTwoPair(),
-		// 			ID:    uuid.New().String(),
-		// 		},
-		// 		{
-		// 			Cards: []*deck.Card{
-		// 				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Eight),
-		// 				deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Seven),
-		// 				deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_Nine),
-		// 				deck.NewCard(ppb.CardSuit_Spade, ppb.CardRank_Ten),
-		// 				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Six),
-		// 			},
-		// 			ID: uuid.New().String(),
-		// 		},
-		// 		{
-		// 			Cards: randomPair(),
-		// 			ID:    uuid.New().String(),
-		// 		},
-		// 		{
-		// 			Cards: []*deck.Card{
-		// 				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Four),
-		// 				deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Five),
-		// 				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Two),
-		// 				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Ace),
-		// 				deck.NewCard(ppb.CardSuit_Spade, ppb.CardRank_Three),
-		// 			},
-		// 			ID: uuid.New().String(),
-		// 		},
-		// 	},
-		// 	want: [][]int{{1}, {3}, {0}, {2}},
-		// },
+		{
+			name: "test2",
+			playerHands: []*PlayerHand{
+				{
+					Cards: randomHighCard(),
+					ID:    uuid.New().String(),
+				},
+				{
+					Cards: []*deck.Card{
+						deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Ace),
+						deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_Ace),
+						deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Jack),
+						deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Eight),
+						deck.NewCard(ppb.CardSuit_Spade, ppb.CardRank_Eight),
+					},
+					ID: uuid.New().String(),
+				},
+				{
+					Cards: []*deck.Card{
+						deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Ace),
+						deck.NewCard(ppb.CardSuit_Spade, ppb.CardRank_Ace),
+						deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Jack),
+						deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Eight),
+						deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_Eight),
+					},
+					ID: uuid.New().String(),
+				},
+				{
+					Cards: randomPair(),
+					ID:    uuid.New().String(),
+				},
+			},
+			want: [][]int{{2, 1}, {3}, {0}},
+		},
+		{
+			name: "test3",
+			playerHands: []*PlayerHand{
+				{
+					Cards: randomHighCard(),
+					ID:    uuid.New().String(),
+				},
+				{
+					Cards: []*deck.Card{
+						deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Ace),
+						deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_Ace),
+						deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Queen),
+						deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Eight),
+						deck.NewCard(ppb.CardSuit_Spade, ppb.CardRank_Eight),
+					},
+					ID: uuid.New().String(),
+				},
+				{
+					Cards: randomPair(),
+					ID:    uuid.New().String(),
+				},
+				{
+					Cards: []*deck.Card{
+						deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Ace),
+						deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_Ace),
+						deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_King),
+						deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Eight),
+						deck.NewCard(ppb.CardSuit_Spade, ppb.CardRank_Eight),
+					},
+					ID: uuid.New().String(),
+				},
+			},
+			want: [][]int{{3}, {1}, {2}, {0}},
+		},
+		{
+			name: "test4",
+			playerHands: []*PlayerHand{
+				{
+					Cards: randomTwoPair(),
+					ID:    uuid.New().String(),
+				},
+				{
+					Cards: []*deck.Card{
+						deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Eight),
+						deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Seven),
+						deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_Nine),
+						deck.NewCard(ppb.CardSuit_Spade, ppb.CardRank_Ten),
+						deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Six),
+					},
+					ID: uuid.New().String(),
+				},
+				{
+					Cards: randomPair(),
+					ID:    uuid.New().String(),
+				},
+				{
+					Cards: []*deck.Card{
+						deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Four),
+						deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Five),
+						deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Two),
+						deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Ace),
+						deck.NewCard(ppb.CardSuit_Spade, ppb.CardRank_Three),
+					},
+					ID: uuid.New().String(),
+				},
+			},
+			want: [][]int{{1}, {3}, {0}, {2}},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
