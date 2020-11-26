@@ -221,7 +221,7 @@ OUTER:
 			if pc.handIsFinished() && !pc.handFinished {
 				pc.l.Info("Game Finished!")
 
-				pc.handFinished = true
+				pc.handFinished = true // used for display only
 				pc.PrintHandResults(in)
 			}
 
@@ -499,12 +499,12 @@ func (pc *PokerClient) PrintHandResults(in *ppb.GameData) error {
 			p.GetName(),
 			humanize.Comma(p.Money.GetWinnings()),
 			color.HiBlueString(p.Combo))
-		// show cards
+
 		pc.showCards(deck.CardsFromProto(p.GetHand()), false)
 		fmt.Println()
-
-		return nil
 	}
+
+	return nil
 }
 
 func (pc *PokerClient) showCards(cards []*deck.Card, divider bool) {

@@ -307,6 +307,10 @@ func (t *Table) infoproto() *ppb.GameInfo {
 		p.Money.Pot = t.pot.GetTotal()
 	}
 
+	// TODO: Add winners
+
+	// TODO: Add cards
+
 	return gi
 }
 
