@@ -26,7 +26,7 @@ import (
 )
 
 var (
-	name     = flag.String("name", fmt.Sprintf("[robot_folder]-%v", randomdata.SillyName()), "player name")
+	name     = flag.String("name", fmt.Sprintf("%v", randomdata.SillyName()), "player name")
 	insecure = flag.Bool("insecure", false, "if true, use insecure connection to server")
 	logg     *logger.Logger
 

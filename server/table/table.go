@@ -221,12 +221,16 @@ func (t *Table) processManagerAction(in ActionRequest) {
 		err := t.State.Fold(in.Player)
 		res = NewTableActionResult(err, nil)
 
+	case ActionCall:
+		err := t.State.Call(in.Player)
+		res = NewTableActionResult(err, nil)
+
 	case ActionAllIn:
 		amount := int64(0) // TODO: Get from player money when available
 		err := t.State.Bet(in.Player, amount)
 		res = NewTableActionResult(err, nil)
 
-	case ActionCall:
+	case ActionBet:
 		amount := in.Opts.(int64)
 		err := t.State.Bet(in.Player, amount)
 		res = NewTableActionResult(err, nil)
@@ -304,6 +308,7 @@ func (t *Table) gameDataProto(p *player.Player) *ppb.GameData {
 	if current != nil {
 		d.WaitTurnID = current.ID.String()
 		d.WaitTurnName = current.Name
+		d.WaitTurnNum = current.CurrentTurn
 	}
 
 	return d

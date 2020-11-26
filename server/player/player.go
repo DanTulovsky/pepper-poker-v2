@@ -25,9 +25,12 @@ func newHandInfo() *handInfo {
 
 // Player represents a single player
 type Player struct {
-	ID       id.PlayerID
-	Name     string
-	HandInfo *handInfo
+	ID   id.PlayerID
+	Name string
+
+	// Keeps track of how many turns the player took, used to sync the client
+	CurrentTurn int64
+	HandInfo    *handInfo
 
 	CommChannel chan actions.GameData
 }

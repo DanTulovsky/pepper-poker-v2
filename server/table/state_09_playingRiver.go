@@ -65,6 +65,5 @@ func (i *playingRiverState) Tick() error {
 	// 	i.round.advancePlayer()
 	// }
 
-	i.table.setState(i.table.playingDoneState)
 	return nil
 }

@@ -63,6 +63,7 @@ type PokerClient struct {
 
 	// the last acked token
 	lastAckedToken string
+	lastTurnTaken  int64
 	handFinished   bool
 
 	gameState ppb.GameState
@@ -97,12 +98,13 @@ func New(ctx context.Context, name string, insecure bool, actions chan *actions.
 
 	logger := logger.New(name, color.New(color.FgGreen))
 	pc := &PokerClient{
-		Name:         name,
-		l:            logger,
-		action:       actions,
-		actionResult: actionResult,
-		inputWanted:  inputWanted,
-		datac:        make(chan *ppb.GameData),
+		Name:          name,
+		l:             logger,
+		action:        actions,
+		actionResult:  actionResult,
+		inputWanted:   inputWanted,
+		lastTurnTaken: -1, // server starts at 0
+		datac:         make(chan *ppb.GameData),
 	}
 
 	opts := []grpc.DialOption{
@@ -181,7 +183,7 @@ func (pc *PokerClient) processGameData(ctx context.Context, exitc chan bool) err
 	// Receive GameData on datac channel and act on it
 OUTER:
 	for {
-		pc.l.Debug("Waiting for GameData...")
+		// pc.l.Debug("Waiting for GameData...")
 		// process server messages if any (on datac channel)
 		select {
 		case <-exitc:
@@ -198,16 +200,21 @@ OUTER:
 			}
 
 			waitID := id.PlayerID(in.WaitTurnID)
+			waitName := in.WaitTurnName
+			waitNum := in.WaitTurnNum
+
 			pc.gameState = in.GetInfo().GetGameState()
 			ackToken := in.GetInfo().GetAckToken()
 
-			pc.l.Debugf("Current Turn Player: %v", in.WaitTurnName)
+			pc.l.Debugf("Current Turn Player (num=%v): %v", waitNum, waitName)
 			pc.l.Debugf("Current State: %v", pc.gameState)
 
 			// Take turn
-			if pc.PlayerID == waitID {
+			if pc.PlayerID == waitID && pc.lastTurnTaken < waitNum {
 				pc.handFinished = false
-				pc.TakeTurn(ctx, in)
+				if err := pc.TakeTurn(ctx, in); err == nil {
+					pc.lastTurnTaken = waitNum
+				}
 			}
 
 			if pc.handIsFinished() && !pc.handFinished {
@@ -233,7 +240,7 @@ func (pc *PokerClient) handIsFinished() bool {
 func (pc *PokerClient) ackIfNeeded(ctx context.Context, ackToken string) {
 
 	if ackToken != pc.lastAckedToken && ackToken != "" {
-		pc.l.Infof("Acking [%v]", ackToken)
+		pc.l.Debugf("Acking [%v]", ackToken)
 		pc.Ack(ctx, ackToken)
 	}
 }
@@ -293,22 +300,22 @@ func (pc *PokerClient) TakeTurn(ctx context.Context, in *ppb.GameData) error {
 		if err = pc.Call(ctx); err != nil {
 			pc.l.Infof("error calling: %v", err)
 		}
+
 	case ppb.PlayerAction_PlayerActionCheck:
 		if err = pc.Check(ctx); err != nil {
 			pc.l.Infof("error checking: %v", err)
 		}
+
 	case ppb.PlayerAction_PlayerActionFold:
 		if err = pc.Fold(ctx); err != nil {
 			pc.l.Infof("error folding: %v", err)
 		}
 
 	case ppb.PlayerAction_PlayerActionAllIn:
-		// special case of bet for convenience
-		// TODO: fix when money available
-		// remains := pc.MyMoney().GetStack()
-		// if err = pc.Bet(ctx, remains); err != nil {
-		// 	pc.l.Infof("error betting: %v", err)
-		// }
+		if err = pc.AllIn(ctx); err != nil {
+			pc.l.Infof("error going all in: %v", err)
+		}
+
 	case ppb.PlayerAction_PlayerActionBet:
 		// TODO(sishi): under the gun has to raise at least a Big Blind if raising
 		amount := paction.Opts.BetAmount
@@ -339,11 +346,10 @@ func (pc *PokerClient) Ack(ctx context.Context, ackToken string) error {
 	_, err := pc.client.AckToken(ctx, req)
 	if err != nil {
 		pc.l.Fatal(err)
-	} else {
-		pc.l.Infof("Acked [%v]", ackToken)
-		pc.lastAckedToken = ackToken
 	}
-	pc.l.Infof("acked: %v", ackToken)
+
+	pc.l.Debugf("Acked [%v]", ackToken)
+	pc.lastAckedToken = ackToken
 
 	return nil
 }
@@ -409,6 +415,29 @@ func (pc *PokerClient) Bet(ctx context.Context, amount int64) error {
 		ActionOpts: &ppb.ActionOpts{
 			BetAmount: amount,
 		},
+	}
+
+	_, err := pc.client.TakeTurn(ctx, req)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// AllIn goes all in
+func (pc *PokerClient) AllIn(ctx context.Context) error {
+	pc.l.Infof("Action: AllIn")
+
+	action := ppb.PlayerAction_PlayerActionAllIn
+
+	req := &ppb.TakeTurnRequest{
+		ClientInfo: &ppb.ClientInfo{
+			PlayerName: pc.Name,
+			PlayerID:   pc.PlayerID.String(),
+			TableID:    pc.TableID.String(),
+		},
+		PlayerAction: action,
 	}
 
 	_, err := pc.client.TakeTurn(ctx, req)

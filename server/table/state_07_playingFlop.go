@@ -67,6 +67,5 @@ func (i *playingFlopState) Tick() error {
 	// 	i.round.advancePlayer()
 	// }
 
-	i.table.setState(i.table.playingTurnState)
 	return nil
 }

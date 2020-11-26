@@ -20,6 +20,7 @@ func (t *Table) bet(p *player.Player, bet int64) error {
 
 	// Success
 	p.SetActionRequired(false)
+	p.CurrentTurn++
 	return nil
 }
 
@@ -37,6 +38,7 @@ func (t *Table) call(p *player.Player) error {
 
 	// Success
 	p.SetActionRequired(false)
+	p.CurrentTurn++
 	return nil
 }
 
@@ -53,6 +55,7 @@ func (t *Table) check(p *player.Player) error {
 
 	// Success
 	p.SetActionRequired(false)
+	p.CurrentTurn++
 	return nil
 }
 
@@ -68,5 +71,6 @@ func (t *Table) fold(p *player.Player) error {
 
 	// Success
 	p.SetActionRequired(false)
+	p.CurrentTurn++
 	return nil
 }
