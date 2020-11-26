@@ -122,6 +122,7 @@ message GameInfo {
   int64 bigBlind = 120;
 
   repeated Player players = 130;
+  repeated Player winners = 140;
 }
 
 // GameData is sent to the client, it tells the client when it's their turn and

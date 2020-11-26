@@ -85,7 +85,7 @@ type PokerClient struct {
 
 // New returns a new pokerClient
 func New(ctx context.Context, name string, insecure bool, actions chan *actions.PlayerAction, actionResult chan *actions.PlayerActionResult, inputWanted chan *ppb.GameData) (*PokerClient, error) {
-	// showWelcome()
+	showWelcome()
 
 	rand.Seed(time.Now().UnixNano())
 
@@ -185,7 +185,6 @@ func (pc *PokerClient) processGameData(ctx context.Context, exitc chan bool) err
 	// Receive GameData on datac channel and act on it
 OUTER:
 	for {
-		// pc.l.Debug("Waiting for GameData...")
 		// process server messages if any (on datac channel)
 		select {
 		case <-exitc:
@@ -223,7 +222,7 @@ OUTER:
 				pc.l.Info("Game Finished!")
 
 				pc.handFinished = true
-				pc.PrintHandResults()
+				pc.PrintHandResults(in)
 			}
 
 			pc.ackIfNeeded(ctx, ackToken)
@@ -249,7 +248,7 @@ func (pc *PokerClient) ackIfNeeded(ctx context.Context, ackToken string) {
 
 // ReceiveGameData receives GameData from the server and sends it to the main thread over a channel
 func (pc *PokerClient) receiveGameData(stream ppb.PokerServer_PlayClient, donec, exitc chan bool) error {
-	pc.l.Debug("Started eceive GameData thread...")
+	pc.l.Debug("Started receive GameData thread...")
 
 OUTER:
 	for {
@@ -287,7 +286,7 @@ func (pc *PokerClient) TakeTurn(ctx context.Context, in *ppb.GameData) error {
 	// Show most up to date status from the server
 	pc.showGameState(in)
 
-	// pc.showCards(append(pc.myCards(), deck.CardsFromProto(pc.TurnLog.CommunityCards().Card)...), true)
+	pc.showCards(deck.CardsFromProto(append(in.GetPlayer().GetCard(), in.GetInfo().GetCommunityCards().Card...)), true)
 
 	// Tell user input is needed
 	pc.inputWanted <- in
@@ -473,52 +472,47 @@ func (pc *PokerClient) Call(ctx context.Context) error {
 }
 
 // PrintHandResults prints the result
-func (pc *PokerClient) PrintHandResults() error {
+func (pc *PokerClient) PrintHandResults(in *ppb.GameData) error {
 
-	fmt.Println("Results!!")
-	// if !pc.roundFinished() {
-	// 	return fmt.Errorf("hand not finished yet")
-	// }
+	for _, p := range in.GetInfo().GetPlayers() {
+		iswinner := ""
+		isme := ""
 
-	// for _, p := range pc.TurnLog.Players() {
-	// 	iswinner := ""
-	// 	isme := ""
+		if pc.PlayerID.String() == p.Id {
+			isme = "(me) "
+		}
 
-	// 	if pc.PlayerID == p.Id {
-	// 		isme = "(me) "
-	// 	}
+		for _, w := range in.GetInfo().GetWinners() {
+			if p.Id == "" {
+				pc.l.Errorf(">w.ID:  %v", w.Id)
+				pc.l.Errorf(">p.ID:  %v", p.Id)
+				pc.l.Fatal("Missing p.ID from a player after game is over... is GameInfo populated correctly?")
+			}
+			if p.Id == w.Id {
+				iswinner = "[winner] "
+			}
+		}
 
-	// 	for _, w := range pc.TurnLog.Winners() {
-	// 		if p.Id == "" {
-	// 			pc.l.Errorf(">w.ID:  %v", w.Id)
-	// 			pc.l.Errorf(">p.ID:  %v", p.Id)
-	// 			pc.l.Fatal("Missing p.ID from a player after game is over... is RoundInfo populated correctly?")
-	// 		}
-	// 		if p.Id == w.Id {
-	// 			iswinner = "[winner] "
-	// 		}
-	// 	}
+		fmt.Printf("  %v%v%v ($%v) (%v)\n",
+			color.YellowString(isme),
+			color.GreenString(iswinner),
+			p.GetName(),
+			humanize.Comma(p.Money.GetWinnings()),
+			color.HiBlueString(p.Combo))
+		// show cards
+		pc.showCards(deck.CardsFromProto(p.GetHand()), false)
+		fmt.Println()
 
-	// 	fmt.Printf("  %v%v%v ($%v) (%v)\n",
-	// 		color.YellowString(isme),
-	// 		color.GreenString(iswinner),
-	// 		p.GetName(),
-	// 		humanize.Comma(p.Money.GetWinnings()),
-	// 		color.HiBlueString(p.Combo))
-	// 	// show cards
-	// 	pc.showCards(deck.CardsFromProto(p.GetHand()), false)
-	// 	fmt.Println()
-	// }
-
-	return nil
+		return nil
+	}
 }
 
-// func (pc *PokerClient) showCards(cards []*deck.Card, divider bool) {
+func (pc *PokerClient) showCards(cards []*deck.Card, divider bool) {
 
-// 	if img, err := deck.CardsImage(cards, divider); err == nil {
-// 		imgcat.CatImage(img, os.Stdout)
-// 	}
-// }
+	if img, err := deck.CardsImage(cards, divider); err == nil {
+		imgcat.CatImage(img, os.Stdout)
+	}
+}
 
 // Register registers with the server
 func (pc *PokerClient) Register(ctx context.Context) error {
@@ -632,10 +626,6 @@ func (pc *PokerClient) getGameState(in *ppb.GameData) string {
 
 	return state.String()
 }
-
-// func (pc *PokerClient) myCards() []*deck.Card {
-// 	return deck.CardsFromProto(pc.TurnLog.PlayerHole())
-// }
 
 func (pc *PokerClient) protoToCards(cards []*ppb.Card) []*deck.Card {
 	nc := make([]*deck.Card, len(cards))
