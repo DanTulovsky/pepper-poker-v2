@@ -144,9 +144,9 @@ func betAmount(data *ppb.GameData) (int64, error) {
 
 	switch q {
 	case "Big Blind":
-		return data.GetBigBlind(), nil
+		return data.GetInfo().GetBigBlind(), nil
 	case "3X Big Blind":
-		return data.GetBigBlind() * 3, nil
+		return data.GetInfo().GetBigBlind() * 3, nil
 	default:
 		// fall through
 	}

@@ -116,18 +116,67 @@ message GameInfo {
 
   int64 maxPlayers = 100;
   int64 minPlayers = 110;
+
+  int64 bigBlind = 120;
+
+  repeated Player player = 130;
 }
 
 // GameData is sent to the client, it tells the client when it's their turn and
 // provides the current state
 message GameData {
   GameInfo info = 10;
+
   string waitTurnID = 20;   // the ID of the player whose turn it is
   string waitTurnName = 30; // the name of the player whose turn it is
   int64 waitTurnNum = 35;   // the turn count of the player whose turn it is
   string playerID = 40;     // the ID of the calling player
 
-  int64 bigBlind = 50;
+  Player player = 50; // the calling player, for convenience
+}
+
+message Player {
+  string name = 10;
+
+  // only filled in for the player that matches the requesting player
+  string id = 15;
+
+  // position around the table
+  int64 position = 20;
+
+  PlayerMoney money = 30;
+  // PlayerState state = 50;
+
+  // only filled in for the player that matches the requesting player except at
+  // the end
+  repeated Card card = 60;
+
+  // Final hand of the player
+  repeated Card hand = 70;
+  string combo = 80;
+}
+
+message PlayerMoney {
+  // money player has in the bank, excluding what they're currently playing with
+  int64 bank = 10;
+
+  // money in the stack the player is playing with at their table
+  int64 stack = 20;
+
+  // total pot size so far in the hand
+  int64 pot = 30;
+
+  // current minimum bet this betting round
+  int64 minBetThisRound = 40;
+
+  // money bet by the player in the betting round so far
+  int64 betThisRound = 50;
+
+  // total money bet by the player in the hand so far
+  int64 betThisHand = 60;
+
+  // total money won by this player in the hand
+  int64 winnings = 70;
 }
 
 // Cards

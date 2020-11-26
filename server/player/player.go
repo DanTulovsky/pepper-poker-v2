@@ -1,8 +1,10 @@
 package player
 
 import (
+	"github.com/DanTulovsky/deck"
 	"github.com/DanTulovsky/pepper-poker-v2/actions"
 	"github.com/DanTulovsky/pepper-poker-v2/id"
+	"github.com/DanTulovsky/pepper-poker-v2/poker"
 )
 
 // handInfo is info for each hand (one poker game)
@@ -12,6 +14,9 @@ type handInfo struct {
 
 	// Keep track if action is required
 	actionRequired bool
+
+	Cards []*deck.Card
+	Hand  *poker.Hand
 }
 
 // newHandInfo creates a new hand info
@@ -31,6 +36,8 @@ type Player struct {
 	// Keeps track of how many turns the player took, used to sync the client
 	CurrentTurn int64
 	HandInfo    *handInfo
+
+	Money *Money
 
 	CommChannel chan actions.GameData
 }
