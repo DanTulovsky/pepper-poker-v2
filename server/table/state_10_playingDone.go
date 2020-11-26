@@ -26,9 +26,6 @@ func (i *playingDoneState) Fold(p *player.Player) error {
 	return fmt.Errorf("hand is done")
 }
 
-func (i *playingDoneState) Init() {
-}
-
 func (i *playingDoneState) Tick() error {
 	i.l.Debugf("Tick(%v)", i.Name())
 

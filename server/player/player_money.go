@@ -21,6 +21,16 @@ func (pm *Money) Bank() int64 {
 	return pm.bank
 }
 
+// SetBank sets the bank
+func (pm *Money) SetBank(b int64) {
+	pm.bank = b
+}
+
+// SetStack sets the player's stack
+func (pm *Money) SetStack(s int64) {
+	pm.stack = s
+}
+
 // Stack returns the player's stack (or what's left of it)
 func (pm *Money) Stack() int64 {
 	return pm.stack

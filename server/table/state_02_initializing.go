@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/DanTulovsky/deck"
 	"github.com/DanTulovsky/pepper-poker-v2/acks"
+	"github.com/DanTulovsky/pepper-poker-v2/poker"
 	"github.com/DanTulovsky/pepper-poker-v2/server/player"
 )
 
@@ -14,7 +16,7 @@ type initializingState struct {
 	token *acks.Token
 }
 
-func (i *initializingState) Init() {
+func (i *initializingState) Init() error {
 	i.l.Info("Initializing table...")
 	i.table.button = i.table.playerAfter(i.table.button)
 	i.table.currentTurn = i.table.playerAfter(i.table.button)
@@ -26,6 +28,11 @@ func (i *initializingState) Init() {
 		p.InitHand()
 	}
 
+	// reset board, pot and deck
+	i.table.board = poker.NewBoard()
+	i.table.deck = deck.NewShuffledDeck()
+	i.table.pot = poker.NewPot()
+
 	// reset any existing acks
 	i.table.clearAckToken()
 
@@ -33,10 +40,8 @@ func (i *initializingState) Init() {
 	i.token = acks.New(i.table.ActivePlayers(), i.table.defaultAckTimeout)
 	i.token.StartTime()
 	i.table.setAckToken(i.token)
-}
 
-func (i *initializingState) StartGame() error {
-	return fmt.Errorf("game not ready to start yet")
+	return nil
 }
 
 func (i *initializingState) Tick() error {

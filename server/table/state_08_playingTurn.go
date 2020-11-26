@@ -4,7 +4,7 @@ type playingTurnState struct {
 	baseState
 }
 
-func (i *playingTurnState) Init() {
+func (i *playingTurnState) Init() error {
 	i.table.SetPlayersActionRequired()
 	i.l.Info("Dealing the turn...")
 
@@ -13,6 +13,8 @@ func (i *playingTurnState) Init() {
 
 	current := i.table.positions[i.table.currentTurn]
 	i.l.Infof("Player %s (%d) goes first", current.Name, i.table.currentTurn)
+
+	return nil
 }
 
 func (i *playingTurnState) Tick() error {

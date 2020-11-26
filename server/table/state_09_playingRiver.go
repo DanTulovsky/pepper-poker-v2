@@ -4,7 +4,7 @@ type playingRiverState struct {
 	baseState
 }
 
-func (i *playingRiverState) Init() {
+func (i *playingRiverState) Init() error {
 	i.table.SetPlayersActionRequired()
 	i.l.Info("Dealing the river...")
 
@@ -13,6 +13,8 @@ func (i *playingRiverState) Init() {
 
 	current := i.table.positions[i.table.currentTurn]
 	i.l.Infof("Player %s (%d) goes first", current.Name, i.table.currentTurn)
+
+	return nil
 }
 
 func (i *playingRiverState) Tick() error {

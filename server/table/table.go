@@ -58,6 +58,7 @@ type Table struct {
 	minBetThisRound      int64
 	pot                  *poker.Pot
 	board                *poker.Board
+	deck                 *deck.Deck
 
 	// how long to wait for player to make a move
 	playerTimeout time.Duration
@@ -80,8 +81,6 @@ func New(tableAction chan ActionRequest) *Table {
 		Name:        randomdata.SillyName(),
 		TableAction: tableAction,
 		l:           logger.New("table", color.New(color.FgYellow)),
-		pot:         poker.NewPot(),
-		board:       poker.NewBoard(),
 
 		maxPlayers: 7,
 		minPlayers: 2,
@@ -176,6 +175,14 @@ func (t *Table) setAckToken(tok *acks.Token) {
 func (t *Table) clearAckToken() {
 	t.currentAckToken = nil
 
+}
+
+// BuyIn buys into the table
+func (t *Table) BuyIn(p *player.Player, amount int64) {
+	stack := p.Money().Stack() + amount
+	bank := p.Money().Bank() - amount
+	p.Money().SetStack(stack)
+	p.Money().SetBank(bank)
 }
 
 // processManagerActions checks the channel from the manager for any player actions
@@ -336,7 +343,7 @@ func (t *Table) confPlayerProto(p *player.Player) *ppb.Player {
 
 	pl.Money.MinBetThisRound = t.minBetThisRound
 	pl.Money.Pot = t.pot.GetTotal()
-	pl.Card = deck.CardsToProto(p.Hole)
+	pl.Card = deck.CardsToProto(p.Hole())
 	return pl
 }
 

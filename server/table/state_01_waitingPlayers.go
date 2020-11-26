@@ -19,7 +19,7 @@ type waitingPlayersState struct {
 	lastPlayerAddedTime time.Time
 }
 
-func (i *waitingPlayersState) StartGame() error {
+func (i *waitingPlayersState) Init() error {
 	return fmt.Errorf("game [%v] waiting for players", i.table.ID)
 }
 

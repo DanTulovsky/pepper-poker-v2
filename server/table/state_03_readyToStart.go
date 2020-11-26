@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/DanTulovsky/pepper-poker-v2/server/player"
+	"github.com/dustin/go-humanize"
 )
 
 type readyToStartState struct {
@@ -12,47 +13,34 @@ type readyToStartState struct {
 	playerTimeout time.Duration
 }
 
-func (i *readyToStartState) StartGame() error {
+func (i *readyToStartState) Init() error {
 	i.l.Info("Starting new game with players...")
 
+	i.l.Info("Players buying in...")
+	for _, p := range i.table.ActivePlayers() {
+		// TODO: Assume the player buys in with all the money they have for now
+		i.table.BuyIn(p, p.Money().Bank())
+
+		i.l.Infof("  [%v ($%v)]: %v", p.Name, humanize.Comma(p.Money().Stack()), p.Hole())
+	}
+
 	i.l.Info("Dealings cards to players...")
-	// i.table.button = i.table.PlayerAfter(i.table.button)
+	for j := 0; j < 2; j++ {
+		for _, p := range i.table.ActivePlayers() {
+			card, err := i.table.deck.Next()
+			if err != nil {
+				return err
+			}
 
-	// activePlayers := []*poker.PlayerInfo{}
-
-	// for _, p := range i.table.AvailablePlayers() {
-	// 	// Assume the player buys in with all the money they have for now
-	// 	i.table.BuyIn(p, p.bank)
-	// 	pi := poker.NewPlayerInfo(p.ID(), p.Name(), p.Stack())
-
-	// 	p.stack = 0 // delegate the stack to the round
-	// 	activePlayers = append(activePlayers, pi)
-	// }
-
-	// for _, p := range activePlayers {
-	// 	i.l.Infof("  [%v ($%v)]: %v", p.Name(), humanize.Comma(p.Stack()), p.Hole())
-	// }
-	// var err error
-	// i.table.round, err = poker.NewRound(i.table.id, activePlayers, i.table.smallBlind, i.table.bigBlind, i.delay, i.playerTimeout)
-	// if err != nil {
-	// 	return err
-	// }
-	// i.l.Infof("Started new round: %v", i.table.Round().ID())
+			p.AddHoleCard(card)
+		}
+	}
 
 	return nil
 }
 
 func (i *readyToStartState) Tick() error {
 	i.l.Debugf("Tick(%v)", i.Name())
-
-	if err := i.StartGame(); err != nil {
-		return err
-	}
-
-	// i.l.Infof("Table [%v] starting round... (players: %d)", i.table.id, len(i.table.Round().Players()))
-	// for _, p := range i.table.Round().Players() {
-	// 	i.l.Infof("  %v", p)
-	// }
 
 	i.table.setState(i.table.playingSmallBlindState)
 	return nil

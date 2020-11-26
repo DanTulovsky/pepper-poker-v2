@@ -17,8 +17,8 @@ type handInfo struct {
 	// Keep track if action is required
 	actionRequired bool
 
-	Cards []*deck.Card
-	Hand  *poker.Hand
+	Hole []*deck.Card
+	Hand *poker.Hand
 }
 
 // newHandInfo creates a new hand info
@@ -40,8 +40,7 @@ type Player struct {
 	HandInfo      *handInfo
 	TablePosition int
 
-	Money *Money
-	Hole  []*deck.Card
+	money *Money
 
 	CommChannel chan actions.GameData
 }
@@ -51,7 +50,7 @@ func New(name string, bank int64) *Player {
 	return &Player{
 		ID:    id.NewPlayerID(),
 		Name:  name,
-		Money: NewMoney(bank),
+		money: NewMoney(bank),
 	}
 }
 
@@ -62,8 +61,23 @@ func (p *Player) AsProto() *ppb.Player {
 		Name:     p.Name,
 		Id:       p.ID.String(),
 		Position: int64(p.TablePosition),
-		Money:    p.Money.AsProto(),
+		Money:    p.money.AsProto(),
 	}
+}
+
+// Money returns the player's money
+func (p *Player) Money() *Money {
+	return p.money
+}
+
+// AddHoleCard deals adds a card to the player's hole
+func (p *Player) AddHoleCard(c *deck.Card) {
+	p.HandInfo.Hole = append(p.HandInfo.Hole, c)
+}
+
+// Hole returns the player's hole
+func (p *Player) Hole() []*deck.Card {
+	return p.HandInfo.Hole
 }
 
 // InitHand initializes the player to play a single hand (one poker game)

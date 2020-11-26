@@ -4,7 +4,7 @@ type playingFlopState struct {
 	baseState
 }
 
-func (i *playingFlopState) Init() {
+func (i *playingFlopState) Init() error {
 	i.table.SetPlayersActionRequired()
 	i.l.Info("Dealing the flop...")
 
@@ -13,6 +13,8 @@ func (i *playingFlopState) Init() {
 
 	current := i.table.positions[i.table.currentTurn]
 	i.l.Infof("Player %s (%d) goes first", current.Name, i.table.currentTurn)
+
+	return nil
 }
 
 func (i *playingFlopState) Tick() error {

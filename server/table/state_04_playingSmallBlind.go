@@ -10,6 +10,14 @@ type playingSmallBlindState struct {
 	baseState
 }
 
+func (i *playingSmallBlindState) Init() error {
+	smallBlind := i.table.positions[i.table.currentTurn]
+	i.l.Infof("[%v] putting in small blind...", smallBlind.Name)
+
+	i.table.advancePlayer()
+	return nil
+}
+
 func (i *playingSmallBlindState) Bet(p *player.Player, bet int64) error {
 	return fmt.Errorf("only small blind bets")
 }
@@ -24,13 +32,6 @@ func (i *playingSmallBlindState) Check(p *player.Player) error {
 
 func (i *playingSmallBlindState) Fold(p *player.Player) error {
 	return fmt.Errorf("cannot fold during this round")
-}
-
-func (i *playingSmallBlindState) Init() {
-	smallBlind := i.table.positions[i.table.currentTurn]
-	i.l.Infof("[%v] putting in small blind...", smallBlind.Name)
-
-	i.table.advancePlayer()
 }
 
 func (i *playingSmallBlindState) Tick() error {

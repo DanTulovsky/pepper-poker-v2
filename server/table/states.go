@@ -20,10 +20,9 @@ type state interface {
 	Call(p *player.Player) error
 	Fold(*player.Player) error
 
-	Init()
+	Init() error
 	Name() ppb.GameState
 	Reset()
-	StartGame() error
 	Tick() error
 	WaitingTurnPlayer() *player.Player
 }
@@ -49,14 +48,8 @@ func newBaseState(name ppb.GameState, table *Table) baseState {
 }
 
 // Init runs once when the stats starts
-func (i *baseState) Init() {
-
-}
-
-// StartGame starts the game
-func (i *baseState) StartGame() error {
-	return fmt.Errorf("unable to start game right now")
-
+func (i *baseState) Init() error {
+	return nil
 }
 
 // Name returns the name

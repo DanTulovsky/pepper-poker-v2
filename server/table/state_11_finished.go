@@ -16,6 +16,19 @@ type finishedState struct {
 	token *acks.Token
 }
 
+func (i *finishedState) Init() error {
+
+	// reset any existing acks
+	i.table.clearAckToken()
+
+	// Used to get an ack before game ends
+	i.token = acks.New(i.table.ActivePlayers(), i.table.defaultAckTimeout)
+	i.token.StartTime()
+	i.table.setAckToken(i.token)
+
+	return nil
+}
+
 func (i *finishedState) Bet(p *player.Player, bet int64) error {
 	return fmt.Errorf("hand is done")
 }
@@ -30,18 +43,6 @@ func (i *finishedState) Check(p *player.Player) error {
 
 func (i *finishedState) Fold(p *player.Player) error {
 	return fmt.Errorf("hand is done")
-}
-
-func (i *finishedState) Init() {
-
-	// reset any existing acks
-	i.table.clearAckToken()
-
-	// Used to get an ack before game ends
-	i.token = acks.New(i.table.ActivePlayers(), i.table.defaultAckTimeout)
-	i.token.StartTime()
-	i.table.setAckToken(i.token)
-
 }
 
 func (i *finishedState) StartGame() error {
