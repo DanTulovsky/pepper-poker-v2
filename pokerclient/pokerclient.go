@@ -146,13 +146,6 @@ func New(ctx context.Context, name string, insecure bool, actions chan *actions.
 	return pc, nil
 }
 
-// Reset resets the client for the next hand
-func (pc *PokerClient) Reset() {
-	pc.l.Info("Resetting PokerClient for next game...")
-
-	pc.lastAckedToken = ""
-}
-
 // Play is called after joining table to begin streaming GameData
 func (pc *PokerClient) Play(ctx context.Context, donec chan bool, errc chan error) {
 	pc.l.Info("Starting GameData streamer..")

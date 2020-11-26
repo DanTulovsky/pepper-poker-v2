@@ -26,7 +26,9 @@ type Manager struct {
 	l                  *logger.Logger
 	fromGrpcServerChan chan actions.PlayerAction
 
-	tables  map[id.TableID]*table.Table
+	tables map[id.TableID]*table.Table
+	// Todo: Consider either adding locks on *Player or just uding IDs here
+	// The Table accesses and calls methods on Player
 	players map[id.PlayerID]*player.Player
 }
 

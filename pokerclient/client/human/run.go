@@ -1,208 +1,187 @@
+// package main ...
+// A very simple robot that folds every time
 package main
 
 import (
 	"context"
 	"flag"
 	"fmt"
-	"io"
 	"math/rand"
 	"os"
+	"os/signal"
+	"strconv"
+	"syscall"
 	"time"
 
 	"github.com/Pallinder/go-randomdata"
-
 	"github.com/fatih/color"
-	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
-	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
-	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
-	"google.golang.org/grpc"
+	"github.com/tcnksm/go-input"
 
 	"github.com/DanTulovsky/logger"
 	"github.com/DanTulovsky/pepper-poker-v2/id"
+	"github.com/DanTulovsky/pepper-poker-v2/pokerclient/actions"
+	"github.com/DanTulovsky/pepper-poker-v2/pokerclient/roboclient"
+
 	ppb "github.com/DanTulovsky/pepper-poker-v2/proto"
 )
 
 var (
-	grpcCrt    = flag.String("grpc_crt", "../../cert/server.crt", "file containg certificate")
-	httpPort   = flag.String("http_port", "", "port to listen on, random if empty")
-	serverAddr = flag.String("server_address", "localhost:8082", "tls server address and port")
+	name     = flag.String("name", fmt.Sprintf("[robot_folder]-%v", randomdata.SillyName()), "player name")
+	insecure = flag.Bool("insecure", false, "if true, use insecure connection to server")
+	logg     *logger.Logger
 
-	name = flag.String("name", randomdata.SillyName(), "player name")
+	ui *input.UI = &input.UI{
+		Writer: os.Stdout,
+		Reader: os.Stdin,
+	}
+)
 
-	playerID  id.PlayerID
-	tableID   id.TableID
-	gameState ppb.GameState
+const (
+	game    string = "Pepper-Poker"
+	version string = "0.1-pre-alpha"
 )
 
 func main() {
 
 	rand.Seed(time.Now().UnixNano())
+
 	flag.Parse()
-	logg := logger.New(fmt.Sprintf("client [%v]", *name), color.New(color.FgBlue))
+	logg = logger.New("main", color.New(color.FgCyan))
 
 	logg.Info("Starting client...")
 
 	ctx := context.Background()
-	opts := []grpc.DialOption{
-		grpc.WithInsecure(),
-		grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
-			grpc_opentracing.StreamClientInterceptor(),
-			grpc_prometheus.StreamClientInterceptor,
-		)),
-		grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
-			grpc_opentracing.UnaryClientInterceptor(),
-			grpc_prometheus.UnaryClientInterceptor,
-		)),
-	}
+	cc := roboclient.NewCommChannels()
 
-	var conn *grpc.ClientConn
-	var err error
-	if conn, err = grpc.Dial(*serverAddr, opts...); err != nil {
-		logg.Fatal(err)
-	}
-	client := ppb.NewPokerServerClient(conn)
-
-	ctxCancel, cancel := context.WithCancel(ctx)
-
-	// register
-	logg.Info("Registering...")
-	req := &ppb.RegisterRequest{
-		ClientInfo: &ppb.ClientInfo{
-			PlayerName: *name,
-		},
-		PlayerAction: ppb.PlayerAction_PlayerActionRegister,
-	}
-	var res *ppb.RegisterResponse
-	if res, err = client.Register(ctx, req); err != nil {
-		logg.Fatal(err)
-	}
-	playerID = id.PlayerID(res.GetPlayerID())
-	logg.Debugf("playerID: %v", playerID)
-
-	// join table
-	logg.Info("Joining table...")
-	reqJT := &ppb.JoinTableRequest{
-		ClientInfo: &ppb.ClientInfo{
-			PlayerName: *name,
-			PlayerID:   playerID.String(),
-			TableID:    tableID.String(),
-		},
-		PlayerAction: ppb.PlayerAction_PlayerActionJoinTable,
-	}
-
-	var resJT *ppb.JoinTableResponse
-	if resJT, err = client.JoinTable(ctx, reqJT); err != nil {
-		logg.Fatal(err)
-	}
-	tableID = id.TableID(resJT.GetTableID())
-	logg.Debugf("tableID: %v", tableID)
-
-	// Subscribe to GameData from the server after joing table
-	reqPlay := &ppb.PlayRequest{
-		ClientInfo: &ppb.ClientInfo{
-			PlayerName: *name,
-			PlayerID:   playerID.String(),
-			TableID:    tableID.String(),
-		},
-		PlayerAction: ppb.PlayerAction_PlayerActionRegister,
-	}
-	stream, err := client.Play(ctxCancel, reqPlay)
+	r, err := roboclient.NewRoboClient(ctx, *name, decideOnAction, cc, *insecure)
 	if err != nil {
 		logg.Fatal(err)
 	}
 
-	var lastAckedToken string
+	if err := r.JoinGame(ctx); err != nil {
+		logg.Fatal(err)
+	}
 
-	// send server response on this channel to process in the main thread
-	datac := make(chan *ppb.GameData)
-	// receive server messages
-	go func() {
-		for {
-			logg.Debug("waiting for server data...")
-			in, err := stream.Recv()
-			logg.Debug("received server data...")
-			if err == io.EOF {
-				logg.Debugf("EOF received from server, exiting GameData thread")
-				return
-			}
-			if err != nil {
-				cancel()
-				logg.Fatal("error receiving from server")
-			}
-			// send the server message to main thread for processing
-			logg.Debug("sending server data to main thread...")
-			datac <- in
-		}
-	}()
-
-	// Receive GameData on datac channel and act on it
+	// Play
 	for {
-		logg.Debug("Waiting for GameData...")
-		// process server messages if any (on datac channel)
-		select {
-		case in := <-datac:
-			logg.Debug("received game data in main thread")
+		query := "What to do?"
+		action, err := ui.Select(query, []string{"play", "quit"}, &input.Options{
+			Default:  "play",
+			Loop:     true,
+			Required: true,
+		})
+		if err != nil {
+			logg.Fatal(err)
+		}
 
-			if playerID != id.PlayerID(in.PlayerID) {
-				logg.Fatal("Mismatch in playerID; expected: %v; got: %v", playerID, id.PlayerID(in.PlayerID))
-			}
-			if tableID != id.TableID(in.GetInfo().GetTableID()) {
-				logg.Fatalf("Mismatch in tableID; expected: %v; got: %v", tableID, id.TableID(in.GetInfo().GetTableID()))
-			}
+		switch action {
+		case "quit":
+			os.Exit(0)
+		default:
+			// Now play game until quit
+			logg.Info("Playing a game...")
+			donec := make(chan bool)
+			SetupCloseHandler(donec)
 
-			waitID := id.PlayerID(in.WaitTurnID)
-			gameState = in.GetInfo().GetGameState()
-			ackToken := in.GetInfo().GetAckToken()
-
-			logg.Infof("Current Turn playerID: %v", in.WaitTurnID)
-			logg.Infof("Current State: %v", gameState)
-
-			if gameState == ppb.GameState_GameStateFinished {
-				logg.Info("Game Finished!")
-				conn.Close()
-				time.Sleep(time.Second * 2)
-				os.Exit(0)
-			}
-
-			if ackToken != lastAckedToken && ackToken != "" {
-				logg.Infof("Acking [%v]", ackToken)
-
-				req := &ppb.AckTokenRequest{
-					ClientInfo: &ppb.ClientInfo{
-						PlayerName: *name,
-						PlayerID:   playerID.String(),
-						TableID:    tableID.String(),
-					},
-					Token: ackToken,
-				}
-
-				_, err := client.AckToken(ctx, req)
-				if err != nil {
-					logg.Fatal(err)
-				} else {
-					logg.Infof("Acked [%v]", ackToken)
-					lastAckedToken = ackToken
-				}
-			}
-
-			if playerID == waitID {
-				action := ppb.PlayerAction_PlayerActionCheck
-				logg.Infof("Taking Turn: %v", action)
-
-				req := &ppb.TakeTurnRequest{
-					ClientInfo: &ppb.ClientInfo{
-						PlayerName: *name,
-						PlayerID:   playerID.String(),
-						TableID:    tableID.String(),
-					},
-					PlayerAction: action,
-				}
-				_, err := client.TakeTurn(ctx, req)
-				if err != nil {
-					logg.Error(err)
-				}
-				time.Sleep(time.Second * 1)
+			if err := r.PlayGame(ctx, cc, donec); err != nil {
+				logg.Error(err)
 			}
 		}
 	}
+
+}
+
+// decideOnAction decides what to do based on tableInfo state
+func decideOnAction(data *ppb.GameData) (*actions.PlayerAction, error) {
+	query := "Select action..."
+
+	action, err := ui.Select(query, []string{
+		ppb.PlayerAction_PlayerActionFold.String(),
+		ppb.PlayerAction_PlayerActionCheck.String(),
+		ppb.PlayerAction_PlayerActionCall.String(),
+		ppb.PlayerAction_PlayerActionAllIn.String(),
+		ppb.PlayerAction_PlayerActionBet.String()}, &input.Options{
+		Default:  ppb.PlayerAction_PlayerActionCheck.String(),
+		Loop:     true,
+		Required: true,
+	})
+	if err != nil {
+		return nil, err
+	}
+	logg.Infof("selected: %v", action)
+
+	paction := ppb.PlayerAction(ppb.PlayerAction_value[action])
+	opts := &ppb.ActionOpts{}
+
+	switch paction {
+	case ppb.PlayerAction_PlayerActionBet:
+		amount, err := betAmount(data)
+		if err != nil {
+			return nil, err
+		}
+		opts.BetAmount = amount
+	default:
+	}
+
+	// First three fields are not used and are set automatically by the client
+	playerAction := actions.NewPlayerAction(id.EmptyPlayerID, id.EmptyTableID, paction, opts, nil)
+
+	return playerAction, err
+}
+
+// betAmount asks the user for and returns the amoount to bet
+func betAmount(data *ppb.GameData) (int64, error) {
+	query := "Select amount to bet"
+	q, err := ui.Select(query, []string{"Big Blind", "3X Big Blind", "Custom"}, &input.Options{
+		Default:  "3X Big Blind",
+		Loop:     true,
+		Required: true,
+	})
+	if err != nil {
+		return 0, err
+	}
+	logg.Infof("selected: %v", q)
+
+	switch q {
+	case "Big Blind":
+		return data.GetBigBlind(), nil
+	case "3X Big Blind":
+		return data.GetBigBlind() * 3, nil
+	default:
+		// fall through
+	}
+
+	query = "How much to bet?"
+	amountS, err := ui.Ask(query, &input.Options{
+		Default:      "1",
+		Loop:         true,
+		Required:     true,
+		ValidateFunc: validateAmount,
+	})
+	if err != nil {
+		return 0, err
+	}
+	// ignore error since we validate above
+	amount, err := strconv.ParseInt(amountS, 10, 64)
+	return amount, err
+}
+
+// validateAmount is used by ui.Ask. Validates that the amount entered is a valid number.
+func validateAmount(s string) error {
+	_, err := strconv.Atoi(s)
+	return err
+}
+
+// SetupCloseHandler creates a 'listener' on a new goroutine which will notify the
+// program if it receives an interrupt from the OS. We then handle this by calling
+// our clean up procedure and exiting the program.
+func SetupCloseHandler(donec chan bool) {
+	c := make(chan os.Signal)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c
+		fmt.Println("\r- Ctrl+C pressed in Terminal")
+		donec <- true
+		// os.Exit(0)
+	}()
 }

@@ -17,7 +17,7 @@ import (
 )
 
 // DeciderFunc is the function that decides what to do
-type DeciderFunc func(pc *pokerclient.PokerClient) (*actions.PlayerAction, error)
+type DeciderFunc func(data *ppb.GameData) (*actions.PlayerAction, error)
 
 // RoboClient is a robot playing poker
 type RoboClient struct {
@@ -117,7 +117,7 @@ func (r *RoboClient) takeTurn(paction chan *actions.PlayerAction, presult chan *
 
 	for playerAction == nil {
 		// action is sent over paction
-		playerAction, err = r.DeciderFunc(r.PokerClient)
+		playerAction, err = r.DeciderFunc(r.gameData)
 		if err != nil {
 			r.l.Error(err)
 		}

@@ -17,7 +17,6 @@ import (
 
 	"github.com/DanTulovsky/logger"
 	"github.com/DanTulovsky/pepper-poker-v2/id"
-	"github.com/DanTulovsky/pepper-poker-v2/pokerclient"
 	"github.com/DanTulovsky/pepper-poker-v2/pokerclient/actions"
 	"github.com/DanTulovsky/pepper-poker-v2/pokerclient/roboclient"
 
@@ -68,7 +67,7 @@ func main() {
 }
 
 // decideOnAction decides what to do based on tableInfo state
-func decideOnAction(pc *pokerclient.PokerClient) (*actions.PlayerAction, error) {
+func decideOnAction(data *ppb.GameData) (*actions.PlayerAction, error) {
 	paction := ppb.PlayerAction_PlayerActionFold
 
 	// First three fields are not used and are set automatically by the client
