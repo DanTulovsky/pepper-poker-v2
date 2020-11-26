@@ -5,6 +5,8 @@ import (
 	"github.com/DanTulovsky/pepper-poker-v2/actions"
 	"github.com/DanTulovsky/pepper-poker-v2/id"
 	"github.com/DanTulovsky/pepper-poker-v2/poker"
+
+	ppb "github.com/DanTulovsky/pepper-poker-v2/proto"
 )
 
 // handInfo is info for each hand (one poker game)
@@ -34,8 +36,9 @@ type Player struct {
 	Name string
 
 	// Keeps track of how many turns the player took, used to sync the client
-	CurrentTurn int64
-	HandInfo    *handInfo
+	CurrentTurn   int64
+	HandInfo      *handInfo
+	TablePosition int
 
 	Money *Money
 
@@ -43,10 +46,22 @@ type Player struct {
 }
 
 // New creates a new player
-func New(name string) *Player {
+func New(name string, bank int64) *Player {
 	return &Player{
-		ID:   id.NewPlayerID(),
-		Name: name,
+		ID:    id.NewPlayerID(),
+		Name:  name,
+		Money: NewMoney(bank),
+	}
+}
+
+// AsProto returns the player as an proto
+// No confidential information is returned here
+func (p *Player) AsProto() *ppb.Player {
+	return &ppb.Player{
+		Name:     p.Name,
+		Id:       p.ID.String(),
+		Position: int64(p.TablePosition),
+		Money:    p.Money.AsProto(),
 	}
 }
 

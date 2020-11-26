@@ -11,9 +11,11 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/common-nighthawk/go-figure"
+	"github.com/dustin/go-humanize"
 	"github.com/fatih/color"
 	"github.com/phayes/freeport"
 	"github.com/tcnksm/go-input"
@@ -283,7 +285,7 @@ func (pc *PokerClient) TakeTurn(ctx context.Context, in *ppb.GameData) error {
 	pc.l.Debug("Trying to take my turn...")
 
 	// Show most up to date status from the server
-	// pc.showGameState()
+	pc.showGameState(in)
 
 	// pc.showCards(append(pc.myCards(), deck.CardsFromProto(pc.TurnLog.CommunityCards().Card)...), true)
 
@@ -582,77 +584,54 @@ func (pc *PokerClient) JoinTable(ctx context.Context, wantTableID id.TableID) er
 	return nil
 }
 
-// func (pc *PokerClient) showGameState() {
-// 	fmt.Println(pc.getGameState())
-// }
+func (pc *PokerClient) showGameState(in *ppb.GameData) {
+	fmt.Println(pc.getGameState(in))
+}
 
-// MyMoney returns the money for the current player
-// func (pc *PokerClient) MyMoney() *ppb.PlayerMoney {
+func (pc *PokerClient) getGameState(in *ppb.GameData) string {
 
-// 	for _, p := range pc.TurnLog.Players() {
-// 		if p.Id == pc.PlayerID {
-// 			return p.GetMoney()
-// 		}
-// 	}
+	mycards := in.GetPlayer().GetCard()
+	mymoney := in.GetPlayer().GetMoney()
+	gameState := in.GetInfo().GetGameState()
+	gameStartsIn := in.GetInfo().GetGameStartsInSec()
 
-// 	return nil
-// }
+	var state strings.Builder
 
-// func (pc *PokerClient) getGameState() string {
+	state.WriteString(fmt.Sprintln("================================================================="))
+	state.WriteString(fmt.Sprintf("%v (pos: %v) %v\n", color.GreenString("My Player:"), pc.position, pc.Name))
+	state.WriteString(fmt.Sprintf("%v %v\n", color.YellowString("Table State:"), in.GetInfo().GetGameState()))
 
-// mycards := pc.myCards()
-// mymoney := pc.MyMoney()
+	startsIn := time.Duration(time.Second * time.Duration(gameStartsIn*1000000))
+	if startsIn > 0 {
+		state.WriteString(fmt.Sprintf("%v %v\n", color.YellowString("Game Starts In:"), startsIn.Truncate(time.Second)))
+	}
 
-// var turnID int64 = -1
-// var roundStatus = ppb.RoundStatus_RoundStatusInitializing
-// var roundID string
+	if gameState >= ppb.GameState_GameStatePlayingSmallBlind {
+		state.WriteString(fmt.Sprintf("%v %v\n", color.RedString("Board:"), pc.protoToCards(in.GetInfo().GetCommunityCards().GetCard())))
+		state.WriteString(fmt.Sprintf("%v %v\n", color.RedString("Player Cards:"), mycards))
 
-// if len(pc.TurnLog.Current().GetTurns()) > 0 {
-// 	turnID = pc.TurnLog.TurnID()
-// 	roundStatus = pc.TurnLog.CurrentStatus()
-// 	roundID = pc.TurnLog.LastRoundInfo().RoundID
-// }
+		if mymoney != nil {
+			state.WriteString(fmt.Sprintf("%v $%v\n", color.CyanString("Total Stack:"), humanize.Comma(mymoney.GetStack())))
+			state.WriteString(fmt.Sprintf("%v $%v\n", color.CyanString("Total Bet this Hand:"), humanize.Comma(mymoney.GetBetThisHand())))
+			state.WriteString(fmt.Sprintf("%v $%v\n", color.CyanString("Current Bet:"), humanize.Comma(mymoney.GetBetThisRound())))
+			state.WriteString(fmt.Sprintf("%v $%v\n", color.CyanString("Min Bet Right Now:"), humanize.Comma(mymoney.GetMinBetThisRound())))
+			state.WriteString(fmt.Sprintf("%v $%v\n", color.CyanString("Pot Right Now:"), humanize.Comma(mymoney.GetPot())))
+		}
+		color.Unset()
+	}
 
-// var state strings.Builder
+	state.WriteString(fmt.Sprintln(color.GreenString("All Players:")))
+	for _, p := range in.GetInfo().GetPlayers() {
+		var me string
+		if p.GetId() == pc.PlayerID.String() {
+			me = color.HiGreenString("(me) ")
+		}
+		state.WriteString(fmt.Sprintf("  %v%v\n", me, p.GetName()))
+	}
+	state.WriteString(fmt.Sprintln("================================================================="))
 
-// state.WriteString(fmt.Sprintln("================================================================="))
-// state.WriteString(fmt.Sprintf("%v (pos: %v) %v\n", color.GreenString("My Player:"), pc.position, pc.Name))
-// state.WriteString(fmt.Sprintf("%v %v (myTurnID: %v)\n", color.GreenString("TurnID:"), turnID, pc.lastTurnTaken))
-// state.WriteString(fmt.Sprintf("%v %v\n", color.YellowString("Table State:"), pc.TableInfo.CurrentStatus().String()))
-
-// if pc.TableInfo.GameStartsIn() > 0 {
-// 	state.WriteString(fmt.Sprintf("%v %v\n", color.YellowString("Game Starts In:"), pc.TableInfo.GameStartsIn().String()))
-// }
-// state.WriteString(fmt.Sprintf("%v %v\n", color.YellowString("Round State:"), roundStatus))
-// state.WriteString(fmt.Sprintf("%v %v\n", color.YellowString("Round ID (local):"), pc.RoundID))
-// state.WriteString(fmt.Sprintf("%v %v\n", color.YellowString("Round ID (remote):"), roundID))
-
-// if pc.TableInfo.CurrentStatus() >= ppb.TableStatus_TableStatusGamePlaying {
-// 	state.WriteString(fmt.Sprintf("%v %v\n", color.RedString("Board:"), pc.protoToCards(pc.TurnLog.CommunityCards().GetCard())))
-// 	state.WriteString(fmt.Sprintf("%v %v\n", color.RedString("Player Cards:"), mycards))
-
-// 	if mymoney != nil {
-// 		state.WriteString(fmt.Sprintf("%v $%v\n", color.CyanString("Total Stack:"), humanize.Comma(mymoney.GetStack())))
-// 		state.WriteString(fmt.Sprintf("%v $%v\n", color.CyanString("Total Bet this Hand:"), humanize.Comma(mymoney.GetBetThisHand())))
-// 		state.WriteString(fmt.Sprintf("%v $%v\n", color.CyanString("Current Bet:"), humanize.Comma(mymoney.GetBetThisRound())))
-// 		state.WriteString(fmt.Sprintf("%v $%v\n", color.CyanString("Min Bet Right Now:"), humanize.Comma(mymoney.GetMinBetThisRound())))
-// 		state.WriteString(fmt.Sprintf("%v $%v\n", color.CyanString("Pot Right Now:"), humanize.Comma(mymoney.GetPot())))
-// 	}
-// 	color.Unset()
-// }
-
-// state.WriteString(fmt.Sprintln(color.GreenString("All Players:")))
-// for _, p := range pc.TurnLog.Players() {
-// 	var me string
-// 	if p.GetName() == pc.Name {
-// 		me = color.HiGreenString("(me) ")
-// 	}
-// 	state.WriteString(fmt.Sprintf("  %v%v: %v\n", me, p.GetName(), p.GetState()))
-// }
-// state.WriteString(fmt.Sprintln("================================================================="))
-
-// return state.String()
-// }
+	return state.String()
+}
 
 // func (pc *PokerClient) myCards() []*deck.Card {
 // 	return deck.CardsFromProto(pc.TurnLog.PlayerHole())

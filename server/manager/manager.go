@@ -30,6 +30,8 @@ type Manager struct {
 	// Todo: Consider either adding locks on *Player or just uding IDs here
 	// The Table accesses and calls methods on Player
 	players map[id.PlayerID]*player.Player
+
+	defaultPlayerBank int64
 }
 
 // New returns a new manager
@@ -42,6 +44,7 @@ func New() *Manager {
 		fromGrpcServerChan: fromServerChan,
 		tables:             make(map[id.TableID]*table.Table),
 		players:            make(map[id.PlayerID]*player.Player),
+		defaultPlayerBank:  10000,
 	}
 }
 
@@ -400,7 +403,7 @@ func (m *Manager) addPlayer(in actions.PlayerAction) (*player.Player, error) {
 	}
 
 	m.l.Infof("[%v] Adding player to manager...", playerName)
-	p := player.New(playerName)
+	p := player.New(playerName, m.defaultPlayerBank)
 	m.players[p.ID] = p
 	return p, nil
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/DanTulovsky/pepper-poker-v2/acks"
 	"github.com/DanTulovsky/pepper-poker-v2/actions"
 	"github.com/DanTulovsky/pepper-poker-v2/id"
+	"github.com/DanTulovsky/pepper-poker-v2/poker"
 	"github.com/DanTulovsky/pepper-poker-v2/server/player"
 	"github.com/Pallinder/go-randomdata"
 	"github.com/fatih/color"
@@ -54,6 +55,7 @@ type Table struct {
 	button               int
 	bigBlind, smallblind int64
 	minBetThisRound      int64
+	pot                  *poker.Pot
 
 	// how long to wait for player to make a move
 	playerTimeout time.Duration
@@ -76,6 +78,7 @@ func New(tableAction chan ActionRequest) *Table {
 		Name:        randomdata.SillyName(),
 		TableAction: tableAction,
 		l:           logger.New("table", color.New(color.FgYellow)),
+		pot:         poker.NewPot(),
 
 		maxPlayers: 7,
 		minPlayers: 2,
@@ -281,14 +284,27 @@ func (t *Table) infoproto() *ppb.GameInfo {
 		TableName: i.Name,
 		TableID:   t.ID.String(),
 
-		GameState: t.State.Name(),
+		GameState:       t.State.Name(),
+		GameStartsInSec: int64(t.gameStartsInTime.Seconds()),
 
 		MaxPlayers: int64(i.MaxPlayers),
 		MinPlayers: int64(i.MinPlayers),
+		BigBlind:   t.bigBlind,
 	}
 
 	if t.currentAckToken != nil {
 		gi.AckToken = t.currentAckToken.String()
+	}
+
+	players := []*ppb.Player{}
+	for _, p := range t.ActivePlayers() {
+		players = append(players, p.AsProto())
+	}
+	gi.Players = players
+
+	for _, p := range gi.Players {
+		p.Money.MinBetThisRound = t.minBetThisRound
+		p.Money.Pot = t.pot.GetTotal()
 	}
 
 	return gi

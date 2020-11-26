@@ -112,14 +112,16 @@ message GameInfo {
   string tableName = 10;
   string tableID = 20;
   GameState gameState = 30;
-  string ackToken = 40;
+  int64 gameStartsInSec = 40;
+  string ackToken = 50;
+
+  CommunityCards CommunityCards = 60;
 
   int64 maxPlayers = 100;
   int64 minPlayers = 110;
-
   int64 bigBlind = 120;
 
-  repeated Player player = 130;
+  repeated Player players = 130;
 }
 
 // GameData is sent to the client, it tells the client when it's their turn and

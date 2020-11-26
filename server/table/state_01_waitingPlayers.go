@@ -70,6 +70,7 @@ func (i *waitingPlayersState) AddPlayer(p *player.Player) (pos int, err error) {
 	if !i.table.playerAtTable(p) {
 		i.l.Infof("Addting player [%v] to table [%v]", p.Name, i.table.Name)
 		i.table.positions[i.table.nextAvailablePosition()] = p
+		p.TablePosition, err = i.table.PlayerPosition(p)
 		return i.table.PlayerPosition(p)
 	}
 
