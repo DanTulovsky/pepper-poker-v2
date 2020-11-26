@@ -41,6 +41,7 @@ type Player struct {
 	TablePosition int
 
 	Money *Money
+	Hole  []*deck.Card
 
 	CommChannel chan actions.GameData
 }

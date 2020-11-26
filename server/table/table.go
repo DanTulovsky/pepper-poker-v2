@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/DanTulovsky/deck"
 	"github.com/DanTulovsky/logger"
 	"github.com/DanTulovsky/pepper-poker-v2/acks"
 	"github.com/DanTulovsky/pepper-poker-v2/actions"
@@ -56,6 +57,7 @@ type Table struct {
 	bigBlind, smallblind int64
 	minBetThisRound      int64
 	pot                  *poker.Pot
+	board                *poker.Board
 
 	// how long to wait for player to make a move
 	playerTimeout time.Duration
@@ -79,6 +81,7 @@ func New(tableAction chan ActionRequest) *Table {
 		TableAction: tableAction,
 		l:           logger.New("table", color.New(color.FgYellow)),
 		pot:         poker.NewPot(),
+		board:       poker.NewBoard(),
 
 		maxPlayers: 7,
 		minPlayers: 2,
@@ -290,46 +293,70 @@ func (t *Table) infoproto() *ppb.GameInfo {
 		MaxPlayers: int64(i.MaxPlayers),
 		MinPlayers: int64(i.MinPlayers),
 		BigBlind:   t.bigBlind,
+
+		CommunityCards: t.board.AsProto(),
 	}
 
 	if t.currentAckToken != nil {
 		gi.AckToken = t.currentAckToken.String()
 	}
 
-	players := []*ppb.Player{}
-	for _, p := range t.ActivePlayers() {
-		players = append(players, p.AsProto())
-	}
-	gi.Players = players
-
-	for _, p := range gi.Players {
-		p.Money.MinBetThisRound = t.minBetThisRound
-		p.Money.Pot = t.pot.GetTotal()
-	}
+	gi.Players = t.playersProto()
 
 	// TODO: Add winners
-
-	// TODO: Add cards
 
 	return gi
 }
 
+// playersProto returns all active players as a proto
+// no confidential information is included
+func (t *Table) playersProto() []*ppb.Player {
+	players := []*ppb.Player{}
+	for _, p := range t.ActivePlayers() {
+		players = append(players, t.playerProto(p))
+	}
+
+	return players
+}
+
+// playerProto returns the player as a proto
+// no confidential information is included
+func (t *Table) playerProto(p *player.Player) *ppb.Player {
+	pl := p.AsProto()
+
+	pl.Money.MinBetThisRound = t.minBetThisRound
+	pl.Money.Pot = t.pot.GetTotal()
+
+	return pl
+}
+
+// confPlayerProto returns the player as a proto, including confidential info
+func (t *Table) confPlayerProto(p *player.Player) *ppb.Player {
+	pl := p.AsProto()
+
+	pl.Money.MinBetThisRound = t.minBetThisRound
+	pl.Money.Pot = t.pot.GetTotal()
+	pl.Card = deck.CardsToProto(p.Hole)
+	return pl
+}
+
 // infoProto returns the ppb.GameData proto filled in from t.info()
 func (t *Table) gameDataProto(p *player.Player) *ppb.GameData {
-
-	// p is the player the info is being sent to
-	current := t.State.WaitingTurnPlayer()
 
 	d := &ppb.GameData{
 		Info:     t.infoproto(),
 		PlayerID: p.ID.String(),
 	}
 
+	current := t.State.WaitingTurnPlayer()
 	if current != nil {
 		d.WaitTurnID = current.ID.String()
 		d.WaitTurnName = current.Name
 		d.WaitTurnNum = current.CurrentTurn
 	}
+
+	// p is the player the info is being sent to, add confidential info
+	d.Player = t.confPlayerProto(p)
 
 	return d
 }

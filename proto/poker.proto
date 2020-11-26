@@ -121,6 +121,7 @@ message GameInfo {
   int64 minPlayers = 110;
   int64 bigBlind = 120;
 
+  // All players, no confidential info
   repeated Player players = 130;
   repeated Player winners = 140;
 }
@@ -135,7 +136,8 @@ message GameData {
   int64 waitTurnNum = 35;   // the turn count of the player whose turn it is
   string playerID = 40;     // the ID of the calling player
 
-  Player player = 50; // the calling player, for convenience
+  // calling player, includes confidential info
+  Player player = 50;
 }
 
 message Player {
