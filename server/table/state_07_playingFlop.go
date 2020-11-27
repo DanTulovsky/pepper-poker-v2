@@ -1,5 +1,9 @@
 package table
 
+import (
+	"github.com/DanTulovsky/deck"
+)
+
 type playingFlopState struct {
 	baseState
 }
@@ -7,6 +11,21 @@ type playingFlopState struct {
 func (i *playingFlopState) Init() error {
 	i.table.SetPlayersActionRequired()
 	i.l.Info("Dealing the flop...")
+
+	i.l.Info("Dealing the Flop...")
+	// Burn one.
+	if _, err := i.table.deck.Next(); err != nil {
+		return err
+	}
+	// Deal the flop.
+	for j := 0; j < 3; j++ {
+		var c deck.Card
+		var err error
+		if c, err = i.table.deck.Next(); err != nil {
+			return err
+		}
+		i.table.board.AddCard(c)
+	}
 
 	// next available player after the button goes first
 	i.table.currentTurn = i.table.playerAfter(i.table.button)
@@ -31,42 +50,10 @@ func (i *playingFlopState) Tick() error {
 		return nil
 	}
 
-	// if !i.dealt {
-	// 	i.logger.Info("Dealing the Flop...")
-	// 	// Burn one.
-	// 	if _, err := i.round.deck.Next(); err != nil {
-	// 		return err
-	// 	}
-	// 	// Deal the flop.
-	// 	for j := 0; j < 3; j++ {
-	// 		var c deck.Card
-	// 		var err error
-	// 		if c, err = i.round.deck.Next(); err != nil {
-	// 			return err
-	// 		}
-	// 		i.round.board.cards = append(i.round.board.cards, c)
-	// 	}
-	// 	i.dealt = true
-
-	// 	i.round.LogSystemTurn(i.round.tableID, i.round.id, ppb.Action_ActionDealCard, &ppb.ActionOpts{
-	// 		Card: deck.CardsToProto(i.round.board.cards),
-	// 	})
-	// }
-
 	// if i.round.haveWinner() {
 	// 	i.round.currentTurn = -1
 	// 	i.round.setState(i.round.roundDone, true, false)
 	// 	return nil
-	// }
-
-	// // Move to next state once all players took their turn
-	// if i.round.canAdvanceState() {
-	// 	return i.round.advanceStateAndReset(i.round.roundTurn, true)
-	// }
-
-	// // Advance active player
-	// if !i.round.players[i.round.currentTurn].actionRequiredThisRound {
-	// 	i.round.advancePlayer()
 	// }
 
 	return nil

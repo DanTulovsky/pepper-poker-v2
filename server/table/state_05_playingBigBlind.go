@@ -13,7 +13,7 @@ type playingBigBlindState struct {
 func (i *playingBigBlindState) Init() error {
 	i.l.Infof("[%v] putting in big blind...", i.table.bigBlindPlayer.Name)
 
-	bet := i.table.smallBlind
+	bet := i.table.bigBlind
 	if i.table.bigBlindPlayer.Money().Stack() < bet {
 		bet = i.table.bigBlindPlayer.Money().Stack()
 	}

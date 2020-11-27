@@ -26,6 +26,11 @@ func (b *Board) Cards() []deck.Card {
 	return b.cards
 }
 
+// AddCard adds a card to the board
+func (b *Board) AddCard(c deck.Card) {
+	b.cards = append(b.cards, c)
+}
+
 // AsProto returns the board as a proto
 func (b *Board) AsProto() *ppb.CommunityCards {
 	return &ppb.CommunityCards{
