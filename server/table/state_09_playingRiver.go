@@ -16,14 +16,12 @@ func (i *playingRiverState) Init() error {
 		return err
 	}
 	// Deal the flop.
-	for j := 0; j < 3; j++ {
-		var c deck.Card
-		var err error
-		if c, err = i.table.deck.Next(); err != nil {
-			return err
-		}
-		i.table.board.AddCard(c)
+	var c deck.Card
+	var err error
+	if c, err = i.table.deck.Next(); err != nil {
+		return err
 	}
+	i.table.board.AddCard(c)
 
 	// next available player after the button goes first
 	i.table.currentTurn = i.table.playerAfter(i.table.button)

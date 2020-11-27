@@ -95,7 +95,6 @@ OUTER:
 			if err := r.takeTurn(cc.Paction, cc.Presult); err != nil {
 				r.l.Error(err)
 			}
-		default:
 		}
 	}
 

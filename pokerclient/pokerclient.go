@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"flag"
 	"fmt"
+	"image"
 	"io"
 	"io/ioutil"
 	"log"
@@ -40,6 +41,7 @@ var (
 	httpPort           = flag.String("http_port", "", "port to listen on, random if empty")
 	secureServerAddr   = flag.String("server_address", "localhost:8443", "tls server address and port")
 	insecureServerAddr = flag.String("insecure_server_address", "localhost:8082", "insecure server address and port")
+	showCardImages     = flag.Bool("show_card_images", false, "set to true to display card images in terminal")
 
 	ui *input.UI = &input.UI{
 		Writer: os.Stdout,
@@ -226,8 +228,6 @@ OUTER:
 			}
 
 			pc.ackIfNeeded(ctx, ackToken)
-
-		default:
 		}
 	}
 	return err
@@ -509,9 +509,21 @@ func (pc *PokerClient) PrintHandResults(in *ppb.GameData) error {
 
 func (pc *PokerClient) showCards(cards []deck.Card, divider bool) {
 
-	if img, err := deck.CardsImage(cards, divider); err == nil {
-		imgcat.CatImage(img, os.Stdout)
+	if !*showCardImages {
+		return
 	}
+
+	if len(cards) == 0 {
+		return
+	}
+
+	var img image.Image
+	var err error
+
+	if img, err = deck.CardsImage(cards, divider); err != nil {
+		log.Fatal(err)
+	}
+	imgcat.CatImage(img, os.Stdout)
 }
 
 // Register registers with the server
