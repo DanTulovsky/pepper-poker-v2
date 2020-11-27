@@ -822,15 +822,122 @@ func Test_haveTwoPair(t *testing.T) {
 			got := haveTwoPair(tt.cards)
 
 			if got == nil && tt.want != nil {
-				t.Fatalf("haveStraight(%v) returned nil; expected: %v", tt.cards, tt.want)
+				t.Fatalf("haveTwoPair(%v) returned nil; expected: %v", tt.cards, tt.want)
 			}
 
 			if got != nil && tt.want == nil {
-				t.Fatalf("haveStraight(%v) did not return nil; expected: %v", tt.cards, tt.want)
+				t.Fatalf("haveTwoPair(%v) did not return nil; expected: %v", tt.cards, tt.want)
 			}
 
 			if got != nil && tt.want != nil && got.combo != tt.want.combo {
-				t.Errorf("haveStraight(%v) returned combo: %v; expected: %v", tt.cards, ComboToString[got.combo], ComboToString[tt.want.combo])
+				t.Errorf("haveTwoPair(%v) returned combo: %v; expected: %v", tt.cards, ComboToString[got.combo], ComboToString[tt.want.combo])
+			}
+
+			if got != nil {
+				checkCardMatch(t, tt.cards, got.cards)
+			}
+		})
+	}
+}
+
+func Test_havePair(t *testing.T) {
+	tests := []struct {
+		name    string
+		cards   []*deck.Card
+		want    *Hand
+		wantErr bool
+	}{
+		{
+			name: "HighCard",
+			cards: []*deck.Card{
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Eight),
+				deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Ace),
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Three),
+				deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_Queen),
+				deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Seven),
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Five),
+				deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_King),
+			},
+			want: nil,
+		},
+		{
+			name: "pair",
+			cards: []*deck.Card{
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Eight),
+				deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Seven),
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Queen),
+				deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_Eight),
+				deck.NewCard(ppb.CardSuit_Spade, ppb.CardRank_Ten),
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Six),
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Ace),
+			},
+			want: &Hand{
+				cards: []*deck.Card{
+					deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_Eight),
+					deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Eight),
+					deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Ace),
+					deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Queen),
+					deck.NewCard(ppb.CardSuit_Spade, ppb.CardRank_Ten),
+				},
+				combo: Pair,
+			},
+		},
+		{
+			name: "pair five card input",
+			cards: []*deck.Card{
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Eight),
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Queen),
+				deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_Eight),
+				deck.NewCard(ppb.CardSuit_Spade, ppb.CardRank_Ten),
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Ace),
+			},
+			want: &Hand{
+				cards: []*deck.Card{
+					deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_Eight),
+					deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Eight),
+					deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Ace),
+					deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Queen),
+					deck.NewCard(ppb.CardSuit_Spade, ppb.CardRank_Ten),
+				},
+				combo: Pair,
+			},
+		},
+		{
+			name: "pair five card input",
+			// [[Q♦ J♦ 5♣ 5♠ 2♦]]
+			cards: []*deck.Card{
+				deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_Queen),
+				deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_Jack),
+				deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Five),
+				deck.NewCard(ppb.CardSuit_Spade, ppb.CardRank_Five),
+				deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_Two),
+			},
+			want: &Hand{
+				cards: []*deck.Card{
+					deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Five),
+					deck.NewCard(ppb.CardSuit_Spade, ppb.CardRank_Five),
+					deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_Queen),
+					deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_Jack),
+					deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_Two),
+				},
+				combo: Pair,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := havePair(tt.cards)
+
+			if got == nil && tt.want != nil {
+				t.Fatalf("havePair(%v) returned nil; expected: %v", tt.cards, tt.want)
+			}
+
+			if got != nil && tt.want == nil {
+				t.Fatalf("havePair(%v) did not return nil; expected: %v", tt.cards, tt.want)
+			}
+
+			if got != nil && tt.want != nil && got.combo != tt.want.combo {
+				t.Errorf("havePair(%v) returned combo: %v; expected: %v", tt.cards, ComboToString[got.combo], ComboToString[tt.want.combo])
 			}
 
 			if got != nil {

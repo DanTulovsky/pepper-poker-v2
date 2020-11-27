@@ -73,6 +73,14 @@ func NewHand() *Hand {
 	}
 }
 
+// NewHandFrom returns a new hand from provided input
+func NewHandFrom(cards []*deck.Card, combo Combo) *Hand {
+	return &Hand{
+		cards: cards,
+		combo: combo,
+	}
+}
+
 // Cards return h.cards
 func (h *Hand) Cards() []*deck.Card {
 	return h.cards
@@ -308,7 +316,6 @@ func haveFullHouse(cards []*deck.Card) *Hand {
 		log.Fatalf("need at least 5 cards for haveFullHouse, have %d", len(cards))
 	}
 
-	log.Println(cards)
 	var hand = new(Hand)
 
 	sort.Sort(sort.Reverse(deck.SortByCards(cards)))
@@ -539,11 +546,11 @@ func haveNOfAKind(cards []*deck.Card, n int) *Hand {
 
 			// Add 7-n more cards
 			for _, c := range cards {
-				if len(hand.cards) == 5 {
-					return hand
-				}
 				if !deck.CardInList(c, hand.cards) {
 					hand.cards = append(hand.cards, c)
+				}
+				if len(hand.cards) == 5 {
+					return hand
 				}
 			}
 		}
@@ -631,11 +638,11 @@ func havePair(cards []*deck.Card) *Hand {
 	hand.combo = Pair
 	// Add 5 more cards
 	for _, c := range cards {
-		if len(hand.cards) == 5 {
-			return hand
-		}
 		if !deck.CardInList(c, hand.cards) {
 			hand.cards = append(hand.cards, c)
+		}
+		if len(hand.cards) == 5 {
+			return hand
 		}
 	}
 
