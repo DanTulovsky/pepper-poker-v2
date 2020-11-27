@@ -10,6 +10,7 @@ type playingFlopState struct {
 
 func (i *playingFlopState) Init() error {
 	i.table.SetPlayersActionRequired()
+
 	i.l.Info("Dealing the flop...")
 
 	i.l.Info("Dealing the Flop...")
