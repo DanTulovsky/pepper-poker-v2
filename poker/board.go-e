@@ -22,7 +22,7 @@ func NewBoard() *Board {
 }
 
 // Cards returns the cards from the board
-func (b *Board) Cards() []deck.Card {
+func (b *Board) Cards() []*deck.Card {
 	return b.cards
 }
 

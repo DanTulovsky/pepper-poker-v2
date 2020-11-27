@@ -507,7 +507,7 @@ func (pc *PokerClient) PrintHandResults(in *ppb.GameData) error {
 	return nil
 }
 
-func (pc *PokerClient) showCards(cards []deck.Card, divider bool) {
+func (pc *PokerClient) showCards(cards []*deck.Card, divider bool) {
 
 	if img, err := deck.CardsImage(cards, divider); err == nil {
 		imgcat.CatImage(img, os.Stdout)
@@ -627,8 +627,8 @@ func (pc *PokerClient) getGameState(in *ppb.GameData) string {
 	return state.String()
 }
 
-func (pc *PokerClient) protoToCards(cards []*ppb.Card) []deck.Card {
-	nc := make([]deck.Card, len(cards))
+func (pc *PokerClient) protoToCards(cards []*ppb.Card) []*deck.Card {
+	nc := make([]*deck.Card, len(cards))
 
 	for i := range cards {
 		nc[i] = deck.NewCard(cards[i].Suite, cards[i].Rank)
@@ -670,7 +670,7 @@ func showWelcome() {
 }
 
 func showRandomCards(num int) {
-	rcards := make([]deck.Card, num)
+	rcards := make([]*deck.Card, num)
 	for i := 0; i < len(rcards); i++ {
 		rcards[i] = deck.RandomCard()
 	}

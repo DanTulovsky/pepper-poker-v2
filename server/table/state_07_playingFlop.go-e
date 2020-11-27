@@ -1,12 +1,12 @@
 package table
 
-type playingTurnState struct {
+type playingFlopState struct {
 	baseState
 }
 
-func (i *playingTurnState) Init() error {
+func (i *playingFlopState) Init() error {
 	i.table.SetPlayersActionRequired()
-	i.l.Info("Dealing the turn...")
+	i.l.Info("Dealing the flop...")
 
 	// next available player after the button goes first
 	i.table.currentTurn = i.table.playerAfter(i.table.button)
@@ -17,11 +17,11 @@ func (i *playingTurnState) Init() error {
 	return nil
 }
 
-func (i *playingTurnState) Tick() error {
+func (i *playingFlopState) Tick() error {
 	i.l.Debugf("Tick(%v)", i.Name())
 
 	if i.table.canAdvanceState() {
-		i.table.setState(i.table.playingRiverState)
+		i.table.setState(i.table.playingTurnState)
 		return nil
 	}
 
@@ -30,24 +30,26 @@ func (i *playingTurnState) Tick() error {
 		i.table.advancePlayer()
 		return nil
 	}
+
 	// if !i.dealt {
-	// 	i.logger.Info("Dealing the Turn...")
+	// 	i.logger.Info("Dealing the Flop...")
 	// 	// Burn one.
 	// 	if _, err := i.round.deck.Next(); err != nil {
 	// 		return err
 	// 	}
-	// 	// Deal the turn.
-	// 	var c deck.Card
-	// 	var err error
-	// 	if c, err = i.round.deck.Next(); err != nil {
-	// 		return err
+	// 	// Deal the flop.
+	// 	for j := 0; j < 3; j++ {
+	// 		var c *deck.Card
+	// 		var err error
+	// 		if c, err = i.round.deck.Next(); err != nil {
+	// 			return err
+	// 		}
+	// 		i.round.board.cards = append(i.round.board.cards, c)
 	// 	}
-	// 	i.round.board.cards = append(i.round.board.cards, c)
-
 	// 	i.dealt = true
 
 	// 	i.round.LogSystemTurn(i.round.tableID, i.round.id, ppb.Action_ActionDealCard, &ppb.ActionOpts{
-	// 		Card: []*ppb.Card{c.ToProto()},
+	// 		Card: deck.CardsToProto(i.round.board.cards),
 	// 	})
 	// }
 
@@ -57,9 +59,9 @@ func (i *playingTurnState) Tick() error {
 	// 	return nil
 	// }
 
-	// // Move to next state once all players have acted
+	// // Move to next state once all players took their turn
 	// if i.round.canAdvanceState() {
-	// 	return i.round.advanceStateAndReset(i.round.roundRiver, true)
+	// 	return i.round.advanceStateAndReset(i.round.roundTurn, true)
 	// }
 
 	// // Advance active player

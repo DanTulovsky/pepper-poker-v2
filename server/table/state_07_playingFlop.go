@@ -39,7 +39,7 @@ func (i *playingFlopState) Tick() error {
 	// 	}
 	// 	// Deal the flop.
 	// 	for j := 0; j < 3; j++ {
-	// 		var c *deck.Card
+	// 		var c deck.Card
 	// 		var err error
 	// 		if c, err = i.round.deck.Next(); err != nil {
 	// 			return err

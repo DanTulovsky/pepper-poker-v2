@@ -115,7 +115,7 @@ func checkRecord(t *testing.T, record []string) {
 
 // 1,1,1,13,2,4,2,3,1,12,0
 func getHand(t *testing.T, record []string) *poker.Hand {
-	cards := []deck.Card{}
+	cards := []*deck.Card{}
 	combo := getCombo(t, record[10])
 
 	for i := 0; i < 9; i = i + 2 {
@@ -156,7 +156,7 @@ func getCombo(t *testing.T, in string) poker.Combo {
 	}
 }
 
-func convCard(t *testing.T, s, r string) deck.Card {
+func convCard(t *testing.T, s, r string) *deck.Card {
 	//    1) S1 “Suit of card #1”
 	//       Ordinal (1-4) representing {Hearts, Spades, Diamonds, Clubs}
 	//    2) C1 “Rank of card #1”

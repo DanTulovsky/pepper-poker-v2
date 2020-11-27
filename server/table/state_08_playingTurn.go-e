@@ -37,7 +37,7 @@ func (i *playingTurnState) Tick() error {
 	// 		return err
 	// 	}
 	// 	// Deal the turn.
-	// 	var c deck.Card
+	// 	var c *deck.Card
 	// 	var err error
 	// 	if c, err = i.round.deck.Next(); err != nil {
 	// 		return err

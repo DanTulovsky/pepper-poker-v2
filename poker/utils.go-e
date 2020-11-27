@@ -10,9 +10,9 @@ import (
 )
 
 // randomHighCard returns 7 cards with no combination in them
-func randomHighCard() []deck.Card {
+func randomHighCard() []*deck.Card {
 	d := deck.NewShuffledDeck()
-	cards := []deck.Card{}
+	cards := []*deck.Card{}
 
 	// Pick 7 random cards until we have no valuable combination
 	for {
@@ -37,19 +37,19 @@ func randomHighCard() []deck.Card {
 }
 
 // randomTwoPair returns 7 cards with at least two pairs in them
-func randomTwoPair() []deck.Card {
+func randomTwoPair() []*deck.Card {
 	return randomNPair(2)
 }
 
 // randomPair returns 7 cards with exactly one pair in them
-func randomPair() []deck.Card {
+func randomPair() []*deck.Card {
 	return randomNPair(1)
 }
 
 // randomNPair returns 7 cards with N pairs in them
-func randomNPair(n int) []deck.Card {
+func randomNPair(n int) []*deck.Card {
 	d := deck.NewShuffledDeck()
-	cards := []deck.Card{}
+	cards := []*deck.Card{}
 
 	uniqueSet := []ppb.CardRank{}
 	for i := 0; i < n; i++ {
@@ -71,7 +71,7 @@ func randomNPair(n int) []deck.Card {
 	// last random cards
 OUTER:
 	for len(cards) != 7 {
-		var cardsCopy = make([]deck.Card, len(cards))
+		var cardsCopy = make([]*deck.Card, len(cards))
 		copy(cardsCopy, cards)
 
 		if c, err := d.Next(); err == nil {
@@ -144,9 +144,9 @@ OUTER:
 }
 
 // randomNOfAKind returns 7 cards with a N of a kind in them
-func randomNOfAKind(n int) []deck.Card {
+func randomNOfAKind(n int) []*deck.Card {
 	d := deck.NewShuffledDeck()
-	cards := []deck.Card{}
+	cards := []*deck.Card{}
 
 	rank := deck.RandomRank()
 
@@ -172,9 +172,9 @@ func randomNOfAKind(n int) []deck.Card {
 }
 
 // randomFullHouse returns 7 cards with a full house in them
-func randomFullHouse() []deck.Card {
+func randomFullHouse() []*deck.Card {
 	d := deck.NewShuffledDeck()
-	cards := []deck.Card{}
+	cards := []*deck.Card{}
 
 	// Pull two different rank cards
 	r1, err := d.Next()
@@ -231,11 +231,11 @@ func randomFullHouse() []deck.Card {
 }
 
 // randomFlush returns 7 cards with a flush in them
-func randomFlush() []deck.Card {
+func randomFlush() []*deck.Card {
 	d := deck.NewShuffledDeck()
 
 	suit := deck.RandomSuit()
-	cards := []deck.Card{}
+	cards := []*deck.Card{}
 
 	// Pull first 5 cards of the same suit from the deck
 	for len(cards) != 5 {
@@ -272,10 +272,10 @@ func randomFlush() []deck.Card {
 }
 
 // randomStraight returns 7 cards with a straight in them
-func randomStraight() []deck.Card {
+func randomStraight() []*deck.Card {
 	// shuffled
 	d := deck.NewShuffledDeck()
-	cards := []deck.Card{}
+	cards := []*deck.Card{}
 
 	suit := deck.RandomSuit()
 	rank := deck.RandomRankAbove(ppb.CardRank_Five)
@@ -315,10 +315,10 @@ func randomStraight() []deck.Card {
 }
 
 // randomStraightFlush returns 5 cards with a straight flush in them
-func randomStraightFlush() []deck.Card {
+func randomStraightFlush() []*deck.Card {
 	// shuffled
 	d := deck.NewShuffledDeck()
-	cards := []deck.Card{}
+	cards := []*deck.Card{}
 
 	suit := deck.RandomSuit()
 	rank := deck.RandomRankAbove(ppb.CardRank_Five)
@@ -351,9 +351,9 @@ func randomStraightFlush() []deck.Card {
 }
 
 //  uniqueRankCards returns a list of cards with duplicate ranks removed
-func uniqueRankCards(cardSlice []deck.Card) []deck.Card {
+func uniqueRankCards(cardSlice []*deck.Card) []*deck.Card {
 	keys := make(map[ppb.CardRank]bool)
-	list := []deck.Card{}
+	list := []*deck.Card{}
 	for _, entry := range cardSlice {
 		if _, value := keys[entry.GetRank()]; !value {
 			keys[entry.GetRank()] = true

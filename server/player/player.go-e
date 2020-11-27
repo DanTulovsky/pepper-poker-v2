@@ -17,7 +17,7 @@ type handInfo struct {
 	// Keep track if action is required
 	actionRequired bool
 
-	Hole []deck.Card
+	Hole []*deck.Card
 	Hand *poker.Hand
 }
 
@@ -27,7 +27,7 @@ func newHandInfo() *handInfo {
 		folded:         false,
 		allin:          false,
 		actionRequired: false,
-		Hole:           []deck.Card{},
+		Hole:           []*deck.Card{},
 		Hand:           poker.NewHand(),
 	}
 }
@@ -74,12 +74,12 @@ func (p *Player) Money() *Money {
 }
 
 // AddHoleCard deals adds a card to the player's hole
-func (p *Player) AddHoleCard(c deck.Card) {
+func (p *Player) AddHoleCard(c *deck.Card) {
 	p.HandInfo.Hole = append(p.HandInfo.Hole, c)
 }
 
 // Hole returns the player's hole
-func (p *Player) Hole() []deck.Card {
+func (p *Player) Hole() []*deck.Card {
 	return p.HandInfo.Hole
 }
 
