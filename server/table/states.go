@@ -5,7 +5,6 @@ import (
 
 	"github.com/DanTulovsky/logger"
 	"github.com/DanTulovsky/pepper-poker-v2/server/player"
-	"github.com/dustin/go-humanize"
 	"github.com/fatih/color"
 
 	ppb "github.com/DanTulovsky/pepper-poker-v2/proto"
@@ -96,41 +95,6 @@ func (i *baseState) Bet(p *player.Player, bet int64) error {
 	if p.AllIn() {
 		return fmt.Errorf("player [%v] all in, not allowed to bet", p.Name)
 	}
-	if bet > p.Money().Stack() {
-		return fmt.Errorf("not enough money to bet $%v; have: $%v", humanize.Comma(bet), humanize.Comma(p.Money().Stack()))
-	}
-	if bet != p.Money().Stack() && p.Money().BetThisRound()+bet < i.table.minBetThisRound {
-		return fmt.Errorf("player must bet minimum of %v", i.table.minBetThisRound)
-	}
-	if bet < 0 {
-		return fmt.Errorf("bet cannot be < 0 (sent: %v)", bet)
-	}
-	if bet == 0 {
-		return fmt.Errorf("cannot bet $0, call() instead")
-	}
-
-	m := p.Money()
-
-	m.SetStack(m.Stack() - bet)
-	m.SetBetThisRound(m.BetThisRound() + bet)
-	p.GoAllIn(m.Stack() == 0)
-	p.SetActionRequired(false)
-
-	i.table.pot.Add(p.ID.String(), bet, p.AllIn())
-
-	if p.Money().BetThisRound() > i.table.minBetThisRound {
-		i.table.minBetThisRound = p.Money().BetThisRound()
-
-		// reset any players that have put in less than this so they get to go again
-		for _, p := range i.table.ActivePlayers() {
-			if !p.AllIn() && !p.Folded() && p.Money().BetThisRound() < i.table.minBetThisRound {
-				p.SetActionRequired(true)
-			}
-		}
-	}
-
-	p.SetActionRequired(false)
-	p.CurrentTurn++
 
 	return i.table.bet(p, bet)
 }
