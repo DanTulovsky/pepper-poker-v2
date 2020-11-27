@@ -1,5 +1,5 @@
 // package main ...
-// A very simple robot that calls (or goes all in) if it must, otherwise checks
+// A very simple robot that goes all in every time
 package main
 
 import (
@@ -69,24 +69,7 @@ func main() {
 func decideOnAction(data *ppb.GameData) (*actions.PlayerAction, error) {
 	logg.Info("Deciding on action...")
 
-	// This client either calls if required, checks, or goes all in
-	var paction ppb.PlayerAction
-
-	mymoney := data.GetPlayer().GetMoney()
-	switch {
-	case mymoney.BetThisRound < mymoney.MinBetThisRound:
-		switch {
-		case mymoney.Stack > mymoney.MinBetThisRound-mymoney.BetThisRound:
-			// Have enough to call
-			paction = ppb.PlayerAction_PlayerActionCall
-		default:
-			// Must go All In (we never fold!)
-			paction = ppb.PlayerAction_PlayerActionAllIn
-		}
-	default:
-		// Check
-		paction = ppb.PlayerAction_PlayerActionCheck
-	}
+	paction := ppb.PlayerAction_PlayerActionAllIn
 
 	// First three fields are not used and are set automatically by the client
 	playerAction := actions.NewPlayerAction(id.EmptyPlayerID, id.EmptyTableID, paction, nil, nil)
