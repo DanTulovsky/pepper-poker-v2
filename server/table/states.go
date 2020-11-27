@@ -19,6 +19,8 @@ type state interface {
 	Check(p *player.Player) error
 	Call(p *player.Player) error
 	Fold(*player.Player) error
+	AllIn(*player.Player) error
+	BuyIn(*player.Player) error
 
 	Init() error
 	Name() ppb.GameState
@@ -79,6 +81,23 @@ func (i *baseState) AvailableToJoin() bool {
 
 func (i *baseState) AddPlayer(player *player.Player) (pos int, err error) {
 	return -1, fmt.Errorf("cannot add player right now")
+}
+
+// AllIn process the allin request
+func (i *baseState) AllIn(p *player.Player) error {
+	if i.WaitingTurnPlayer() != p {
+		return fmt.Errorf("it's not your turn")
+	}
+	if !p.ActionRequired() {
+		return fmt.Errorf("no action required from you")
+	}
+	return i.table.allin(p)
+}
+
+// BuyIn process the buyin request
+func (i *baseState) BuyIn(p *player.Player) error {
+	// TODO: Allow buyin at any point when available space and play in the next round
+	return fmt.Errorf("cannot buy in right now")
 }
 
 // Bet processes the bet request

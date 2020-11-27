@@ -17,9 +17,6 @@ func (t *Table) bet(p *player.Player, bet int64) error {
 	if bet < 0 {
 		return fmt.Errorf("bet cannot be < 0 (sent: %v)", bet)
 	}
-	if bet == 0 {
-		return fmt.Errorf("cannot bet $0, call() instead")
-	}
 
 	m := p.Money()
 
@@ -28,15 +25,17 @@ func (t *Table) bet(p *player.Player, bet int64) error {
 	p.GoAllIn(m.Stack() == 0)
 	p.SetActionRequired(false)
 
-	t.pot.Add(p.ID.String(), bet, p.AllIn())
+	if bet != 0 {
+		t.pot.Add(p.ID.String(), bet, p.AllIn())
 
-	if p.Money().BetThisRound() > t.minBetThisRound {
-		t.minBetThisRound = p.Money().BetThisRound()
+		if p.Money().BetThisRound() > t.minBetThisRound {
+			t.minBetThisRound = p.Money().BetThisRound()
 
-		// reset any players that have put in less than this so they get to go again
-		for _, p := range t.ActivePlayers() {
-			if !p.AllIn() && !p.Folded() && p.Money().BetThisRound() < t.minBetThisRound {
-				p.SetActionRequired(true)
+			// reset any players that have put in less than this so they get to go again
+			for _, p := range t.ActivePlayers() {
+				if !p.AllIn() && !p.Folded() && p.Money().BetThisRound() < t.minBetThisRound {
+					p.SetActionRequired(true)
+				}
 			}
 		}
 	}
@@ -48,25 +47,37 @@ func (t *Table) bet(p *player.Player, bet int64) error {
 }
 
 func (t *Table) call(p *player.Player) error {
-	// TODO: Additional checks when money is available
+	bet := t.minBetThisRound - p.Money().BetThisRound()
+	if bet == 0 {
+		return fmt.Errorf("no bet is needed to call, should check instead")
+	}
 
-	// Success
-	p.SetActionRequired(false)
-	p.CurrentTurn++
+	return t.bet(p, bet)
+}
+
+func (t *Table) buyin(p *player.Player) error {
+	if p.Money().Bank() < t.buyinAmount {
+		return fmt.Errorf("table buyin is [$%v], player has: $%v", humanize.Comma(t.buyinAmount), humanize.Comma(p.Money().Stack()))
+	}
+
+	stack := p.Money().Stack() + t.buyinAmount
+	bank := p.Money().Bank() - t.buyinAmount
+	p.Money().SetStack(stack)
+	p.Money().SetBank(bank)
+
 	return nil
+}
+
+func (t *Table) allin(p *player.Player) error {
+	return t.bet(p, p.Money().Stack())
 }
 
 func (t *Table) check(p *player.Player) error {
-	// TODO: Additional checks when money is available
-
-	// Success
-	p.SetActionRequired(false)
-	p.CurrentTurn++
-	return nil
+	return t.bet(p, 0)
 }
 
 func (t *Table) fold(p *player.Player) error {
-	// Success
+	p.Fold()
 	p.SetActionRequired(false)
 	p.CurrentTurn++
 	return nil

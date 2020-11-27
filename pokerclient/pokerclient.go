@@ -328,7 +328,7 @@ func (pc *PokerClient) TakeTurn(ctx context.Context, in *ppb.GameData) error {
 	// Send reply back to client
 	pc.actionResult <- actions.NewPlayerActionResult(err == nil, err, nil)
 
-	return nil
+	return err
 }
 
 // Ack acks a token
@@ -394,7 +394,7 @@ func (pc *PokerClient) Check(ctx context.Context) error {
 	}
 	_, err := pc.client.TakeTurn(ctx, req)
 	if err != nil {
-		pc.l.Error(err)
+		return err
 	}
 
 	return nil
@@ -465,7 +465,7 @@ func (pc *PokerClient) Call(ctx context.Context) error {
 	}
 	_, err := pc.client.TakeTurn(ctx, req)
 	if err != nil {
-		pc.l.Error(err)
+		return err
 	}
 
 	return nil
@@ -600,12 +600,14 @@ func (pc *PokerClient) getGameState(in *ppb.GameData) string {
 	mymoney := in.GetPlayer().GetMoney()
 	gameState := in.GetInfo().GetGameState()
 	gameStartsIn := in.GetInfo().GetGameStartsInSec()
+	buyin := in.GetInfo().GetBuyin()
 
 	var state strings.Builder
 
 	state.WriteString(fmt.Sprintln("================================================================="))
 	state.WriteString(fmt.Sprintf("%v (pos: %v) %v\n", color.GreenString("My Player:"), pc.position, pc.Name))
 	state.WriteString(fmt.Sprintf("%v %v\n", color.YellowString("Table State:"), in.GetInfo().GetGameState()))
+	state.WriteString(fmt.Sprintf("%v $%v\n", color.YellowString("Table Buyin:"), humanize.Comma(buyin)))
 
 	startsIn := time.Duration(time.Second * time.Duration(gameStartsIn*1000000))
 	if startsIn > 0 {
@@ -617,6 +619,7 @@ func (pc *PokerClient) getGameState(in *ppb.GameData) string {
 		state.WriteString(fmt.Sprintf("%v %v\n", color.RedString("Player Cards:"), deck.CardsFromProto(mycards)))
 
 		if mymoney != nil {
+			state.WriteString(fmt.Sprintf("%v $%v\n", color.CyanString("Total Bank:"), humanize.Comma(mymoney.GetBank())))
 			state.WriteString(fmt.Sprintf("%v $%v\n", color.CyanString("Total Stack:"), humanize.Comma(mymoney.GetStack())))
 			state.WriteString(fmt.Sprintf("%v $%v\n", color.CyanString("Total Bet this Hand:"), humanize.Comma(mymoney.GetBetThisHand())))
 			state.WriteString(fmt.Sprintf("%v $%v\n", color.CyanString("Current Bet:"), humanize.Comma(mymoney.GetBetThisRound())))

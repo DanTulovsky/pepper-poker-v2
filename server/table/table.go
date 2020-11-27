@@ -60,6 +60,7 @@ type Table struct {
 	pot                              *poker.Pot
 	board                            *poker.Board
 	deck                             *deck.Deck
+	buyinAmount                      int64
 
 	// how long to wait for player to make a move
 	playerTimeout time.Duration
@@ -88,9 +89,10 @@ func New(tableAction chan ActionRequest) *Table {
 		maxPlayers: 7,
 		minPlayers: 2,
 
-		button:     -1,
-		smallBlind: 5,
-		bigBlind:   10,
+		button:      -1,
+		smallBlind:  5,
+		bigBlind:    10,
+		buyinAmount: 1000,
 
 		defaultAckTimeout: time.Second * 10,
 		playerTimeout:     time.Second * 120,
@@ -180,14 +182,6 @@ func (t *Table) clearAckToken() {
 
 }
 
-// BuyIn buys into the table
-func (t *Table) BuyIn(p *player.Player, amount int64) {
-	stack := p.Money().Stack() + amount
-	bank := p.Money().Bank() - amount
-	p.Money().SetStack(stack)
-	p.Money().SetBank(bank)
-}
-
 // processManagerActions checks the channel from the manager for any player actions
 func (t *Table) processManagerActions() error {
 	select {
@@ -229,6 +223,10 @@ func (t *Table) processManagerAction(in ActionRequest) {
 		err := t.ackToken(in.Player, token)
 		res = NewTableActionResult(err, nil)
 
+	case ActionBuyIn:
+		err := t.State.BuyIn(in.Player)
+		res = NewTableActionResult(err, nil)
+
 	case ActionCheck:
 		err := t.State.Check(in.Player)
 		res = NewTableActionResult(err, nil)
@@ -242,8 +240,7 @@ func (t *Table) processManagerAction(in ActionRequest) {
 		res = NewTableActionResult(err, nil)
 
 	case ActionAllIn:
-		amount := int64(0) // TODO: Get from player money when available
-		err := t.State.Bet(in.Player, amount)
+		err := t.State.AllIn(in.Player)
 		res = NewTableActionResult(err, nil)
 
 	case ActionBet:
@@ -303,6 +300,7 @@ func (t *Table) infoproto() *ppb.GameInfo {
 		MaxPlayers: int64(i.MaxPlayers),
 		MinPlayers: int64(i.MinPlayers),
 		BigBlind:   t.bigBlind,
+		Buyin:      t.buyinAmount,
 
 		CommunityCards: t.board.AsProto(),
 	}
@@ -420,6 +418,7 @@ func (t *Table) setState(s state) {
 }
 
 // ActivePlayers returns the players at the table
+// Active players are present at the table and playing the current hand
 func (t *Table) ActivePlayers() []*player.Player {
 	players := []*player.Player{}
 
@@ -432,9 +431,43 @@ func (t *Table) ActivePlayers() []*player.Player {
 	return players
 }
 
+// AvailablePlayers returns the available players at the table
+// Available players are present at the table and have a non-zero stack
+func (t *Table) AvailablePlayers() []*player.Player {
+	players := []*player.Player{}
+
+	for _, p := range t.positions {
+		if p != nil && p.Money().Stack() > 0 {
+			players = append(players, p)
+		}
+	}
+
+	return players
+}
+
+// PresentPlayers returns the players present at the table
+// Present players are all players at the table, including those watching
+// TODO: Implement this
+// func (t *Table) PresentPlayers() []*player.Player {
+// 	players := []*player.Player{}
+
+// 	for _, p := range t.positions {
+// 		if p != nil {
+// 			players = append(players, p)
+// 		}
+// 	}
+
+// 	return players
+// }
+
 // numActivePlayers returns the number of players at the table
 func (t *Table) numActivePlayers() int {
 	return len(t.ActivePlayers())
+}
+
+// numAvailablePlayers returns the number of available players at the table
+func (t *Table) numAvailablePlayers() int {
+	return len(t.AvailablePlayers())
 }
 
 // PlayerPosition returns the position of the player
@@ -488,10 +521,13 @@ func (t *Table) sendUpdateToPlayers() {
 	for _, p := range t.ActivePlayers() {
 		in := t.gameDataProto(p)
 		action := actions.NewGameData(in)
+
 		if p.CommChannel == nil {
 			t.l.Debugf("player [%v] has nil comm channel", p.Name)
 			continue
 		}
+
+		t.l.Debugf("Sending update to %v", p.Name)
 		select {
 		case p.CommChannel <- action:
 		default:

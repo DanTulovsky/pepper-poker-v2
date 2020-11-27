@@ -188,6 +188,15 @@ func (m *Manager) processPlayerRequests() {
 			result := actions.NewPlayerActionResult(err, &ppb.AckTokenResponse{})
 			in.ResultC <- result
 
+		case proto.PlayerAction_PlayerActionBuyIn:
+			if err := m.playerBuyIn(p, t); err != nil {
+				m.l.Error(err)
+				in.ResultC <- actions.NewPlayerActionError(err)
+				break
+			}
+			result := actions.NewPlayerActionResult(err, &ppb.TakeTurnResponse{})
+			in.ResultC <- result
+
 		case proto.PlayerAction_PlayerActionCheck:
 			if err := m.playerCheck(p, t); err != nil {
 				m.l.Error(err)
@@ -282,6 +291,18 @@ func (m *Manager) playerByID(playerID id.PlayerID) (*player.Player, error) {
 		return p, nil
 	}
 	return nil, fmt.Errorf("player with id [%v] not found", playerID)
+}
+
+// playerBuyIn sends the BuyIn action to the table
+func (m *Manager) playerBuyIn(p *player.Player, t *table.Table) error {
+	result := make(chan table.ActionResult)
+	req := table.NewTableAction(table.ActionBuyIn, result, p, nil)
+	t.TableAction <- req
+
+	// block until response
+	res := <-result
+
+	return res.Err
 }
 
 // playerCheck sends the Check action to the table

@@ -43,6 +43,7 @@ enum PlayerAction {
   PlayerActionFold = 7;
   PlayerActionAckToken = 8;
   PlayerActionAllIn = 9;
+  PlayerActionBuyIn = 10;
 }
 
 message ActionOpts {
@@ -120,10 +121,11 @@ message GameInfo {
   int64 maxPlayers = 100;
   int64 minPlayers = 110;
   int64 bigBlind = 120;
+  int64 buyin = 130;
 
   // All players, no confidential info
-  repeated Player players = 130;
-  repeated Player winners = 140;
+  repeated Player players = 140;
+  repeated Player winners = 150;
 }
 
 // GameData is sent to the client, it tells the client when it's their turn and

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/DanTulovsky/pepper-poker-v2/server/player"
+	"github.com/dustin/go-humanize"
 )
 
 type waitingPlayersState struct {
@@ -29,16 +30,16 @@ func (i *waitingPlayersState) Tick() error {
 	now := time.Now()
 	var status string
 
-	numActivePlayers := i.table.numActivePlayers()
+	numAvailablePlayers := i.table.numAvailablePlayers()
 
-	status = fmt.Sprintf("Table [%v] waiting for players... (players: %d)", i.table.ID, numActivePlayers)
+	status = fmt.Sprintf("Table [%v] waiting for players... (players: %d)", i.table.ID, numAvailablePlayers)
 
-	if numActivePlayers >= i.table.minPlayers && i.table.playersReady() {
+	if numAvailablePlayers >= i.table.minPlayers && i.table.playersReady() {
 		wait := i.gameWaitTimeout - now.Sub(i.lastPlayerAddedTime)
 		i.table.gameStartsInTime = wait
 
 		if wait > 0 {
-			status = fmt.Sprintf("Table [%v] waiting %v before starting... (players: %d)", i.table.ID, wait.Truncate(time.Second), numActivePlayers)
+			status = fmt.Sprintf("Table [%v] waiting %v before starting... (players: %d)", i.table.ID, wait.Truncate(time.Second), numAvailablePlayers)
 		} else {
 			i.table.setState(i.table.initializingState)
 			i.cache = ""
@@ -56,18 +57,25 @@ func (i *waitingPlayersState) Tick() error {
 
 // AvailableToJoin returns true if the table has empty positions
 func (i *waitingPlayersState) AvailableToJoin() bool {
-	return i.table.numActivePlayers() < i.table.maxPlayers
+	return i.table.numAvailablePlayers() < i.table.maxPlayers
 }
 
 // AddPlayer adds the player to the table and returns the position at the table
 func (i *waitingPlayersState) AddPlayer(p *player.Player) (pos int, err error) {
 	i.lastPlayerAddedTime = time.Now()
 
-	if i.table.numActivePlayers() == i.table.maxPlayers {
+	// TODO: Take into account those watching, check i.table.numPresentPlayer
+	if i.table.numAvailablePlayers() == i.table.maxPlayers {
 		return -1, fmt.Errorf("no available positions at table")
 	}
 
 	if !i.table.playerAtTable(p) {
+		// buy in
+		i.l.Infof("[%v] buying into the table ($%v)", p.Name, humanize.Comma(i.table.buyinAmount))
+		if err := i.BuyIn(p); err != nil {
+			return -1, err
+		}
+
 		i.l.Infof("Addting player [%v] to table [%v]", p.Name, i.table.Name)
 		i.table.positions[i.table.nextAvailablePosition()] = p
 		p.TablePosition, err = i.table.PlayerPosition(p)
@@ -84,4 +92,9 @@ func (i *waitingPlayersState) Reset() {
 
 func (i *waitingPlayersState) WaitingTurnPlayer() *player.Player {
 	return nil
+}
+
+// BuyIn process the buyin request
+func (i *waitingPlayersState) BuyIn(p *player.Player) error {
+	return i.table.buyin(p)
 }

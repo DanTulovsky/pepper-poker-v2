@@ -210,13 +210,15 @@ OUTER:
 		select {
 		case input, ok := <-toPlayerC:
 			if !ok {
+				ps.l.Debug("Lost connection to table player channel")
 				break OUTER
 			}
-			ps.l.Debugf("Sending data to client: %#v", input.Data.WaitTurnID)
+			ps.l.Debugf("Sending data to client (%v): %#v", in.ClientInfo.PlayerName, input.Data.WaitTurnID)
 			if err := stream.Send(input.Data); err != nil {
 				ps.l.Infof("client connection to %v lost", in.ClientInfo.PlayerName)
 				return nil
 			}
+			ps.l.Debugf("Sent data to client (%v): %#v", in.ClientInfo.PlayerName, input.Data.WaitTurnID)
 		}
 	}
 	ps.l.Info("Client channel closed, exiting thread...")

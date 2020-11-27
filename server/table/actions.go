@@ -34,6 +34,9 @@ const (
 
 	// ActionAllIn bets all available money
 	ActionAllIn
+
+	// ActionBuyIn uses the player's bank to buy into the table (bank -> stack)
+	ActionBuyIn
 )
 
 // ActionAddPlayerResult is the result of an AddPlayer action
