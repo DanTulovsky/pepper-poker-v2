@@ -19,9 +19,17 @@ type initializingState struct {
 func (i *initializingState) Init() error {
 	i.l.Info("Initializing table...")
 	i.table.button = i.table.playerAfter(i.table.button)
-	i.table.currentTurn = i.table.playerAfter(i.table.button)
+	sb := i.table.playerAfter(i.table.button)
+	bb := i.table.playerAfter(sb)
+
+	i.table.currentTurn = sb
+
+	i.table.smallBlindPlayer = i.table.positions[sb]
+	i.table.bigBlindPlayer = i.table.positions[bb]
 
 	i.l.Infof("button: %v", i.table.positions[i.table.button].Name)
+	i.l.Infof("smallBlind: %v", i.table.smallBlindPlayer.Name)
+	i.l.Infof("bigBlind: %v", i.table.bigBlindPlayer.Name)
 
 	i.l.Info("Initializing player information for the hand...")
 	for _, p := range i.table.ActivePlayers() {

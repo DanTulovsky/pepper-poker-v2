@@ -53,12 +53,13 @@ type Table struct {
 	// index into the positions array
 	currentTurn int
 	// the current button, index into positions array
-	button               int
-	bigBlind, smallblind int64
-	minBetThisRound      int64
-	pot                  *poker.Pot
-	board                *poker.Board
-	deck                 *deck.Deck
+	button                           int
+	bigBlindPlayer, smallBlindPlayer *player.Player
+	bigBlind, smallBlind             int64
+	minBetThisRound                  int64
+	pot                              *poker.Pot
+	board                            *poker.Board
+	deck                             *deck.Deck
 
 	// how long to wait for player to make a move
 	playerTimeout time.Duration
@@ -88,7 +89,7 @@ func New(tableAction chan ActionRequest) *Table {
 		minPlayers: 2,
 
 		button:     -1,
-		smallblind: 5,
+		smallBlind: 5,
 		bigBlind:   10,
 
 		defaultAckTimeout: time.Second * 10,
@@ -413,8 +414,6 @@ func (t *Table) setState(s state) {
 	to = s.Name().String()
 
 	t.l.Infof(color.GreenString("Changing State (%v): %v -> %v"), t.stateAdvanceDelay, from, to)
-	// TODO: This blocks all processing and is really not needed
-	time.Sleep(t.stateAdvanceDelay)
 	t.State = s
 
 	s.Init()

@@ -1,21 +1,11 @@
 package table
 
 import (
-	"fmt"
-
 	"github.com/DanTulovsky/pepper-poker-v2/server/player"
 )
 
+// TODO: delete all these
 func (t *Table) bet(p *player.Player, bet int64) error {
-
-	if t.State.WaitingTurnPlayer() != p {
-		return fmt.Errorf("it's not your turn")
-
-	}
-	if !p.ActionRequired() {
-		return fmt.Errorf("no action required from you")
-	}
-
 	// TODO: Additional checks when money is available
 
 	// Success
@@ -25,15 +15,6 @@ func (t *Table) bet(p *player.Player, bet int64) error {
 }
 
 func (t *Table) call(p *player.Player) error {
-
-	if t.State.WaitingTurnPlayer() != p {
-		return fmt.Errorf("it's not your turn")
-
-	}
-	if !p.ActionRequired() {
-		return fmt.Errorf("no action required from you")
-	}
-
 	// TODO: Additional checks when money is available
 
 	// Success
@@ -43,14 +24,6 @@ func (t *Table) call(p *player.Player) error {
 }
 
 func (t *Table) check(p *player.Player) error {
-	if t.State.WaitingTurnPlayer() != p {
-		return fmt.Errorf("it's not your turn")
-
-	}
-	if !p.ActionRequired() {
-		return fmt.Errorf("no action required from you")
-	}
-
 	// TODO: Additional checks when money is available
 
 	// Success
@@ -60,15 +33,6 @@ func (t *Table) check(p *player.Player) error {
 }
 
 func (t *Table) fold(p *player.Player) error {
-
-	if t.State.WaitingTurnPlayer() != p {
-		return fmt.Errorf("it's not your turn")
-
-	}
-	if !p.ActionRequired() {
-		return fmt.Errorf("no action required from you")
-	}
-
 	// Success
 	p.SetActionRequired(false)
 	p.CurrentTurn++

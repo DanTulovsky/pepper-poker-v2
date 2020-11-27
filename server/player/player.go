@@ -120,7 +120,7 @@ func (p *Player) AllIn() bool {
 	return p.HandInfo.allin
 }
 
-// GoAllIn marks the player as having gone all in
-func (p *Player) GoAllIn() {
-	p.HandInfo.allin = true
+// GoAllIn marks the player as having gone all in if true
+func (p *Player) GoAllIn(g bool) {
+	p.HandInfo.allin = g
 }

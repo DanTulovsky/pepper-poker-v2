@@ -11,8 +11,15 @@ type playingBigBlindState struct {
 }
 
 func (i *playingBigBlindState) Init() error {
-	bigBlind := i.table.positions[i.table.currentTurn]
-	i.l.Infof("[%v] putting in big blind...", bigBlind.Name)
+	i.l.Infof("[%v] putting in big blind...", i.table.bigBlindPlayer.Name)
+
+	bet := i.table.smallBlind
+	if i.table.bigBlindPlayer.Money().Stack() < bet {
+		bet = i.table.bigBlindPlayer.Money().Stack()
+	}
+	if err := i.table.bet(i.table.bigBlindPlayer, bet); err != nil {
+		i.l.Fatalf("playingBigBlindState error: %s", err)
+	}
 
 	i.table.advancePlayer()
 	return nil
@@ -37,23 +44,6 @@ func (i *playingBigBlindState) Fold(p *player.Player) error {
 func (i *playingBigBlindState) Tick() error {
 	i.l.Debugf("Tick(%v)", i.Name())
 
-	// // Put money into pot
-	// if i.round.players[i.round.CurrentTurn()] == i.round.bigBlindPlayer {
-	// 	bet := i.round.bigBlind
-	// 	if i.round.bigBlindPlayer.Stack() < bet {
-	// 		bet = i.round.bigBlindPlayer.Stack()
-	// 	}
-	// 	if err := i.round.bet(i.round.bigBlindPlayer.ID(), bet); err != nil {
-	// 		log.Fatalf("playingBigBlindState error: %s", err)
-	// 	}
-	// } else {
-	// 	log.Fatal("playingBigBlindState error, should never happen.")
-	// }
-
-	// // go to next statess
-	// i.round.advancePlayer()
-	// i.round.bigBlindPlayer.actionRequiredThisRound = !i.round.bigBlindPlayer.allin
-	// i.round.setState(i.round.roundPreFlop, true, false)
 	i.table.setState(i.table.playingPreFlopState)
 
 	return nil

@@ -36,6 +36,11 @@ func (pm *Money) Stack() int64 {
 	return pm.stack
 }
 
+// SetBetThisRound sets the amount of money bet during the current betting round
+func (pm *Money) SetBetThisRound(b int64) {
+	pm.betThisRound = b
+}
+
 // BetThisRound returns the amount of money bet during the current betting round
 func (pm *Money) BetThisRound() int64 {
 	return pm.betThisRound

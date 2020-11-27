@@ -19,6 +19,7 @@ func (i *readyToStartState) Init() error {
 	i.l.Info("Players buying in...")
 	for _, p := range i.table.ActivePlayers() {
 		// TODO: Assume the player buys in with all the money they have for now
+		// TODO: Buyin should happen at table join time
 		i.table.BuyIn(p, p.Money().Bank())
 	}
 
