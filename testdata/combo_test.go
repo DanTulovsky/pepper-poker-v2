@@ -6,8 +6,12 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"math/rand"
+	"os"
 	"strconv"
 	"strings"
+	"testing"
+	"time"
 
 	"github.com/DanTulovsky/deck"
 	"github.com/DanTulovsky/pepper-poker-v2/poker"
@@ -64,18 +68,24 @@ var (
 	dataFile = flag.String("data_file", "poker-hand-testing.data", "test data file")
 )
 
-func check(e error) {
+func TestMain(m *testing.M) {
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	rand.Seed(time.Now().UnixNano())
+	flag.Parse()
+
+	os.Exit(m.Run())
+}
+
+func check(t *testing.T, e error) {
 	if e != nil {
-		panic(e)
+		t.Fatal(e)
 	}
 }
 
-func main() {
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
-	flag.Parse()
+func Test_comboVerify(t *testing.T) {
 
 	data, err := ioutil.ReadFile(*dataFile)
-	check(err)
+	check(t, err)
 
 	r := csv.NewReader(strings.NewReader(string(data)))
 	for {
@@ -83,32 +93,33 @@ func main() {
 		if err == io.EOF {
 			break
 		}
-		check(err)
+		check(t, err)
 
-		checkRecord(record)
+		checkRecord(t, record)
 	}
 }
 
-func checkRecord(record []string) {
-	wantHand := getHand(record)
+func checkRecord(t *testing.T, record []string) {
+	wantHand := getHand(t, record)
 	gotHand := poker.BestCombo(wantHand.Cards()...)
 
 	if wantHand.CompareTo(gotHand) != 0 {
-		log.Printf("----------------------------------------------")
-		log.Println("mismatch: ")
-		log.Printf("  wanted: %v\n", wantHand)
-		log.Printf("  got: %v\n", gotHand)
-		log.Printf("----------------------------------------------")
+		t.Error("----------------------------------------------")
+		t.Error("mismatch: ")
+		t.Errorf("  wanted: %v\n", wantHand)
+		t.Errorf("  got: %v\n", gotHand)
+		t.Error("----------------------------------------------")
+		t.Fatal()
 	}
 }
 
 // 1,1,1,13,2,4,2,3,1,12,0
-func getHand(record []string) *poker.Hand {
+func getHand(t *testing.T, record []string) *poker.Hand {
 	cards := []*deck.Card{}
-	combo := getCombo(record[10])
+	combo := getCombo(t, record[10])
 
 	for i := 0; i < 9; i = i + 2 {
-		c := convCard(record[i], record[i+1])
+		c := convCard(t, record[i], record[i+1])
 		cards = append(cards, c)
 	}
 
@@ -116,10 +127,10 @@ func getHand(record []string) *poker.Hand {
 	return hand
 }
 
-func getCombo(in string) poker.Combo {
+func getCombo(t *testing.T, in string) poker.Combo {
 
 	c, err := strconv.Atoi(in)
-	check(err)
+	check(t, err)
 
 	switch c {
 	case 0:
@@ -145,7 +156,7 @@ func getCombo(in string) poker.Combo {
 	}
 }
 
-func convCard(s, r string) *deck.Card {
+func convCard(t *testing.T, s, r string) *deck.Card {
 	//    1) S1 “Suit of card #1”
 	//       Ordinal (1-4) representing {Hearts, Spades, Diamonds, Clubs}
 	//    2) C1 “Rank of card #1”
@@ -154,9 +165,9 @@ func convCard(s, r string) *deck.Card {
 	var rank ppb.CardRank
 
 	sint, err := strconv.Atoi(s)
-	check(err)
+	check(t, err)
 	rint, err := strconv.Atoi(r)
-	check(err)
+	check(t, err)
 
 	switch sint {
 	case 1:
