@@ -6,6 +6,7 @@ import (
 	"sort"
 
 	"github.com/DanTulovsky/deck"
+	"github.com/DanTulovsky/pepper-poker-v2/id"
 
 	ppb "github.com/DanTulovsky/pepper-poker-v2/proto"
 )
@@ -142,11 +143,11 @@ func (h *Hand) CompareTo(other *Hand) int {
 type PlayerHand struct {
 	Cards []deck.Card
 	Hand  *Hand
-	ID    string
+	ID    id.PlayerID
 }
 
 // NewPlayerHand returns a new player hand
-func NewPlayerHand(id string, cards []deck.Card) *PlayerHand {
+func NewPlayerHand(id id.PlayerID, cards []deck.Card) *PlayerHand {
 	return &PlayerHand{
 		ID:    id,
 		Cards: cards,
@@ -176,7 +177,16 @@ func (a SortByPlayerHands) Less(i, j int) bool {
 }
 
 // Winners is a list of player IDs that have the same value hands
-type Winners []string
+type Winners []id.PlayerID
+
+// SortByID sorts the winners
+type SortByID []id.PlayerID
+
+func (a SortByID) Len() int      { return len(a) }
+func (a SortByID) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a SortByID) Less(i, j int) bool {
+	return a[i] < a[j]
+}
 
 // BestHand returns an ordered list of lists of the player IDs of the best hands (in case of a tie)
 // [
@@ -238,7 +248,7 @@ func BestHand(pls []*PlayerHand) []Winners {
 
 	// consistent order for comparisons
 	for _, w := range winners {
-		sort.Strings(w)
+		sort.Sort(SortByID(w))
 	}
 	return winners
 }

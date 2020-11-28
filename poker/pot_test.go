@@ -2,15 +2,17 @@ package poker
 
 import (
 	"testing"
+
+	"github.com/DanTulovsky/pepper-poker-v2/id"
 )
 
 type addition struct {
-	player string
+	player id.PlayerID
 	bet    int64
 	allin  bool
 }
 type result struct {
-	player string
+	player id.PlayerID
 	amount int64
 }
 

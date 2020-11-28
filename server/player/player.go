@@ -18,7 +18,7 @@ type handInfo struct {
 	actionRequired bool
 
 	Hole []deck.Card
-	Hand *poker.Hand
+	Hand *poker.PlayerHand
 }
 
 // newHandInfo creates a new hand info
@@ -28,7 +28,6 @@ func newHandInfo() *handInfo {
 		allin:          false,
 		actionRequired: false,
 		Hole:           []deck.Card{},
-		Hand:           poker.NewHand(),
 	}
 }
 
@@ -42,7 +41,8 @@ type Player struct {
 	HandInfo      *handInfo
 	TablePosition int
 
-	money *Money
+	money    *Money
+	iswinner bool
 
 	CommChannel chan actions.GameData
 }
@@ -55,6 +55,27 @@ func New(name string, bank int64) *Player {
 		money:    NewMoney(bank),
 		HandInfo: newHandInfo(),
 	}
+}
+
+// PlayerHand sets the player's final hand
+func (p *Player) PlayerHand() *poker.PlayerHand {
+	return p.HandInfo.Hand
+}
+
+// SetPlayerHand sets the player's final hand
+func (p *Player) SetPlayerHand(h *poker.PlayerHand) {
+	p.HandInfo.Hand = h
+}
+
+// IsWinner retruns true if the player is a winner
+func (p *Player) IsWinner() bool {
+	return p.iswinner
+}
+
+// SetWinnerAndWinnings sets the player as a winner, and adjusts the money
+func (p *Player) SetWinnerAndWinnings(w int64) {
+	p.iswinner = true
+	p.money.SetWinnings(w)
 }
 
 // AsProto returns the player as an proto
@@ -83,8 +104,9 @@ func (p *Player) Hole() []deck.Card {
 	return p.HandInfo.Hole
 }
 
-// InitHand initializes the player to play a single hand (one poker game)
-func (p *Player) InitHand() {
+// Init initializes the player to play a single hand (one poker game)
+func (p *Player) Init() {
+	p.iswinner = false
 	p.HandInfo = newHandInfo()
 }
 

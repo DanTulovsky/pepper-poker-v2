@@ -17,6 +17,10 @@ func (i *playingPreFlopState) Init() error {
 func (i *playingPreFlopState) Tick() error {
 	i.l.Debugf("Tick(%v)", i.Name())
 
+	if i.table.haveWinner() {
+		i.table.setState(i.table.playingDoneState)
+	}
+
 	if i.table.canAdvanceState() {
 		i.table.setState(i.table.playingFlopState)
 		return nil
@@ -27,12 +31,6 @@ func (i *playingPreFlopState) Tick() error {
 		i.table.advancePlayer()
 		return nil
 	}
-
-	// if i.round.haveWinner() {
-	// 	i.round.currentTurn = -1
-	// 	i.round.setState(i.round.roundDone, true, false)
-	// 	return nil
-	// }
 
 	return nil
 }

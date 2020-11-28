@@ -9,10 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/uuid"
-
 	"github.com/DanTulovsky/deck"
 
+	"github.com/DanTulovsky/pepper-poker-v2/id"
 	ppb "github.com/DanTulovsky/pepper-poker-v2/proto"
 )
 
@@ -957,23 +956,23 @@ func TestBestHand(t *testing.T) {
 			playerHands: []*PlayerHand{
 				{
 					Cards: randomFlush(),
-					ID:    uuid.New().String(),
+					ID:    id.NewPlayerID(),
 				},
 				{
 					Cards: randomFullHouse(),
-					ID:    uuid.New().String(),
+					ID:    id.NewPlayerID(),
 				},
 				{
 					Cards: randomHighCard(),
-					ID:    uuid.New().String(),
+					ID:    id.NewPlayerID(),
 				},
 				{
 					Cards: randomPair(),
-					ID:    uuid.New().String(),
+					ID:    id.NewPlayerID(),
 				},
 				{
 					Cards: randomTwoPair(),
-					ID:    uuid.New().String(),
+					ID:    id.NewPlayerID(),
 				},
 			},
 			want: [][]int{{1}, {0}, {4}, {3}, {2}},
@@ -983,23 +982,23 @@ func TestBestHand(t *testing.T) {
 			playerHands: []*PlayerHand{
 				{
 					Cards: randomFlush(),
-					ID:    uuid.New().String(),
+					ID:    id.NewPlayerID(),
 				},
 				{
 					Cards: randomFullHouse(),
-					ID:    uuid.New().String(),
+					ID:    id.NewPlayerID(),
 				},
 				{
 					Cards: randomStraightFlush(),
-					ID:    uuid.New().String(),
+					ID:    id.NewPlayerID(),
 				},
 				{
 					Cards: randomPair(),
-					ID:    uuid.New().String(),
+					ID:    id.NewPlayerID(),
 				},
 				{
 					Cards: randomTwoPair(),
-					ID:    uuid.New().String(),
+					ID:    id.NewPlayerID(),
 				},
 			},
 			want: [][]int{{2}, {1}, {0}, {4}, {3}},
@@ -1009,7 +1008,7 @@ func TestBestHand(t *testing.T) {
 			playerHands: []*PlayerHand{
 				{
 					Cards: randomHighCard(),
-					ID:    uuid.New().String(),
+					ID:    id.NewPlayerID(),
 				},
 				{
 					Cards: []deck.Card{
@@ -1019,7 +1018,7 @@ func TestBestHand(t *testing.T) {
 						deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Eight),
 						deck.NewCard(ppb.CardSuit_Spade, ppb.CardRank_Eight),
 					},
-					ID: uuid.New().String(),
+					ID: id.NewPlayerID(),
 				},
 				{
 					Cards: []deck.Card{
@@ -1029,11 +1028,11 @@ func TestBestHand(t *testing.T) {
 						deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Eight),
 						deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_Eight),
 					},
-					ID: uuid.New().String(),
+					ID: id.NewPlayerID(),
 				},
 				{
 					Cards: randomPair(),
-					ID:    uuid.New().String(),
+					ID:    id.NewPlayerID(),
 				},
 			},
 			want: [][]int{{2, 1}, {3}, {0}},
@@ -1043,7 +1042,7 @@ func TestBestHand(t *testing.T) {
 			playerHands: []*PlayerHand{
 				{
 					Cards: randomHighCard(),
-					ID:    uuid.New().String(),
+					ID:    id.NewPlayerID(),
 				},
 				{
 					Cards: []deck.Card{
@@ -1053,11 +1052,11 @@ func TestBestHand(t *testing.T) {
 						deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Eight),
 						deck.NewCard(ppb.CardSuit_Spade, ppb.CardRank_Eight),
 					},
-					ID: uuid.New().String(),
+					ID: id.NewPlayerID(),
 				},
 				{
 					Cards: randomPair(),
-					ID:    uuid.New().String(),
+					ID:    id.NewPlayerID(),
 				},
 				{
 					Cards: []deck.Card{
@@ -1067,7 +1066,7 @@ func TestBestHand(t *testing.T) {
 						deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Eight),
 						deck.NewCard(ppb.CardSuit_Spade, ppb.CardRank_Eight),
 					},
-					ID: uuid.New().String(),
+					ID: id.NewPlayerID(),
 				},
 			},
 			want: [][]int{{3}, {1}, {2}, {0}},
@@ -1077,7 +1076,7 @@ func TestBestHand(t *testing.T) {
 			playerHands: []*PlayerHand{
 				{
 					Cards: randomTwoPair(),
-					ID:    uuid.New().String(),
+					ID:    id.NewPlayerID(),
 				},
 				{
 					Cards: []deck.Card{
@@ -1087,11 +1086,11 @@ func TestBestHand(t *testing.T) {
 						deck.NewCard(ppb.CardSuit_Spade, ppb.CardRank_Ten),
 						deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Six),
 					},
-					ID: uuid.New().String(),
+					ID: id.NewPlayerID(),
 				},
 				{
 					Cards: randomPair(),
-					ID:    uuid.New().String(),
+					ID:    id.NewPlayerID(),
 				},
 				{
 					Cards: []deck.Card{
@@ -1101,7 +1100,7 @@ func TestBestHand(t *testing.T) {
 						deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Ace),
 						deck.NewCard(ppb.CardSuit_Spade, ppb.CardRank_Three),
 					},
-					ID: uuid.New().String(),
+					ID: id.NewPlayerID(),
 				},
 			},
 			want: [][]int{{1}, {3}, {0}, {2}},
@@ -1118,7 +1117,7 @@ func TestBestHand(t *testing.T) {
 				wantWinners = append(wantWinners, win)
 			}
 			for _, w := range wantWinners {
-				sort.Strings(w)
+				sort.Sort(SortByID(w))
 			}
 
 			got := BestHand(tt.playerHands)

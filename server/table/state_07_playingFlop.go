@@ -11,7 +11,6 @@ type playingFlopState struct {
 func (i *playingFlopState) Init() error {
 	i.table.SetPlayersActionRequired()
 
-	i.l.Info("Dealing the Flop...")
 	// Burn one.
 	if _, err := i.table.deck.Next(); err != nil {
 		return err
@@ -25,6 +24,7 @@ func (i *playingFlopState) Init() error {
 		}
 		i.table.board.AddCard(c)
 	}
+	i.l.Infof("Dealing the Flop... [%v]", i.table.board.Cards())
 
 	// next available player after the button goes first
 	i.table.currentTurn = i.table.playerAfter(i.table.button)
@@ -38,6 +38,10 @@ func (i *playingFlopState) Init() error {
 func (i *playingFlopState) Tick() error {
 	i.l.Debugf("Tick(%v)", i.Name())
 
+	if i.table.haveWinner() {
+		i.table.setState(i.table.playingDoneState)
+	}
+
 	if i.table.canAdvanceState() {
 		i.table.setState(i.table.playingTurnState)
 		return nil
@@ -48,12 +52,6 @@ func (i *playingFlopState) Tick() error {
 		i.table.advancePlayer()
 		return nil
 	}
-
-	// if i.round.haveWinner() {
-	// 	i.round.currentTurn = -1
-	// 	i.round.setState(i.round.roundDone, true, false)
-	// 	return nil
-	// }
 
 	return nil
 }

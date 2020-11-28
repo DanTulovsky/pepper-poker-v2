@@ -125,7 +125,7 @@ message GameInfo {
 
   // All players, no confidential info
   repeated Player players = 140;
-  repeated Player winners = 150;
+  repeated string winners = 150;
 }
 
 // GameData is sent to the client, it tells the client when it's their turn and

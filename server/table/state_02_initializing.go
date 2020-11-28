@@ -33,7 +33,7 @@ func (i *initializingState) Init() error {
 
 	i.l.Info("Initializing player information for the hand...")
 	for _, p := range i.table.ActivePlayers() {
-		p.InitHand()
+		p.Init()
 	}
 
 	// reset board, pot and deck

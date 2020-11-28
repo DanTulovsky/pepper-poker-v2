@@ -9,8 +9,6 @@ type playingRiverState struct {
 func (i *playingRiverState) Init() error {
 	i.table.SetPlayersActionRequired()
 
-	i.l.Info("Dealing the river...")
-
 	// Burn one.
 	if _, err := i.table.deck.Next(); err != nil {
 		return err
@@ -22,6 +20,7 @@ func (i *playingRiverState) Init() error {
 		return err
 	}
 	i.table.board.AddCard(c)
+	i.l.Infof("Dealing the river... [%v]", c)
 
 	// next available player after the button goes first
 	i.table.currentTurn = i.table.playerAfter(i.table.button)
@@ -35,6 +34,10 @@ func (i *playingRiverState) Init() error {
 func (i *playingRiverState) Tick() error {
 	i.l.Debugf("Tick(%v)", i.Name())
 
+	if i.table.haveWinner() {
+		i.table.setState(i.table.playingDoneState)
+	}
+
 	if i.table.canAdvanceState() {
 		i.table.setState(i.table.playingDoneState)
 		return nil
@@ -45,12 +48,6 @@ func (i *playingRiverState) Tick() error {
 		i.table.advancePlayer()
 		return nil
 	}
-
-	// if i.round.haveWinner() {
-	// 	i.round.currentTurn = -1
-	// 	i.round.setState(i.round.roundDone, true, false)
-	// 	return nil
-	// }
 
 	return nil
 }

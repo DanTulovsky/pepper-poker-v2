@@ -26,7 +26,7 @@ func (t *Table) bet(p *player.Player, bet int64) error {
 	p.SetActionRequired(false)
 
 	if bet != 0 {
-		t.pot.Add(p.ID.String(), bet, p.AllIn())
+		t.pot.Add(p.ID, bet, p.AllIn())
 
 		if p.Money().BetThisRound() > t.minBetThisRound {
 			t.minBetThisRound = p.Money().BetThisRound()

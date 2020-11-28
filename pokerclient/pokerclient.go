@@ -234,7 +234,7 @@ OUTER:
 }
 
 func (pc *PokerClient) handIsFinished() bool {
-	return pc.gameState == ppb.GameState_GameStateFinished
+	return pc.gameState == ppb.GameState_GameStatePlayingDone
 }
 
 // ackIfNeeded acks a token if needed
@@ -471,9 +471,18 @@ func (pc *PokerClient) Call(ctx context.Context) error {
 	return nil
 }
 
+// IsWinner returns true if the players appears in the winners proto
+func (pc *PokerClient) IsWinner(p *ppb.Player, winners []string) bool {
+	for _, w := range winners {
+		if p.Id == w {
+			return true
+		}
+	}
+	return false
+}
+
 // PrintHandResults prints the result
 func (pc *PokerClient) PrintHandResults(in *ppb.GameData) error {
-
 	for _, p := range in.GetInfo().GetPlayers() {
 		iswinner := ""
 		isme := ""
@@ -482,24 +491,20 @@ func (pc *PokerClient) PrintHandResults(in *ppb.GameData) error {
 			isme = "(me) "
 		}
 
-		for _, w := range in.GetInfo().GetWinners() {
-			if p.Id == "" {
-				pc.l.Errorf(">w.ID:  %v", w.Id)
-				pc.l.Errorf(">p.ID:  %v", p.Id)
-				pc.l.Fatal("Missing p.ID from a player after game is over... is GameInfo populated correctly?")
-			}
-			if p.Id == w.Id {
-				iswinner = "[winner] "
-			}
+		if pc.IsWinner(p, in.GetInfo().GetWinners()) {
+			iswinner = "[winner] "
 		}
 
-		fmt.Printf("  %v%v%v ($%v) (%v)\n",
+		fmt.Printf("  %v%v%v (+$%v; bank: %v; stack: %v) (%v)\n",
 			color.YellowString(isme),
 			color.GreenString(iswinner),
 			p.GetName(),
-			humanize.Comma(p.Money.GetWinnings()),
-			color.HiBlueString(p.Combo))
+			humanize.Comma(p.GetMoney().GetWinnings()),
+			humanize.Comma(p.GetMoney().GetBank()),
+			humanize.Comma(p.GetMoney().GetStack()),
+			color.HiBlueString(p.GetCombo()))
 
+		fmt.Printf("     [%v] %v", p.GetCombo(), deck.CardsFromProto(p.GetHand()))
 		pc.showCards(deck.CardsFromProto(p.GetHand()), false)
 		fmt.Println()
 	}

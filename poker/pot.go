@@ -3,19 +3,21 @@ package poker
 import (
 	"fmt"
 	"log"
+
+	"github.com/DanTulovsky/pepper-poker-v2/id"
 )
 
 // Subpot is one subpot within the pot.
 type Subpot struct {
 	limit int64
 	// TODO: rename string to playerID, or just pass in *player.Player here
-	bets map[string]int64
+	bets map[id.PlayerID]int64
 }
 
 // NewSubpot creates a new subpot.
 func NewSubpot() *Subpot {
 	return &Subpot{
-		bets: make(map[string]int64),
+		bets: make(map[id.PlayerID]int64),
 	}
 }
 
@@ -29,7 +31,7 @@ func (s *Subpot) GetTotal() int64 {
 }
 
 // GetBet returns a player's total bet in the subpot.
-func (s *Subpot) GetBet(player string) int64 {
+func (s *Subpot) GetBet(player id.PlayerID) int64 {
 	return s.bets[player]
 }
 
@@ -39,14 +41,14 @@ type Pot struct {
 
 	// Only set after Finalize is called
 	finalized bool
-	winnings  map[string]int64
+	winnings  map[id.PlayerID]int64
 }
 
 // NewPot creates a new pot.
 func NewPot() *Pot {
 	p := &Pot{
 		subpots:  []*Subpot{NewSubpot()},
-		winnings: make(map[string]int64),
+		winnings: make(map[id.PlayerID]int64),
 	}
 	return p
 }
@@ -61,7 +63,7 @@ func (p *Pot) GetTotal() int64 {
 }
 
 // GetBet returns a player's total bet in the pot.
-func (p *Pot) GetBet(player string) int64 {
+func (p *Pot) GetBet(player id.PlayerID) int64 {
 	bet := int64(0)
 	for _, s := range p.subpots {
 		bet += s.GetBet(player)
@@ -70,13 +72,13 @@ func (p *Pot) GetBet(player string) int64 {
 }
 
 // Add adds a player's bet to the pot.
-func (p *Pot) Add(player string, bet int64, allin bool) {
+func (p *Pot) Add(player id.PlayerID, bet int64, allin bool) {
 	if bet <= 0 {
 		log.Fatal("trying to add non-positive bet to the pot")
 	}
 	if p.finalized {
 		p.finalized = false
-		p.winnings = make(map[string]int64)
+		p.winnings = make(map[id.PlayerID]int64)
 	}
 
 	// Go through the subpots, adding the player's bet to the first subpots we can.
@@ -145,7 +147,7 @@ func (p *Pot) Finalize(rankings []Winners) {
 			continue
 		}
 		// Each subpot can only go to players who have money in the subpot.
-		var winners []string
+		var winners []id.PlayerID
 		for _, level := range rankings {
 			// Add all players at this level who have money in this subpot.
 			for _, player := range level {
@@ -178,7 +180,7 @@ func (p *Pot) Finalize(rankings []Winners) {
 }
 
 // GetWinnings returns a player's winnings after the pot has been finalized.
-func (p *Pot) GetWinnings(player string) (int64, error) {
+func (p *Pot) GetWinnings(player id.PlayerID) (int64, error) {
 	if !p.finalized {
 		return 0, fmt.Errorf("must finalize the pot before getting winnings")
 	}

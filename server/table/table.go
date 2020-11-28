@@ -310,10 +310,24 @@ func (t *Table) infoproto() *ppb.GameInfo {
 	}
 
 	gi.Players = t.playersProto()
-
-	// TODO: Add winners
+	gi.Winners = t.winnersProto()
 
 	return gi
+}
+
+// winnersProto returns the winners of the hand
+func (t *Table) winnersProto() []string {
+	winners := []string{}
+
+	for _, p := range t.ActivePlayers() {
+		if !p.IsWinner() {
+			continue
+		}
+
+		winners = append(winners, p.ID.String())
+	}
+
+	return winners
 }
 
 // playersProto returns all active players as a proto
@@ -334,6 +348,14 @@ func (t *Table) playerProto(p *player.Player) *ppb.Player {
 
 	pl.Money.MinBetThisRound = t.minBetThisRound
 	pl.Money.Pot = t.pot.GetTotal()
+
+	// PlayerHand is only set at the end
+	if p.PlayerHand() != nil {
+		for _, c := range p.PlayerHand().Hand.Cards() {
+			pl.Hand = append(pl.Hand, c.ToProto())
+			pl.Combo = poker.ComboToString[p.PlayerHand().Hand.Combo()]
+		}
+	}
 
 	return pl
 }
@@ -514,6 +536,17 @@ func (t *Table) SetPlayersActionRequired() {
 			p.SetActionRequired(true)
 		}
 	}
+}
+
+// haveWinner returns true when there is only one player left
+func (t *Table) haveWinner() bool {
+	active := 0
+	for _, p := range t.ActivePlayers() {
+		if !p.Folded() {
+			active++
+		}
+	}
+	return active < 2
 }
 
 // sendUpdateToPlayers sends updates to players as needed
