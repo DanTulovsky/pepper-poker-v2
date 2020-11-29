@@ -16,7 +16,7 @@ var (
 	statesEntered = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "pepperpoker_states_entered_total",
 		Help: "The total number of states entered",
-	}, []string{"state", "hand"})
+	}, []string{"state"})
 )
 
 // state is the state machine for the table
@@ -60,7 +60,7 @@ func newBaseState(name ppb.GameState, table *Table) baseState {
 
 // Init runs once when the stats starts
 func (i *baseState) Init() error {
-	statesEntered.WithLabelValues(i.Name().String(), fmt.Sprintf("%d", i.table.currentHand)).Inc()
+	statesEntered.WithLabelValues(i.Name().String()).Inc()
 
 	return nil
 }

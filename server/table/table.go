@@ -356,8 +356,9 @@ func (t *Table) playersProto() []*ppb.Player {
 func (t *Table) playerProto(p *player.Player) *ppb.Player {
 	pl := p.AsProto()
 
-	pl.Money.MinBetThisRound = t.minBetThisRound
-	pl.Money.Pot = t.pot.GetTotal()
+	pl.GetMoney().MinBetThisRound = t.minBetThisRound
+	pl.GetMoney().Pot = t.pot.GetTotal()
+	pl.GetMoney().BetThisHand = t.pot.GetBet(p.ID)
 
 	// PlayerHand is only set at the end
 	if p.PlayerHand() != nil {
@@ -376,6 +377,8 @@ func (t *Table) confPlayerProto(p *player.Player) *ppb.Player {
 
 	pl.Money.MinBetThisRound = t.minBetThisRound
 	pl.Money.Pot = t.pot.GetTotal()
+	pl.GetMoney().BetThisHand = t.pot.GetBet(p.ID)
+
 	pl.Card = deck.CardsToProto(p.Hole())
 	return pl
 }

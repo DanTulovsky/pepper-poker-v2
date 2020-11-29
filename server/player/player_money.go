@@ -7,7 +7,6 @@ import (
 // Money keeps track of the player's money during the hand
 type Money struct {
 	bank, stack, betThisRound, winnings int64
-	betThisHand                         int64 // TODO: This isn't set anywhere
 }
 
 // NewMoney returns a new money struct
@@ -63,7 +62,6 @@ func (pm *Money) AsProto() *ppb.PlayerMoney {
 		Bank:         pm.bank,
 		Stack:        pm.stack,
 		BetThisRound: pm.betThisRound,
-		BetThisHand:  pm.betThisHand,
 		Winnings:     pm.winnings,
 	}
 }
