@@ -14,6 +14,8 @@ type playingDoneState struct {
 }
 
 func (i *playingDoneState) Init() error {
+	i.baseState.Init()
+
 	i.l.Info("Have winner!")
 
 	// Collect all the player hands.

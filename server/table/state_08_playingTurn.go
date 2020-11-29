@@ -7,6 +7,8 @@ type playingTurnState struct {
 }
 
 func (i *playingTurnState) Init() error {
+	i.baseState.Init()
+	i.table.ResetPlayersBets()
 	i.table.SetPlayersActionRequired()
 
 	// Burn one.

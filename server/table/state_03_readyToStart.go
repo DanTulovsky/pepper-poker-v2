@@ -14,9 +14,9 @@ type readyToStartState struct {
 }
 
 func (i *readyToStartState) Init() error {
-	i.l.Info("Starting new game with players...")
+	i.baseState.Init()
 
-	i.l.Info("Players buying in...")
+	i.l.Info("Starting new game with players...")
 
 	i.l.Info("Dealings cards to players...")
 	for j := 0; j < 2; j++ {

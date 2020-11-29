@@ -9,6 +9,8 @@ type playingFlopState struct {
 }
 
 func (i *playingFlopState) Init() error {
+	i.baseState.Init()
+	i.table.ResetPlayersBets()
 	i.table.SetPlayersActionRequired()
 
 	// Burn one.

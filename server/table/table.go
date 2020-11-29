@@ -61,6 +61,7 @@ type Table struct {
 	board                            *poker.Board
 	deck                             *deck.Deck
 	buyinAmount                      int64
+	currentHand                      int64 // allows tracking metrics by hand
 
 	// how long to wait for player to make a move
 	playerTimeout time.Duration
@@ -152,7 +153,16 @@ func (t *Table) Run() error {
 		if err := t.Tick(); err != nil {
 			return err
 		}
-		time.Sleep(time.Second)
+		time.Sleep(time.Millisecond * 100)
+	}
+}
+
+// ResetPlayersBets resets player bet this round
+func (t *Table) ResetPlayersBets() {
+
+	t.minBetThisRound = 0
+	for _, p := range t.ActivePlayers() {
+		p.ResetForBettingRound()
 	}
 }
 

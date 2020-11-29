@@ -11,6 +11,8 @@ type playingBigBlindState struct {
 }
 
 func (i *playingBigBlindState) Init() error {
+	i.baseState.Init()
+
 	i.l.Infof("[%v] putting in big blind...", i.table.bigBlindPlayer.Name)
 
 	bet := i.table.bigBlind

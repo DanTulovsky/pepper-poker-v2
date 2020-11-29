@@ -6,7 +6,8 @@ import (
 
 // Money keeps track of the player's money during the hand
 type Money struct {
-	bank, stack, betThisRound, betThisHand, winnings int64
+	bank, stack, betThisRound, winnings int64
+	betThisHand                         int64 // TODO: This isn't set anywhere
 }
 
 // NewMoney returns a new money struct

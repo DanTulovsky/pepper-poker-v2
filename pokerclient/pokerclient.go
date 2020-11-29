@@ -626,8 +626,8 @@ func (pc *PokerClient) getGameState(in *ppb.GameData) string {
 		if mymoney != nil {
 			state.WriteString(fmt.Sprintf("%v $%v\n", color.CyanString("Total Bank:"), humanize.Comma(mymoney.GetBank())))
 			state.WriteString(fmt.Sprintf("%v $%v\n", color.CyanString("Total Stack:"), humanize.Comma(mymoney.GetStack())))
-			state.WriteString(fmt.Sprintf("%v $%v\n", color.CyanString("Total Bet this Hand:"), humanize.Comma(mymoney.GetBetThisHand())))
-			state.WriteString(fmt.Sprintf("%v $%v\n", color.CyanString("Current Bet:"), humanize.Comma(mymoney.GetBetThisRound())))
+			state.WriteString(fmt.Sprintf("%v $%v\n", color.CyanString("Bet this Hand: (not used?)"), humanize.Comma(mymoney.GetBetThisHand())))
+			state.WriteString(fmt.Sprintf("%v $%v\n", color.CyanString("Bet this Betting Round:"), humanize.Comma(mymoney.GetBetThisRound())))
 			state.WriteString(fmt.Sprintf("%v $%v\n", color.CyanString("Min Bet Right Now:"), humanize.Comma(mymoney.GetMinBetThisRound())))
 			state.WriteString(fmt.Sprintf("%v $%v\n", color.CyanString("Pot Right Now:"), humanize.Comma(mymoney.GetPot())))
 		}

@@ -7,6 +7,8 @@ type playingRiverState struct {
 }
 
 func (i *playingRiverState) Init() error {
+	i.baseState.Init()
+	i.table.ResetPlayersBets()
 	i.table.SetPlayersActionRequired()
 
 	// Burn one.

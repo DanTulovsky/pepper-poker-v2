@@ -57,6 +57,11 @@ func New(name string, bank int64) *Player {
 	}
 }
 
+// ResetForBettingRound resets the player for the next betting round (multiple of these inside one hand)
+func (p *Player) ResetForBettingRound() {
+	p.Money().SetBetThisRound(0)
+}
+
 // PlayerHand sets the player's final hand
 func (p *Player) PlayerHand() *poker.PlayerHand {
 	return p.HandInfo.Hand

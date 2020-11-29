@@ -5,6 +5,8 @@ type playingPreFlopState struct {
 }
 
 func (i *playingPreFlopState) Init() error {
+	i.baseState.Init()
+
 	i.table.SetPlayersActionRequired()
 
 	// properly set from the previous state

@@ -6,8 +6,17 @@ import (
 	"github.com/DanTulovsky/logger"
 	"github.com/DanTulovsky/pepper-poker-v2/server/player"
 	"github.com/fatih/color"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	ppb "github.com/DanTulovsky/pepper-poker-v2/proto"
+)
+
+var (
+	statesEntered = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "pepperpoker_states_entered_total",
+		Help: "The total number of states entered",
+	}, []string{"state", "hand"})
 )
 
 // state is the state machine for the table
@@ -51,6 +60,8 @@ func newBaseState(name ppb.GameState, table *Table) baseState {
 
 // Init runs once when the stats starts
 func (i *baseState) Init() error {
+	statesEntered.WithLabelValues(i.Name().String(), fmt.Sprintf("%d", i.table.currentHand)).Inc()
+
 	return nil
 }
 

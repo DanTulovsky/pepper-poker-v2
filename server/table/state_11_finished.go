@@ -13,10 +13,12 @@ type finishedState struct {
 
 	gameEndDelay time.Duration
 
-	token *acks.Token
+	token       *acks.Token
+	statusCache string
 }
 
 func (i *finishedState) Init() error {
+	i.baseState.Init()
 
 	// reset any existing acks
 	i.table.clearAckToken()
@@ -51,7 +53,11 @@ func (i *finishedState) StartGame() error {
 
 func (i *finishedState) Tick() error {
 
-	i.l.Infof("Waiting (%v) for %d players to ack...", i.token.TimeRemaining().Truncate(time.Second), i.token.NumStillToAck())
+	status := fmt.Sprintf("Waiting (%v) for %d players to ack...", i.token.TimeRemaining().Truncate(time.Second), i.token.NumStillToAck())
+	if i.statusCache != status {
+		i.l.Infof(status)
+		i.statusCache = status
+	}
 	if i.token.AllAcked() || i.token.Expired() {
 		i.table.clearAckToken()
 		i.token = nil

@@ -13,11 +13,15 @@ import (
 type initializingState struct {
 	baseState
 
-	token *acks.Token
+	token       *acks.Token
+	statusCache string
 }
 
 func (i *initializingState) Init() error {
 	i.l.Info("Initializing table...")
+
+	i.table.currentHand++
+
 	i.table.button = i.table.playerAfter(i.table.button)
 	sb := i.table.playerAfter(i.table.button)
 	bb := i.table.playerAfter(sb)
@@ -40,6 +44,7 @@ func (i *initializingState) Init() error {
 	i.table.board = poker.NewBoard()
 	i.table.deck = deck.NewShuffledDeck()
 	i.table.pot = poker.NewPot()
+	i.table.ResetPlayersBets()
 
 	// reset any existing acks
 	i.table.clearAckToken()
@@ -71,7 +76,11 @@ func (i *initializingState) Tick() error {
 		return nil
 	}
 
-	i.l.Infof("Waiting (%v) for %d players to ack...", i.token.TimeRemaining().Truncate(time.Second), i.token.NumStillToAck())
+	status := fmt.Sprintf("Waiting (%v) for %d players to ack...", i.token.TimeRemaining().Truncate(time.Second), i.token.NumStillToAck())
+	if i.statusCache != status {
+		i.l.Infof(status)
+		i.statusCache = status
+	}
 
 	return nil
 }

@@ -9,6 +9,8 @@ import (
 	"github.com/fatih/color"
 )
 
+var ()
+
 func main() {
 
 	flag.Parse()
