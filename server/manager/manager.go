@@ -146,6 +146,12 @@ func (m *Manager) processPlayerRequests() {
 
 		m.l.Infof("[%v] Received request from player: %#v", playerUsername, playerAction.String())
 
+		if !users.Check(playerUsername, in.ClientInfo.Password) {
+			err = fmt.Errorf("invalid username or password")
+			in.ResultC <- actions.NewPlayerActionError(err)
+			return
+		}
+
 		switch playerAction {
 		case proto.PlayerAction_PlayerActionNone:
 			m.l.Infof("[%v] player sent empty action...", playerName)

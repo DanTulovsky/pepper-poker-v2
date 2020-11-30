@@ -16,7 +16,7 @@ var (
 	playerCombos = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "pepperpoker_combos_played_total",
 		Help: "The total number of combos played",
-	}, []string{"combo"})
+	}, []string{"username", "combo"}) // TODO: this is only ok for very few players
 )
 
 // handInfo is info for each hand (one poker game)
@@ -43,6 +43,9 @@ func newHandInfo() *handInfo {
 
 // Stats keeps per-player stats
 type Stats struct {
+	// username for metric exporting
+	username string
+
 	// GamesPlays is the total number of games played
 	gamesPlayed int64
 
@@ -60,6 +63,16 @@ func (s *Stats) GamesPlayedInc() {
 	s.gamesPlayed++
 }
 
+// NewStats returns new stats
+func NewStats(username string) *Stats {
+	return &Stats{
+		username:    username,
+		gamesPlayed: 0,
+		gamesWon:    0,
+		combos:      make(map[poker.Combo]int64),
+	}
+}
+
 // GamesWonInc increments games won
 func (s *Stats) GamesWonInc() {
 	s.gamesWon++
@@ -73,16 +86,7 @@ func (s *Stats) ComboInc(combo poker.Combo) {
 	}
 	s.combos[combo]++
 
-	playerCombos.WithLabelValues(combo.String()).Inc()
-}
-
-// NewStats returns new stats
-func NewStats() *Stats {
-	return &Stats{
-		gamesPlayed: 0,
-		gamesWon:    0,
-		combos:      make(map[poker.Combo]int64),
-	}
+	playerCombos.WithLabelValues(s.username, combo.String()).Inc()
 }
 
 // Player represents a single player
@@ -112,7 +116,7 @@ func New(u users.User) *Player {
 		Username: u.Username,
 		money:    NewMoney(u.Bank),
 		HandInfo: newHandInfo(),
-		Stats:    NewStats(),
+		Stats:    NewStats(u.Username),
 	}
 }
 

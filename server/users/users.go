@@ -1,7 +1,19 @@
 // Package users manages the users allowed to play games
 package users
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+)
+
+var (
+	authchecks = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "pepperpoker_authchecks_total",
+		Help: "keeps track of failed and successful auth checks",
+	}, []string{"result"})
+)
 
 // User is a user of the system
 type User struct {
@@ -23,23 +35,19 @@ func Load(username string, token string) (User, error) {
 // load loads from the external db
 func loadFromStatic(username, token string) (User, error) {
 
-	var u User
-	var ok bool
-
-	if u, ok = userdb[username]; !ok {
+	if !Check(username, token) {
 		return User{}, fmt.Errorf("invalid login for [%v]", username)
 	}
 
-	if u.Token != token {
-		return User{}, fmt.Errorf("invalid login for [%v] (wrong password)", username)
-	}
-	return u, nil
+	return userdb[username], nil
 }
 
 // Check returns true if the username and token are valid
 func Check(username, token string) bool {
 	if _, ok := userdb[username]; !ok {
+		authchecks.WithLabelValues("failure").Inc()
 		return false
 	}
+	authchecks.WithLabelValues("success").Inc()
 	return true
 }
