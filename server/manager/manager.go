@@ -3,7 +3,6 @@ package manager
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/DanTulovsky/logger"
 	"github.com/DanTulovsky/pepper-poker-v2/actions"
@@ -107,7 +106,7 @@ func (m *Manager) tick() error {
 
 	m.processPlayerRequests()
 
-	time.Sleep(time.Millisecond * 500)
+	// time.Sleep(time.Millisecond * 500)
 
 	return nil
 }

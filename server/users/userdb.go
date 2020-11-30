@@ -29,7 +29,7 @@ var (
 		"robot3": {
 			Bank:     10000,
 			Name:     "robot the three",
-			Username: "robot2",
+			Username: "robot3",
 			Token:    "password",
 		},
 		"robot4": {
