@@ -28,6 +28,9 @@ type Table struct {
 	// table positions
 	positions []*player.Player
 
+	// players playing the current hand
+	currentHandPlayers []*player.Player
+
 	maxPlayers int
 	minPlayers int
 
@@ -80,12 +83,13 @@ type Table struct {
 // New creates a new table
 func New(tableAction chan ActionRequest) *Table {
 	t := &Table{
-		ID:          id.NewTableID(),
-		Name:        randomdata.SillyName(),
-		TableAction: tableAction,
-		l:           logger.New("table", color.New(color.FgYellow)),
-		board:       poker.NewBoard(),
-		pot:         poker.NewPot(),
+		ID:                 id.NewTableID(),
+		Name:               randomdata.SillyName(),
+		TableAction:        tableAction,
+		l:                  logger.New("table", color.New(color.FgYellow)),
+		board:              poker.NewBoard(),
+		pot:                poker.NewPot(),
+		currentHandPlayers: []*player.Player{},
 
 		maxPlayers: 7,
 		minPlayers: 2,
@@ -161,7 +165,7 @@ func (t *Table) Run() error {
 func (t *Table) ResetPlayersBets() {
 
 	t.minBetThisRound = 0
-	for _, p := range t.ActivePlayers() {
+	for _, p := range t.CurrentHandPlayers() {
 		p.ResetForBettingRound()
 	}
 }
@@ -329,7 +333,7 @@ func (t *Table) infoproto() *ppb.GameInfo {
 func (t *Table) winnersProto() []string {
 	winners := []string{}
 
-	for _, p := range t.ActivePlayers() {
+	for _, p := range t.CurrentHandPlayers() {
 		if !p.IsWinner() {
 			continue
 		}
@@ -344,7 +348,7 @@ func (t *Table) winnersProto() []string {
 // no confidential information is included
 func (t *Table) playersProto() []*ppb.Player {
 	players := []*ppb.Player{}
-	for _, p := range t.ActivePlayers() {
+	for _, p := range t.CurrentHandPlayers() {
 		players = append(players, t.playerProto(p))
 	}
 
@@ -419,11 +423,11 @@ func (t *Table) AvailableToJoin() bool {
 	return t.State.AvailableToJoin()
 }
 
-// playerAfter returns the index of the first non-empty chair after index.
+// playerAfter returns the index of the first non-empty chair after index, includes only players in the current hand
 func (t *Table) playerAfter(index int) int {
 	for i := 0; i < t.maxPlayers; i++ {
 		index = (index + 1) % t.maxPlayers
-		if t.positions[index] != nil {
+		if t.positions[index] != nil && t.positions[index].InList(t.currentHandPlayers) {
 			break
 		}
 	}
@@ -432,7 +436,7 @@ func (t *Table) playerAfter(index int) int {
 
 // canAdvanceState returns true if the state can advance
 func (t *Table) canAdvanceState() bool {
-	for _, p := range t.ActivePlayers() {
+	for _, p := range t.CurrentHandPlayers() {
 		if p.ActionRequired() {
 			return false
 		}
@@ -451,6 +455,26 @@ func (t *Table) setState(s state) {
 	t.State = s
 
 	s.Init()
+}
+
+// AddCurrentHandPlayer adds a player to the currentHandPlayers
+func (t *Table) AddCurrentHandPlayer(p *player.Player) {
+	t.currentHandPlayers = append(t.currentHandPlayers, p)
+}
+
+// NumCurrentHandPlayers returns the number players participating in the current hand
+func (t *Table) NumCurrentHandPlayers() int {
+	return len(t.currentHandPlayers)
+}
+
+// CurrentHandPlayers returns the players participating in the current hand
+func (t *Table) CurrentHandPlayers() []*player.Player {
+	return t.currentHandPlayers
+}
+
+// ClearCurrentHandPlayers clears players participating in the current hand
+func (t *Table) ClearCurrentHandPlayers() {
+	t.currentHandPlayers = []*player.Player{}
 }
 
 // ActivePlayers returns the players at the table
@@ -545,7 +569,7 @@ func (t *Table) nextAvailablePosition() int {
 
 // SetPlayersActionRequired resets the actionRequired attribute on players before each state
 func (t *Table) SetPlayersActionRequired() {
-	for _, p := range t.ActivePlayers() {
+	for _, p := range t.CurrentHandPlayers() {
 		if !p.AllIn() && !p.Folded() {
 			p.SetActionRequired(true)
 		}
@@ -555,7 +579,7 @@ func (t *Table) SetPlayersActionRequired() {
 // haveWinner returns true when there is only one player left
 func (t *Table) haveWinner() bool {
 	active := 0
-	for _, p := range t.ActivePlayers() {
+	for _, p := range t.CurrentHandPlayers() {
 		if !p.Folded() {
 			active++
 		}
@@ -565,7 +589,8 @@ func (t *Table) haveWinner() bool {
 
 // sendUpdateToPlayers sends updates to players as needed
 func (t *Table) sendUpdateToPlayers() {
-	for _, p := range t.ActivePlayers() {
+	// note that this sends updates to all ActivePlayers, not just the ones playing a hand
+	for _, p := range t.CurrentHandPlayers() {
 		in := t.gameDataProto(p)
 		action := actions.NewGameData(in)
 

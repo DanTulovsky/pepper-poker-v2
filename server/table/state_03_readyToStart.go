@@ -27,11 +27,12 @@ func (i *readyToStartState) Init() error {
 
 	i.l.Info("Starting new game with players...")
 	numPlayers.WithLabelValues("active").Set(float64(i.table.numActivePlayers()))
+	numPlayers.WithLabelValues("current_hand").Set(float64(i.table.NumCurrentHandPlayers()))
 	numPlayers.WithLabelValues("available").Set(float64(i.table.numAvailablePlayers()))
 
 	i.l.Info("Dealings cards to players...")
 	for j := 0; j < 2; j++ {
-		for _, p := range i.table.ActivePlayers() {
+		for _, p := range i.table.CurrentHandPlayers() {
 			card, err := i.table.deck.Next()
 			if err != nil {
 				return err
@@ -41,7 +42,7 @@ func (i *readyToStartState) Init() error {
 		}
 	}
 
-	for _, p := range i.table.ActivePlayers() {
+	for _, p := range i.table.CurrentHandPlayers() {
 		i.l.Infof("  [%v ($%v)]: %v", p.Name, humanize.Comma(p.Money().Stack()), p.Hole())
 	}
 

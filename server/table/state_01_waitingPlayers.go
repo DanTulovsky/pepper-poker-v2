@@ -41,6 +41,11 @@ func (i *waitingPlayersState) Tick() error {
 		if wait > 0 {
 			status = fmt.Sprintf("Table [%v] waiting %v before starting... (players: %d)", i.table.ID, wait.Truncate(time.Second), numAvailablePlayers)
 		} else {
+			i.l.Info("Adding players to current hand...")
+			for _, p := range i.table.AvailablePlayers() {
+				i.table.AddCurrentHandPlayer(p)
+			}
+
 			i.table.setState(i.table.initializingState)
 			i.cache = ""
 			return nil

@@ -24,7 +24,7 @@ func (i *finishedState) Init() error {
 	i.table.clearAckToken()
 
 	// Used to get an ack before game ends
-	i.token = acks.New(i.table.ActivePlayers(), i.table.defaultAckTimeout)
+	i.token = acks.New(i.table.CurrentHandPlayers(), i.table.defaultAckTimeout)
 	i.token.StartTime()
 	i.table.setAckToken(i.token)
 
@@ -61,6 +61,10 @@ func (i *finishedState) Tick() error {
 	if i.token.AllAcked() || i.token.Expired() {
 		i.table.clearAckToken()
 		i.token = nil
+
+		i.l.Info("Removing players from current hand...")
+		i.table.ClearCurrentHandPlayers()
+
 		i.table.setState(i.table.waitingPlayersState)
 		return nil
 	}

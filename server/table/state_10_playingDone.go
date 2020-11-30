@@ -20,7 +20,7 @@ func (i *playingDoneState) Init() error {
 
 	// Collect all the player hands.
 	var hands []*poker.PlayerHand
-	for _, p := range i.table.ActivePlayers() {
+	for _, p := range i.table.CurrentHandPlayers() {
 		i.l.Infof("[%v] => bet this hand: %v; => folded? %t", p.Name, humanize.Comma(i.table.pot.GetBet(p.ID)), p.Folded())
 
 		if !p.Folded() {
@@ -47,7 +47,7 @@ func (i *playingDoneState) Init() error {
 	i.table.pot.Finalize(levels)
 
 	// Set winners
-	for _, p := range i.table.ActivePlayers() {
+	for _, p := range i.table.CurrentHandPlayers() {
 		p.Stats.GamesPlayedInc()
 
 		if !p.Folded() && len(hands) > 1 {

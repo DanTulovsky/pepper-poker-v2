@@ -36,7 +36,7 @@ func (i *initializingState) Init() error {
 	i.l.Infof("bigBlind: %v", i.table.bigBlindPlayer.Name)
 
 	i.l.Info("Initializing player information for the hand...")
-	for _, p := range i.table.ActivePlayers() {
+	for _, p := range i.table.CurrentHandPlayers() {
 		p.Init()
 	}
 
@@ -50,7 +50,7 @@ func (i *initializingState) Init() error {
 	i.table.clearAckToken()
 
 	// Used to get an ack before game starts
-	i.token = acks.New(i.table.ActivePlayers(), i.table.defaultAckTimeout)
+	i.token = acks.New(i.table.CurrentHandPlayers(), i.table.defaultAckTimeout)
 	i.token.StartTime()
 	i.table.setAckToken(i.token)
 

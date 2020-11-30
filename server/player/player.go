@@ -120,6 +120,16 @@ func New(u users.User) *Player {
 	}
 }
 
+// InList returns true if the player is in the list l
+func (p *Player) InList(l []*Player) bool {
+	for _, pl := range l {
+		if p == pl {
+			return true
+		}
+	}
+	return false
+}
+
 // ResetForBettingRound resets the player for the next betting round (multiple of these inside one hand)
 func (p *Player) ResetForBettingRound() {
 	p.Money().SetBetThisRound(0)
