@@ -1,5 +1,5 @@
 // package main ...
-// A very simple robot that folds every time
+// A very simple robot that calls if it has to, otherwise folds
 package main
 
 import (
@@ -70,6 +70,22 @@ func main() {
 func decideOnAction(data *ppb.GameData) (*actions.PlayerAction, error) {
 	paction := ppb.PlayerAction_PlayerActionFold
 
+	mymoney := data.GetPlayer().GetMoney()
+
+	switch {
+	case mymoney.BetThisRound < mymoney.MinBetThisRound:
+		switch {
+		case mymoney.Stack > mymoney.MinBetThisRound-mymoney.BetThisRound:
+			// Have enough to call
+			paction = ppb.PlayerAction_PlayerActionCall
+		default:
+			// Fold if can't call
+			paction = ppb.PlayerAction_PlayerActionFold
+		}
+	default:
+		// Check
+		paction = ppb.PlayerAction_PlayerActionFold
+	}
 	// First three fields are not used and are set automatically by the client
 	playerAction := actions.NewPlayerAction(id.EmptyPlayerID, id.EmptyTableID, paction, nil, nil)
 
