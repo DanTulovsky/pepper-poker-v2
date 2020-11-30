@@ -16,12 +16,14 @@ import (
 	ppb "github.com/DanTulovsky/pepper-poker-v2/proto"
 )
 
+var ()
+
 // DeciderFunc is the function that decides what to do
 type DeciderFunc func(data *ppb.GameData) (*actions.PlayerAction, error)
 
 // RoboClient is a robot playing poker
 type RoboClient struct {
-	Name string
+	username string
 
 	playerID  id.PlayerID
 	tableID   id.TableID
@@ -35,17 +37,17 @@ type RoboClient struct {
 }
 
 // NewRoboClient returns a new robot client
-func NewRoboClient(ctx context.Context, name string, df DeciderFunc, cc *CommChannels, insecure bool) (*RoboClient, error) {
+func NewRoboClient(ctx context.Context, username, password string, df DeciderFunc, cc *CommChannels, insecure bool) (*RoboClient, error) {
 	rand.Seed(time.Now().UnixNano())
 
 	r := &RoboClient{
-		Name:        name,
+		username:    username,
 		DeciderFunc: df,
 		l:           logger.New("roboclient", color.New(color.FgBlue)),
 	}
 
 	var err error
-	if r.PokerClient, err = pokerclient.New(ctx, r.Name, insecure, cc.Paction, cc.Presult, cc.InputWanted); err != nil {
+	if r.PokerClient, err = pokerclient.New(ctx, r.username, password, insecure, cc.Paction, cc.Presult, cc.InputWanted); err != nil {
 		return nil, err
 	}
 	return r, nil
@@ -66,7 +68,7 @@ func (r *RoboClient) JoinGame(ctx context.Context) error {
 		return fmt.Errorf("failed to join game: %v", err)
 	}
 
-	r.l.Infof("[%v] Joined game [%v]...", r.PokerClient.Name, r.PokerClient.TableID)
+	r.l.Infof("[%v] Joined game [%v]...", r.PokerClient.PlayerUsername, r.PokerClient.TableID)
 
 	return nil
 }

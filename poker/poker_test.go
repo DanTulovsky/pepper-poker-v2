@@ -125,7 +125,7 @@ func Test_bestCombo(t *testing.T) {
 			}
 
 			if got.combo != tt.want.combo {
-				t.Errorf("bestCombo(%v): got %v; expected %v", cards, ComboToString[got.combo], ComboToString[tt.want.combo])
+				t.Errorf("bestCombo(%v): got %v; expected %v", cards, got.combo, tt.want.combo)
 			}
 		})
 	}
@@ -479,7 +479,7 @@ func Test_haveStraightFlush(t *testing.T) {
 			}
 
 			if got != nil && tt.want != nil && got.combo != tt.want.combo {
-				t.Fatalf("haveStraight(%v) returned combo: %v; expected: %v", tt.cards, ComboToString[got.combo], ComboToString[tt.want.combo])
+				t.Fatalf("haveStraight(%v) returned combo: %v; expected: %v", tt.cards, got.combo, tt.want.combo)
 			}
 
 			if got != nil {
@@ -567,7 +567,7 @@ func Test_haveFullHouse(t *testing.T) {
 			}
 
 			if got != nil && tt.want != nil && got.combo != tt.want.combo {
-				t.Fatalf("haveFullHouse(%v) returned combo: %v; expected: %v", tt.cards, ComboToString[got.combo], ComboToString[tt.want.combo])
+				t.Fatalf("haveFullHouse(%v) returned combo: %v; expected: %v", tt.cards, got.combo, tt.want.combo)
 			}
 
 			if got != nil {
@@ -654,7 +654,7 @@ func Test_haveFlush(t *testing.T) {
 			}
 
 			if got != nil && tt.want != nil && got.combo != tt.want.combo {
-				t.Errorf("haveFlush(%v) returned combo: %v; expected: %v", tt.cards, ComboToString[got.combo], ComboToString[tt.want.combo])
+				t.Errorf("haveFlush(%v) returned combo: %v; expected: %v", tt.cards, got.combo, tt.want.combo)
 			}
 
 			if got != nil {
@@ -742,7 +742,7 @@ func Test_haveStraight(t *testing.T) {
 			}
 
 			if got != nil && tt.want != nil && got.combo != tt.want.combo {
-				t.Errorf("haveStraight(%v) returned combo: %v; expected: %v", tt.cards, ComboToString[got.combo], ComboToString[tt.want.combo])
+				t.Errorf("haveStraight(%v) returned combo: %v; expected: %v", tt.cards, got.combo, tt.want.combo)
 			}
 
 			if got != nil {
@@ -829,7 +829,7 @@ func Test_haveTwoPair(t *testing.T) {
 			}
 
 			if got != nil && tt.want != nil && got.combo != tt.want.combo {
-				t.Errorf("haveTwoPair(%v) returned combo: %v; expected: %v", tt.cards, ComboToString[got.combo], ComboToString[tt.want.combo])
+				t.Errorf("haveTwoPair(%v) returned combo: %v; expected: %v", tt.cards, got.combo, tt.want.combo)
 			}
 
 			if got != nil {
@@ -936,7 +936,7 @@ func Test_havePair(t *testing.T) {
 			}
 
 			if got != nil && tt.want != nil && got.combo != tt.want.combo {
-				t.Errorf("havePair(%v) returned combo: %v; expected: %v", tt.cards, ComboToString[got.combo], ComboToString[tt.want.combo])
+				t.Errorf("havePair(%v) returned combo: %v; expected: %v", tt.cards, got.combo, tt.want.combo)
 			}
 
 			if got != nil {

@@ -48,6 +48,8 @@ func (i *playingDoneState) Init() error {
 
 	// Set winners
 	for _, p := range i.table.ActivePlayers() {
+		p.Stats.GamesPlayedInc()
+
 		if !p.Folded() && len(hands) > 1 {
 			// set the player's best hand
 			cards := append(p.Hole(), i.table.board.Cards()...)
@@ -56,11 +58,15 @@ func (i *playingDoneState) Init() error {
 			p.SetPlayerHand(&poker.PlayerHand{
 				Hand: hand,
 			})
+
+			p.Stats.ComboInc(hand.Combo())
 		}
 
 		winnings, _ := i.table.pot.GetWinnings(p.ID)
 		if winnings > 0 {
-			i.l.Infof("[%v] is a Winner ([%v] %v)", p.Name, poker.ComboToString[p.PlayerHand().Hand.Combo()], p.PlayerHand().Hand.Cards())
+			i.l.Infof("[%v] is a Winner ([%v] %v)", p.Name, p.PlayerHand().Hand.Combo().String(), p.PlayerHand().Hand.Cards())
+
+			p.Stats.GamesWonInc()
 			p.SetWinnerAndWinnings(winnings)
 			// Return winnings to the stack
 			// TODO: On disconnect, return money to the bank

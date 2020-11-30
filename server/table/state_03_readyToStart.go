@@ -6,6 +6,15 @@ import (
 
 	"github.com/DanTulovsky/pepper-poker-v2/server/player"
 	"github.com/dustin/go-humanize"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+)
+
+var (
+	numPlayers = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "pepperpoker_players_total",
+		Help: "The total number of players",
+	}, []string{"type"})
 )
 
 type readyToStartState struct {
@@ -17,6 +26,8 @@ func (i *readyToStartState) Init() error {
 	i.baseState.Init()
 
 	i.l.Info("Starting new game with players...")
+	numPlayers.WithLabelValues("active").Set(float64(i.table.numActivePlayers()))
+	numPlayers.WithLabelValues("available").Set(float64(i.table.numAvailablePlayers()))
 
 	i.l.Info("Dealings cards to players...")
 	for j := 0; j < 2; j++ {

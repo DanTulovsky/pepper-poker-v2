@@ -92,7 +92,9 @@ message PlayRequest {
 message ClientInfo {
   string playerID = 10;
   string playerName = 20;
-  string tableID = 30;
+  string playerUsername = 30;
+  string tableID = 40;
+  string password = 50;
 }
 
 enum GameState {

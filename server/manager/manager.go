@@ -3,6 +3,7 @@ package manager
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/DanTulovsky/logger"
 	"github.com/DanTulovsky/pepper-poker-v2/actions"
@@ -11,6 +12,7 @@ import (
 	"github.com/DanTulovsky/pepper-poker-v2/server/player"
 	"github.com/DanTulovsky/pepper-poker-v2/server/server"
 	"github.com/DanTulovsky/pepper-poker-v2/server/table"
+	"github.com/DanTulovsky/pepper-poker-v2/server/users"
 	"github.com/fatih/color"
 
 	ppb "github.com/DanTulovsky/pepper-poker-v2/proto"
@@ -29,6 +31,9 @@ type Manager struct {
 	// Todo: Consider either adding locks on *Player or just uding IDs here
 	// The Table accesses and calls methods on Player
 	players map[id.PlayerID]*player.Player
+
+	// Map is username to external user object
+	users map[string]users.User
 
 	defaultPlayerBank int64
 }
@@ -96,13 +101,13 @@ func (m *Manager) startServers(ctx context.Context, serverChan chan actions.Play
 	}()
 }
 
-// tick is one ass through the manager
+// tick is one pass through the manager
 func (m *Manager) tick() error {
 	m.l.Debug("Tick()")
 
 	m.processPlayerRequests()
 
-	// time.Sleep(time.Millisecond * 500)
+	time.Sleep(time.Millisecond * 500)
 
 	return nil
 }
@@ -117,6 +122,7 @@ func (m *Manager) processPlayerRequests() {
 	select {
 	case in := <-m.fromGrpcServerChan:
 		playerName := in.ClientInfo.PlayerName
+		playerUsername := in.ClientInfo.PlayerUsername
 		playerID := id.PlayerID(in.ClientInfo.PlayerID)
 		tableID := id.TableID(in.ClientInfo.TableID)
 		playerAction := in.Action
@@ -138,7 +144,7 @@ func (m *Manager) processPlayerRequests() {
 			}
 		}
 
-		m.l.Infof("[%v] Received request from player: %#v", playerName, playerAction.String())
+		m.l.Infof("[%v] Received request from player: %#v", playerUsername, playerAction.String())
 
 		switch playerAction {
 		case proto.PlayerAction_PlayerActionNone:
@@ -416,22 +422,30 @@ func (m *Manager) firstAvailableTable() (*table.Table, error) {
 }
 
 // addPlayer add the player to the manager instance and make them available for playing games
+// player must exist in the userdb
 func (m *Manager) addPlayer(in actions.PlayerAction) (*player.Player, error) {
-	playerName := in.ClientInfo.PlayerName
-	if m.havePlayerName(playerName) {
-		return nil, fmt.Errorf("already have player with name [%v]", playerName)
+	username := in.ClientInfo.PlayerUsername
+	if m.havePlayerUsername(username) {
+		return nil, fmt.Errorf("already have player with name [%v]", username)
 	}
 
-	m.l.Infof("[%v] Adding player to manager...", playerName)
-	p := player.New(playerName, m.defaultPlayerBank)
+	m.l.Infof("[%v] Checking for playing in userdb...", username)
+	u, err := users.Load(username, in.ClientInfo.Password)
+	if err != nil {
+		return nil, err
+	}
+
+	m.l.Infof("[%v] Adding player to manager...", username)
+	p := player.New(u)
+
 	m.players[p.ID] = p
 	return p, nil
 }
 
-// havePlayerName returns true if there is a player with the given name
-func (m *Manager) havePlayerName(name string) bool {
+// havePlayerUsername returns true if there is a player with the given username already in the manager
+func (m *Manager) havePlayerUsername(username string) bool {
 	for _, p := range m.players {
-		if p.Name == name {
+		if p.Username == username {
 			return true
 		}
 	}

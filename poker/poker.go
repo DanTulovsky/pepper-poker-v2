@@ -39,6 +39,10 @@ const (
 	RoyalFlush
 )
 
+func (c Combo) String() string {
+	return ComboToString[c]
+}
+
 var (
 	// ComboToString ...
 	ComboToString = map[Combo]string{
@@ -92,7 +96,7 @@ func (h *Hand) Combo() Combo {
 	return h.combo
 }
 func (h *Hand) String() string {
-	return fmt.Sprintf("(%v) -> [%v]", ComboToString[h.combo], h.cards)
+	return fmt.Sprintf("(%v) -> [%v]", h.combo.String(), h.cards)
 }
 
 // SortCards sorts the cards, highest to lowest, in the hand based on the combination

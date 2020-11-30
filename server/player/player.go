@@ -5,8 +5,18 @@ import (
 	"github.com/DanTulovsky/pepper-poker-v2/actions"
 	"github.com/DanTulovsky/pepper-poker-v2/id"
 	"github.com/DanTulovsky/pepper-poker-v2/poker"
+	"github.com/DanTulovsky/pepper-poker-v2/server/users"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	ppb "github.com/DanTulovsky/pepper-poker-v2/proto"
+)
+
+var (
+	playerCombos = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "pepperpoker_combos_played_total",
+		Help: "The total number of combos played",
+	}, []string{"combo"})
 )
 
 // handInfo is info for each hand (one poker game)
@@ -31,10 +41,55 @@ func newHandInfo() *handInfo {
 	}
 }
 
+// Stats keeps per-player stats
+type Stats struct {
+	// GamesPlays is the total number of games played
+	gamesPlayed int64
+
+	// GamesWon is the number of games won (no money lost; in the winners list)
+	gamesWon int64
+
+	// Combos is a map of combo to how many times player had it
+	combos map[poker.Combo]int64
+
+	// TODO: Add money related stats
+}
+
+// GamesPlayedInc increments games played
+func (s *Stats) GamesPlayedInc() {
+	s.gamesPlayed++
+}
+
+// GamesWonInc increments games won
+func (s *Stats) GamesWonInc() {
+	s.gamesWon++
+}
+
+// ComboInc increments the combo count
+func (s *Stats) ComboInc(combo poker.Combo) {
+
+	if _, ok := s.combos[combo]; !ok {
+		s.combos[combo] = 0
+	}
+	s.combos[combo]++
+
+	playerCombos.WithLabelValues(combo.String()).Inc()
+}
+
+// NewStats returns new stats
+func NewStats() *Stats {
+	return &Stats{
+		gamesPlayed: 0,
+		gamesWon:    0,
+		combos:      make(map[poker.Combo]int64),
+	}
+}
+
 // Player represents a single player
 type Player struct {
-	ID   id.PlayerID
-	Name string
+	ID       id.PlayerID
+	Name     string
+	Username string
 
 	// Keeps track of how many turns the player took, used to sync the client
 	CurrentTurn   int64
@@ -44,16 +99,20 @@ type Player struct {
 	money    *Money
 	iswinner bool
 
+	Stats *Stats
+
 	CommChannel chan actions.GameData
 }
 
 // New creates a new player
-func New(name string, bank int64) *Player {
+func New(u users.User) *Player {
 	return &Player{
 		ID:       id.NewPlayerID(),
-		Name:     name,
-		money:    NewMoney(bank),
+		Name:     u.Name,
+		Username: u.Username,
+		money:    NewMoney(u.Bank),
 		HandInfo: newHandInfo(),
+		Stats:    NewStats(),
 	}
 }
 

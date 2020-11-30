@@ -12,7 +12,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Pallinder/go-randomdata"
 	"github.com/fatih/color"
 
 	"github.com/DanTulovsky/logger"
@@ -24,7 +23,8 @@ import (
 )
 
 var (
-	name     = flag.String("name", fmt.Sprintf("[robot_folder]-%v", randomdata.SillyName()), "player name")
+	username = flag.String("username", "", "player username")
+	password = flag.String("password", "", "player password")
 	insecure = flag.Bool("insecure", false, "if true, use insecure connection to server")
 	logg     *logger.Logger
 )
@@ -46,7 +46,7 @@ func main() {
 	ctx := context.Background()
 	cc := roboclient.NewCommChannels()
 
-	r, err := roboclient.NewRoboClient(ctx, *name, decideOnAction, cc, *insecure)
+	r, err := roboclient.NewRoboClient(ctx, *username, *password, decideOnAction, cc, *insecure)
 	if err != nil {
 		logg.Fatal(err)
 	}

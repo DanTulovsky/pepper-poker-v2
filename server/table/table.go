@@ -98,8 +98,8 @@ func New(tableAction chan ActionRequest) *Table {
 		defaultAckTimeout: time.Second * 10,
 		playerTimeout:     time.Second * 120,
 		gameEndDelay:      time.Second * 10,
-		gameWaitTimeout:   time.Second * 5,
-		stateAdvanceDelay: time.Second * 1,
+		gameWaitTimeout:   time.Second * 10,
+		stateAdvanceDelay: time.Second * 0,
 	}
 
 	t.positions = make([]*player.Player, t.maxPlayers)
@@ -364,7 +364,7 @@ func (t *Table) playerProto(p *player.Player) *ppb.Player {
 	if p.PlayerHand() != nil {
 		for _, c := range p.PlayerHand().Hand.Cards() {
 			pl.Hand = append(pl.Hand, c.ToProto())
-			pl.Combo = poker.ComboToString[p.PlayerHand().Hand.Combo()]
+			pl.Combo = p.PlayerHand().Hand.Combo().String()
 		}
 	}
 
@@ -447,6 +447,7 @@ func (t *Table) setState(s state) {
 	to = s.Name().String()
 
 	t.l.Infof(color.GreenString("Changing State (%v): %v -> %v"), t.stateAdvanceDelay, from, to)
+	time.Sleep(t.stateAdvanceDelay)
 	t.State = s
 
 	s.Init()

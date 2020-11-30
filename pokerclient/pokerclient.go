@@ -56,8 +56,11 @@ const (
 
 // PokerClient is the poker client
 type PokerClient struct {
-	Name     string
 	PlayerID id.PlayerID
+
+	PlayerUsername string
+	PlayerPassword string
+
 	TableID  id.TableID
 	position int64
 	client   ppb.PokerServerClient
@@ -86,7 +89,7 @@ type PokerClient struct {
 }
 
 // New returns a new pokerClient
-func New(ctx context.Context, name string, insecure bool, actions chan *actions.PlayerAction, actionResult chan *actions.PlayerActionResult, inputWanted chan *ppb.GameData) (*PokerClient, error) {
+func New(ctx context.Context, username, password string, insecure bool, actions chan *actions.PlayerAction, actionResult chan *actions.PlayerActionResult, inputWanted chan *ppb.GameData) (*PokerClient, error) {
 	showWelcome()
 
 	rand.Seed(time.Now().UnixNano())
@@ -100,15 +103,16 @@ func New(ctx context.Context, name string, insecure bool, actions chan *actions.
 		*httpPort = fmt.Sprintf("%d", port)
 	}
 
-	logger := logger.New(name, color.New(color.FgGreen))
+	logger := logger.New(username, color.New(color.FgGreen))
 	pc := &PokerClient{
-		Name:          name,
-		l:             logger,
-		action:        actions,
-		actionResult:  actionResult,
-		inputWanted:   inputWanted,
-		lastTurnTaken: -1, // server starts at 0
-		datac:         make(chan *ppb.GameData),
+		PlayerUsername: username,
+		PlayerPassword: password,
+		l:              logger,
+		action:         actions,
+		actionResult:   actionResult,
+		inputWanted:    inputWanted,
+		lastTurnTaken:  -1, // server starts at 0
+		datac:          make(chan *ppb.GameData),
 	}
 
 	opts := []grpc.DialOption{
@@ -152,6 +156,16 @@ func New(ctx context.Context, name string, insecure bool, actions chan *actions.
 	return pc, nil
 }
 
+// ClientInfo returns the filled into ClientInfo proto
+func (pc *PokerClient) ClientInfo() *ppb.ClientInfo {
+	return &ppb.ClientInfo{
+		PlayerUsername: pc.PlayerUsername,
+		Password:       pc.PlayerPassword,
+		PlayerID:       pc.PlayerID.String(),
+		TableID:        pc.TableID.String(),
+	}
+}
+
 // Play is called after joining table to begin streaming GameData
 func (pc *PokerClient) Play(ctx context.Context, donec chan bool, errc chan error) {
 	pc.l.Info("Starting GameData streamer..")
@@ -161,11 +175,7 @@ func (pc *PokerClient) Play(ctx context.Context, donec chan bool, errc chan erro
 
 	// Subscribe to GameData from the server after joing table
 	reqPlay := &ppb.PlayRequest{
-		ClientInfo: &ppb.ClientInfo{
-			PlayerName: pc.Name,
-			PlayerID:   pc.PlayerID.String(),
-			TableID:    pc.TableID.String(),
-		},
+		ClientInfo:   pc.ClientInfo(),
 		PlayerAction: ppb.PlayerAction_PlayerActionRegister,
 	}
 	stream, err := pc.client.Play(ctxCancel, reqPlay)
@@ -336,12 +346,8 @@ func (pc *PokerClient) Ack(ctx context.Context, ackToken string) error {
 	pc.l.Infof("Action: Ack [%v]", ackToken)
 
 	req := &ppb.AckTokenRequest{
-		ClientInfo: &ppb.ClientInfo{
-			PlayerName: pc.Name,
-			PlayerID:   pc.PlayerID.String(),
-			TableID:    pc.TableID.String(),
-		},
-		Token: ackToken,
+		ClientInfo: pc.ClientInfo(),
+		Token:      ackToken,
 	}
 
 	_, err := pc.client.AckToken(ctx, req)
@@ -362,11 +368,7 @@ func (pc *PokerClient) Fold(ctx context.Context) error {
 	action := ppb.PlayerAction_PlayerActionFold
 
 	req := &ppb.TakeTurnRequest{
-		ClientInfo: &ppb.ClientInfo{
-			PlayerName: pc.Name,
-			PlayerID:   pc.PlayerID.String(),
-			TableID:    pc.TableID.String(),
-		},
+		ClientInfo:   pc.ClientInfo(),
 		PlayerAction: action,
 	}
 
@@ -385,11 +387,7 @@ func (pc *PokerClient) Check(ctx context.Context) error {
 	action := ppb.PlayerAction_PlayerActionCheck
 
 	req := &ppb.TakeTurnRequest{
-		ClientInfo: &ppb.ClientInfo{
-			PlayerName: pc.Name,
-			PlayerID:   pc.PlayerID.String(),
-			TableID:    pc.TableID.String(),
-		},
+		ClientInfo:   pc.ClientInfo(),
 		PlayerAction: action,
 	}
 	_, err := pc.client.TakeTurn(ctx, req)
@@ -407,11 +405,7 @@ func (pc *PokerClient) Bet(ctx context.Context, amount int64) error {
 	action := ppb.PlayerAction_PlayerActionBet
 
 	req := &ppb.TakeTurnRequest{
-		ClientInfo: &ppb.ClientInfo{
-			PlayerName: pc.Name,
-			PlayerID:   pc.PlayerID.String(),
-			TableID:    pc.TableID.String(),
-		},
+		ClientInfo:   pc.ClientInfo(),
 		PlayerAction: action,
 		ActionOpts: &ppb.ActionOpts{
 			BetAmount: amount,
@@ -433,11 +427,7 @@ func (pc *PokerClient) AllIn(ctx context.Context) error {
 	action := ppb.PlayerAction_PlayerActionAllIn
 
 	req := &ppb.TakeTurnRequest{
-		ClientInfo: &ppb.ClientInfo{
-			PlayerName: pc.Name,
-			PlayerID:   pc.PlayerID.String(),
-			TableID:    pc.TableID.String(),
-		},
+		ClientInfo:   pc.ClientInfo(),
 		PlayerAction: action,
 	}
 
@@ -456,11 +446,7 @@ func (pc *PokerClient) Call(ctx context.Context) error {
 	action := ppb.PlayerAction_PlayerActionCall
 
 	req := &ppb.TakeTurnRequest{
-		ClientInfo: &ppb.ClientInfo{
-			PlayerName: pc.Name,
-			PlayerID:   pc.PlayerID.String(),
-			TableID:    pc.TableID.String(),
-		},
+		ClientInfo:   pc.ClientInfo(),
 		PlayerAction: action,
 	}
 	_, err := pc.client.TakeTurn(ctx, req)
@@ -536,9 +522,7 @@ func (pc *PokerClient) Register(ctx context.Context) error {
 
 	pc.l.Info("Registering...")
 	req := &ppb.RegisterRequest{
-		ClientInfo: &ppb.ClientInfo{
-			PlayerName: pc.Name,
-		},
+		ClientInfo:   pc.ClientInfo(),
 		PlayerAction: ppb.PlayerAction_PlayerActionRegister,
 	}
 	var res *ppb.RegisterResponse
@@ -561,11 +545,7 @@ func (pc *PokerClient) JoinTable(ctx context.Context, wantTableID id.TableID) er
 
 	pc.l.Info("Joining table...")
 	req := &ppb.JoinTableRequest{
-		ClientInfo: &ppb.ClientInfo{
-			PlayerName: pc.Name,
-			PlayerID:   pc.PlayerID.String(),
-			TableID:    pc.TableID.String(),
-		},
+		ClientInfo:   pc.ClientInfo(),
 		PlayerAction: ppb.PlayerAction_PlayerActionJoinTable,
 	}
 
@@ -610,7 +590,7 @@ func (pc *PokerClient) getGameState(in *ppb.GameData) string {
 	var state strings.Builder
 
 	state.WriteString(fmt.Sprintln("================================================================="))
-	state.WriteString(fmt.Sprintf("%v (pos: %v) %v\n", color.GreenString("My Player:"), pc.position, pc.Name))
+	state.WriteString(fmt.Sprintf("%v (pos: %v) %v\n", color.GreenString("My Player:"), pc.position, pc.PlayerUsername))
 	state.WriteString(fmt.Sprintf("%v %v\n", color.YellowString("Table State:"), in.GetInfo().GetGameState()))
 	state.WriteString(fmt.Sprintf("%v $%v\n", color.YellowString("Table Buyin:"), humanize.Comma(buyin)))
 
