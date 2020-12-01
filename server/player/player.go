@@ -75,6 +75,9 @@ type Stats struct {
 
 	// TODO: Add money related stats
 	money map[string]int64
+
+	// states records how many times a player reach this state
+	states map[string]int64
 }
 
 // GamesPlayedInc increments games played
@@ -91,11 +94,17 @@ func NewStats(username string) *Stats {
 		combos:      make(map[poker.Combo]int64),
 		actions:     make(map[actions.Action]int64),
 		money:       make(map[string]int64),
+		states:      make(map[string]int64),
 	}
 }
 
 // StateInc increments the state
 func (s *Stats) StateInc(state string) {
+
+	if _, ok := s.states[state]; !ok {
+		s.states[state] = 0
+	}
+	s.states[state]++
 
 	playerStates.WithLabelValues(s.username, state).Inc()
 }
