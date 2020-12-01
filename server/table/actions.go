@@ -7,6 +7,14 @@ import (
 // Action describes a possible table action
 type Action int
 
+func (a Action) String() string {
+	switch a {
+	case ActionBet:
+		return "Bet"
+	}
+	return ""
+}
+
 const (
 	// ActionAddPlayer adds a new player to the table
 	ActionAddPlayer Action = iota

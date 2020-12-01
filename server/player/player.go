@@ -17,6 +17,7 @@ var (
 		Name: "pepperpoker_combos_played_total",
 		Help: "The total number of combos played",
 	}, []string{"username", "combo"}) // TODO: this is only ok for very few players
+
 )
 
 // handInfo is info for each hand (one poker game)

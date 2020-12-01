@@ -19,7 +19,7 @@ func (i *playingBigBlindState) Init() error {
 	if i.table.bigBlindPlayer.Money().Stack() < bet {
 		bet = i.table.bigBlindPlayer.Money().Stack()
 	}
-	if err := i.table.bet(i.table.bigBlindPlayer, bet); err != nil {
+	if err := i.table.bet(i.table.bigBlindPlayer, bet, ActionBet); err != nil {
 		i.l.Fatalf("playingBigBlindState error: %s", err)
 	}
 
