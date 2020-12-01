@@ -30,6 +30,10 @@ func (i *playingRiverState) Init() error {
 	current := i.table.positions[i.table.currentTurn]
 	i.l.Infof("Player %s (%d) goes first", current.Name, i.table.currentTurn)
 
+	// records players that reached here
+	for _, p := range i.table.CurrentHandActivePlayers() {
+		p.Stats.StateInc("river")
+	}
 	return nil
 }
 

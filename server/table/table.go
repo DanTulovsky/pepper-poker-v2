@@ -472,6 +472,18 @@ func (t *Table) CurrentHandPlayers() []*player.Player {
 	return t.currentHandPlayers
 }
 
+// CurrentHandActivePlayers returns the players participating in the current hand that have not folded
+func (t *Table) CurrentHandActivePlayers() []*player.Player {
+	players := []*player.Player{}
+	for _, p := range t.currentHandPlayers {
+		if p.Folded() {
+			continue
+		}
+		players = append(players, p)
+	}
+	return players
+}
+
 // ClearCurrentHandPlayers clears players participating in the current hand
 func (t *Table) ClearCurrentHandPlayers() {
 	t.currentHandPlayers = []*player.Player{}

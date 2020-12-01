@@ -72,6 +72,17 @@ func (i *playingDoneState) Init() error {
 			// TODO: On disconnect, return money to the bank
 			p.Money().SetStack(p.Money().Stack() + p.Money().Winnings())
 		}
+
+		// Set money sets
+		p.Stats.MoneySet("bank", p.Money().Bank())
+		p.Stats.MoneySet("stack", p.Money().Stack())
+		p.Stats.MoneySet("winnings", p.Money().Winnings())
+		p.Stats.MoneySet("bet_this_hand", i.table.pot.GetBet(p.ID))
+
+		// records players that reached here
+		for _, p := range i.table.CurrentHandActivePlayers() {
+			p.Stats.StateInc("done")
+		}
 	}
 	return nil
 }

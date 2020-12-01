@@ -23,6 +23,15 @@ var (
 		Help: "The total number of player actions",
 	}, []string{"username", "action"}) // TODO: This is only ok for very few players
 
+	playerMoney = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "pepperpoker_player_money_total",
+		Help: "Player money stats",
+	}, []string{"username", "stat"}) // TODO: This is only ok for very few players
+
+	playerStates = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "pepperpoker_player_states_total",
+		Help: "The total number of states reached by player",
+	}, []string{"username", "state"}) // TODO: This is only ok for very few players
 )
 
 // handInfo is info for each hand (one poker game)
@@ -65,6 +74,7 @@ type Stats struct {
 	actions map[actions.Action]int64
 
 	// TODO: Add money related stats
+	money map[string]int64
 }
 
 // GamesPlayedInc increments games played
@@ -80,7 +90,28 @@ func NewStats(username string) *Stats {
 		gamesWon:    0,
 		combos:      make(map[poker.Combo]int64),
 		actions:     make(map[actions.Action]int64),
+		money:       make(map[string]int64),
 	}
+}
+
+// StateInc increments the state
+func (s *Stats) StateInc(state string) {
+
+	playerStates.WithLabelValues(s.username, state).Inc()
+}
+
+// MoneySet sets the money stat
+func (s *Stats) MoneySet(stat string, amount int64) {
+
+	switch stat {
+	case "winnings":
+		if _, ok := s.money[stat]; !ok {
+			s.money[stat] = 0
+		}
+		s.money[stat] += amount
+	}
+
+	playerMoney.WithLabelValues(s.username, stat).Set(float64(amount))
 }
 
 // GamesWonInc increments games won
