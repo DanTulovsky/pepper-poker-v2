@@ -60,3 +60,54 @@ func NewGameData(in *ppb.GameData) GameData {
 		Data: in,
 	}
 }
+
+// Action describes a possible table action
+type Action int
+
+func (a Action) String() string {
+	switch a {
+	case ActionBet:
+		return "Bet"
+	case ActionBuyIn:
+		return "Buyin"
+	case ActionCheck:
+		return "Check"
+	case ActionCall:
+		return "Call"
+	case ActionFold:
+		return "Fold"
+	}
+	return ""
+}
+
+const (
+	// ActionAddPlayer adds a new player to the table
+	ActionAddPlayer Action = iota
+
+	// ActionRegisterPlayerCC adds the player comm channel for sending updates
+	ActionRegisterPlayerCC
+
+	// ActionInfo returns various information about the table
+	ActionInfo
+
+	// ActionAckToken acks a token
+	ActionAckToken
+
+	// ActionCheck checks
+	ActionCheck
+
+	// ActionCall calls
+	ActionCall
+
+	// ActionFold folds
+	ActionFold
+
+	// ActionBet bets
+	ActionBet
+
+	// ActionAllIn bets all available money
+	ActionAllIn
+
+	// ActionBuyIn uses the player's bank to buy into the table (bank -> stack)
+	ActionBuyIn
+)

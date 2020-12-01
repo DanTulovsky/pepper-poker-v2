@@ -265,7 +265,7 @@ func (m *Manager) processPlayerRequests() {
 func (m *Manager) playerAckToken(p *player.Player, t *table.Table, token string) error {
 	// Table response comes back over this channel
 	result := make(chan table.ActionResult)
-	req := table.NewTableAction(table.ActionAckToken, result, p, token)
+	req := table.NewTableAction(actions.ActionAckToken, result, p, token)
 
 	t.TableAction <- req
 
@@ -278,7 +278,7 @@ func (m *Manager) playerAckToken(p *player.Player, t *table.Table, token string)
 func (m *Manager) registerPlayerCC(p *player.Player, t *table.Table, cc chan actions.GameData) error {
 	// Table response comes back over this channel
 	result := make(chan table.ActionResult)
-	req := table.NewTableAction(table.ActionRegisterPlayerCC, result, p, cc)
+	req := table.NewTableAction(actions.ActionRegisterPlayerCC, result, p, cc)
 
 	t.TableAction <- req
 
@@ -306,7 +306,7 @@ func (m *Manager) playerByID(playerID id.PlayerID) (*player.Player, error) {
 // playerBuyIn sends the BuyIn action to the table
 func (m *Manager) playerBuyIn(p *player.Player, t *table.Table) error {
 	result := make(chan table.ActionResult)
-	req := table.NewTableAction(table.ActionBuyIn, result, p, nil)
+	req := table.NewTableAction(actions.ActionBuyIn, result, p, nil)
 	t.TableAction <- req
 
 	// block until response
@@ -318,7 +318,7 @@ func (m *Manager) playerBuyIn(p *player.Player, t *table.Table) error {
 // playerCheck sends the Check action to the table
 func (m *Manager) playerCheck(p *player.Player, t *table.Table) error {
 	result := make(chan table.ActionResult)
-	req := table.NewTableAction(table.ActionCheck, result, p, nil)
+	req := table.NewTableAction(actions.ActionCheck, result, p, nil)
 	t.TableAction <- req
 
 	// block until response
@@ -330,7 +330,7 @@ func (m *Manager) playerCheck(p *player.Player, t *table.Table) error {
 // playerFold sends the Fold action to the table
 func (m *Manager) playerFold(p *player.Player, t *table.Table) error {
 	result := make(chan table.ActionResult)
-	req := table.NewTableAction(table.ActionFold, result, p, nil)
+	req := table.NewTableAction(actions.ActionFold, result, p, nil)
 	t.TableAction <- req
 
 	// block until response
@@ -342,7 +342,7 @@ func (m *Manager) playerFold(p *player.Player, t *table.Table) error {
 // playerCall sends the Call action to the table
 func (m *Manager) playerCall(p *player.Player, t *table.Table) error {
 	result := make(chan table.ActionResult)
-	req := table.NewTableAction(table.ActionCall, result, p, nil)
+	req := table.NewTableAction(actions.ActionCall, result, p, nil)
 	t.TableAction <- req
 
 	// block until response
@@ -354,7 +354,7 @@ func (m *Manager) playerCall(p *player.Player, t *table.Table) error {
 // playerAllIn sends the AllIn action to the table
 func (m *Manager) playerAllIn(p *player.Player, t *table.Table) error {
 	result := make(chan table.ActionResult)
-	req := table.NewTableAction(table.ActionAllIn, result, p, nil)
+	req := table.NewTableAction(actions.ActionAllIn, result, p, nil)
 	t.TableAction <- req
 
 	// block until response
@@ -366,7 +366,7 @@ func (m *Manager) playerAllIn(p *player.Player, t *table.Table) error {
 // playerBet sends the Bet action to the table
 func (m *Manager) playerBet(p *player.Player, t *table.Table, amount int64) error {
 	result := make(chan table.ActionResult)
-	req := table.NewTableAction(table.ActionBet, result, p, amount)
+	req := table.NewTableAction(actions.ActionBet, result, p, amount)
 	t.TableAction <- req
 
 	// block until response
@@ -389,7 +389,7 @@ func (m *Manager) joinTable(p *player.Player, t *table.Table) (tableID id.TableI
 
 	// Table response comes back over this channel
 	result := make(chan table.ActionResult)
-	req := table.NewTableAction(table.ActionAddPlayer, result, p, nil)
+	req := table.NewTableAction(actions.ActionAddPlayer, result, p, nil)
 	t.TableAction <- req
 
 	// block(!?) until table responds
@@ -408,7 +408,7 @@ func (m *Manager) firstAvailableTable() (*table.Table, error) {
 	for _, t := range m.tables {
 
 		result := make(chan table.ActionResult)
-		req := table.NewTableAction(table.ActionInfo, result, nil, nil)
+		req := table.NewTableAction(actions.ActionInfo, result, nil, nil)
 		t.TableAction <- req
 
 		res := <-result

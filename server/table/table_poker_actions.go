@@ -3,22 +3,16 @@ package table
 import (
 	"fmt"
 
+	"github.com/DanTulovsky/pepper-poker-v2/actions"
 	"github.com/DanTulovsky/pepper-poker-v2/server/player"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	"github.com/dustin/go-humanize"
 )
 
-var (
-	playerActions = promauto.NewCounterVec(prometheus.CounterOpts{
-		Name: "pepperpoker_player_actions_total",
-		Help: "The total number of player actions",
-	}, []string{"username", "action"}) // TODO: This is only ok for very few players
-)
+var ()
 
 // bet bets, 'a' is used to keep track of stats only
-func (t *Table) bet(p *player.Player, bet int64, a Action) error {
+func (t *Table) bet(p *player.Player, bet int64, a actions.Action) error {
 	if bet > p.Money().Stack() {
 		return fmt.Errorf("not enough money to bet $%v; have: $%v", humanize.Comma(bet), humanize.Comma(p.Money().Stack()))
 	}
@@ -52,9 +46,7 @@ func (t *Table) bet(p *player.Player, bet int64, a Action) error {
 	}
 
 	// Success
-	if a == ActionBet {
-		playerActions.WithLabelValues(p.Username, "bet").Inc()
-	}
+	p.Stats.ActionInc(a) // covers bet, call, allin, check
 	p.SetActionRequired(false)
 	p.CurrentTurn++
 	return nil
@@ -66,8 +58,7 @@ func (t *Table) call(p *player.Player) error {
 		return fmt.Errorf("no bet is needed to call, should check instead")
 	}
 
-	playerActions.WithLabelValues(p.Username, "call").Inc()
-	return t.bet(p, bet, ActionCall)
+	return t.bet(p, bet, actions.ActionCall)
 }
 
 func (t *Table) buyin(p *player.Player) error {
@@ -80,23 +71,21 @@ func (t *Table) buyin(p *player.Player) error {
 	p.Money().SetStack(stack)
 	p.Money().SetBank(bank)
 
-	playerActions.WithLabelValues(p.Username, "buyin").Inc()
+	p.Stats.ActionInc(actions.ActionBuyIn)
 	return nil
 }
 
 func (t *Table) allin(p *player.Player) error {
-	playerActions.WithLabelValues(p.Username, "allin").Inc()
-	return t.bet(p, p.Money().Stack(), ActionAllIn)
+	return t.bet(p, p.Money().Stack(), actions.ActionAllIn)
 }
 
 func (t *Table) check(p *player.Player) error {
-	playerActions.WithLabelValues(p.Username, "check").Inc()
-	return t.bet(p, 0, ActionCheck)
+	return t.bet(p, 0, actions.ActionCheck)
 }
 
 func (t *Table) fold(p *player.Player) error {
 	p.Fold()
-	playerActions.WithLabelValues(p.Username, "fold").Inc()
+	p.Stats.ActionInc(actions.ActionFold)
 
 	p.SetActionRequired(false)
 	p.CurrentTurn++

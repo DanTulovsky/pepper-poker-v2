@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/DanTulovsky/logger"
+	"github.com/DanTulovsky/pepper-poker-v2/actions"
 	"github.com/DanTulovsky/pepper-poker-v2/server/player"
 	"github.com/fatih/color"
 	"github.com/prometheus/client_golang/prometheus"
@@ -126,7 +127,7 @@ func (i *baseState) Bet(p *player.Player, bet int64) error {
 		return fmt.Errorf("player [%v] all in, not allowed to bet", p.Name)
 	}
 
-	return i.table.bet(p, bet, ActionBet)
+	return i.table.bet(p, bet, actions.ActionBet)
 }
 
 // Check process the check request

@@ -212,7 +212,7 @@ func (t *Table) processManagerAction(in ActionRequest) {
 	var res ActionResult
 
 	switch in.Action {
-	case ActionAddPlayer:
+	case actions.ActionAddPlayer:
 		pos, err := t.addPlayer(in.Player)
 		switch err {
 		case nil:
@@ -223,41 +223,41 @@ func (t *Table) processManagerAction(in ActionRequest) {
 			res = NewTableActionResult(err, nil)
 		}
 
-	case ActionRegisterPlayerCC:
+	case actions.ActionRegisterPlayerCC:
 		cc := in.Opts.(chan actions.GameData)
 		err := t.registerPlayerCC(in.Player, cc)
 		res = NewTableActionResult(err, nil)
 
-	case ActionInfo:
+	case actions.ActionInfo:
 		i := t.info()
 		res = NewTableActionResult(nil, i)
 
-	case ActionAckToken:
+	case actions.ActionAckToken:
 		token := in.Opts.(string)
 		err := t.ackToken(in.Player, token)
 		res = NewTableActionResult(err, nil)
 
-	case ActionBuyIn:
+	case actions.ActionBuyIn:
 		err := t.State.BuyIn(in.Player)
 		res = NewTableActionResult(err, nil)
 
-	case ActionCheck:
+	case actions.ActionCheck:
 		err := t.State.Check(in.Player)
 		res = NewTableActionResult(err, nil)
 
-	case ActionFold:
+	case actions.ActionFold:
 		err := t.State.Fold(in.Player)
 		res = NewTableActionResult(err, nil)
 
-	case ActionCall:
+	case actions.ActionCall:
 		err := t.State.Call(in.Player)
 		res = NewTableActionResult(err, nil)
 
-	case ActionAllIn:
+	case actions.ActionAllIn:
 		err := t.State.AllIn(in.Player)
 		res = NewTableActionResult(err, nil)
 
-	case ActionBet:
+	case actions.ActionBet:
 		amount := in.Opts.(int64)
 		err := t.State.Bet(in.Player, amount)
 		res = NewTableActionResult(err, nil)

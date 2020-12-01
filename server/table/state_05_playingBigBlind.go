@@ -3,6 +3,7 @@ package table
 import (
 	"fmt"
 
+	"github.com/DanTulovsky/pepper-poker-v2/actions"
 	"github.com/DanTulovsky/pepper-poker-v2/server/player"
 )
 
@@ -19,7 +20,7 @@ func (i *playingBigBlindState) Init() error {
 	if i.table.bigBlindPlayer.Money().Stack() < bet {
 		bet = i.table.bigBlindPlayer.Money().Stack()
 	}
-	if err := i.table.bet(i.table.bigBlindPlayer, bet, ActionBet); err != nil {
+	if err := i.table.bet(i.table.bigBlindPlayer, bet, actions.ActionBet); err != nil {
 		i.l.Fatalf("playingBigBlindState error: %s", err)
 	}
 

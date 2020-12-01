@@ -18,6 +18,11 @@ var (
 		Help: "The total number of combos played",
 	}, []string{"username", "combo"}) // TODO: this is only ok for very few players
 
+	playerActions = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "pepperpoker_player_actions_total",
+		Help: "The total number of player actions",
+	}, []string{"username", "action"}) // TODO: This is only ok for very few players
+
 )
 
 // handInfo is info for each hand (one poker game)
@@ -56,6 +61,9 @@ type Stats struct {
 	// Combos is a map of combo to how many times player had it
 	combos map[poker.Combo]int64
 
+	// Actions is a map of action to how many times the player acted
+	actions map[actions.Action]int64
+
 	// TODO: Add money related stats
 }
 
@@ -71,6 +79,7 @@ func NewStats(username string) *Stats {
 		gamesPlayed: 0,
 		gamesWon:    0,
 		combos:      make(map[poker.Combo]int64),
+		actions:     make(map[actions.Action]int64),
 	}
 }
 
@@ -88,6 +97,17 @@ func (s *Stats) ComboInc(combo poker.Combo) {
 	s.combos[combo]++
 
 	playerCombos.WithLabelValues(s.username, combo.String()).Inc()
+}
+
+// ActionInc increments the action count
+func (s *Stats) ActionInc(a actions.Action) {
+
+	if _, ok := s.actions[a]; !ok {
+		s.actions[a] = 0
+	}
+	s.actions[a]++
+
+	playerCombos.WithLabelValues(s.username, a.String()).Inc()
 }
 
 // Player represents a single player

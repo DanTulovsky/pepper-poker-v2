@@ -1,50 +1,8 @@
 package table
 
 import (
+	"github.com/DanTulovsky/pepper-poker-v2/actions"
 	"github.com/DanTulovsky/pepper-poker-v2/server/player"
-)
-
-// Action describes a possible table action
-type Action int
-
-func (a Action) String() string {
-	switch a {
-	case ActionBet:
-		return "Bet"
-	}
-	return ""
-}
-
-const (
-	// ActionAddPlayer adds a new player to the table
-	ActionAddPlayer Action = iota
-
-	// ActionRegisterPlayerCC adds the player comm channel for sending updates
-	ActionRegisterPlayerCC
-
-	// ActionInfo returns various information about the table
-	ActionInfo
-
-	// ActionAckToken acks a token
-	ActionAckToken
-
-	// ActionCheck checks
-	ActionCheck
-
-	// ActionCall calls
-	ActionCall
-
-	// ActionFold folds
-	ActionFold
-
-	// ActionBet bets
-	ActionBet
-
-	// ActionAllIn bets all available money
-	ActionAllIn
-
-	// ActionBuyIn uses the player's bank to buy into the table (bank -> stack)
-	ActionBuyIn
 )
 
 // ActionAddPlayerResult is the result of an AddPlayer action
@@ -61,7 +19,7 @@ type ActionInfoResult struct {
 
 // ActionRequest is sent to the table
 type ActionRequest struct {
-	Action Action
+	Action actions.Action
 	Player *player.Player
 	Opts   interface{}
 
@@ -69,7 +27,7 @@ type ActionRequest struct {
 }
 
 // NewTableAction returns a table action
-func NewTableAction(action Action, ch chan ActionResult, p *player.Player, opts interface{}) ActionRequest {
+func NewTableAction(action actions.Action, ch chan ActionResult, p *player.Player, opts interface{}) ActionRequest {
 	return ActionRequest{
 		Action:     action,
 		Player:     p,
