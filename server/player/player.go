@@ -107,7 +107,7 @@ func (s *Stats) ActionInc(a actions.Action) {
 	}
 	s.actions[a]++
 
-	playerCombos.WithLabelValues(s.username, a.String()).Inc()
+	playerActions.WithLabelValues(s.username, a.String()).Inc()
 }
 
 // Player represents a single player
