@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/DanTulovsky/deck"
 	"github.com/DanTulovsky/pepper-poker-v2/poker"
 	"github.com/DanTulovsky/pepper-poker-v2/server/player"
 	"github.com/dustin/go-humanize"
@@ -64,7 +65,14 @@ func (i *playingDoneState) Init() error {
 
 		winnings, _ := i.table.pot.GetWinnings(p.ID)
 		if winnings > 0 {
-			i.l.Infof("[%v] is a Winner ([%v] %v)", p.Name, p.PlayerHand().Hand.Combo().String(), p.PlayerHand().Hand.Cards())
+			var combo string
+			var cards []deck.Card
+
+			if p.PlayerHand() != nil {
+				combo = p.PlayerHand().Hand.Combo().String()
+				cards = p.PlayerHand().Hand.Cards()
+			}
+			i.l.Infof("[%v] is a Winner ([%v] %v)", p.Name, combo, cards)
 
 			p.Stats.GamesWonInc()
 			p.SetWinnerAndWinnings(winnings)

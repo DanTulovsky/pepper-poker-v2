@@ -31,6 +31,9 @@ type Table struct {
 	// players playing the current hand
 	currentHandPlayers []*player.Player
 
+	// pendingPlayers are those that want to buyin and join the next hand
+	pendingPlayers []*player.Player
+
 	maxPlayers int
 	minPlayers int
 
@@ -358,7 +361,7 @@ func (t *Table) playersProto() []*ppb.Player {
 // playerProto returns the player as a proto
 // no confidential information is included
 func (t *Table) playerProto(p *player.Player) *ppb.Player {
-	pl := p.AsProto()
+	pl := p.AsProto(t.bigBlind, t.buyinAmount)
 
 	pl.GetMoney().MinBetThisRound = t.minBetThisRound
 	pl.GetMoney().Pot = t.pot.GetTotal()
@@ -377,7 +380,7 @@ func (t *Table) playerProto(p *player.Player) *ppb.Player {
 
 // confPlayerProto returns the player as a proto, including confidential info
 func (t *Table) confPlayerProto(p *player.Player) *ppb.Player {
-	pl := p.AsProto()
+	pl := p.AsProto(t.bigBlind, t.buyinAmount)
 
 	pl.Money.MinBetThisRound = t.minBetThisRound
 	pl.Money.Pot = t.pot.GetTotal()
@@ -404,6 +407,9 @@ func (t *Table) gameDataProto(p *player.Player) *ppb.GameData {
 
 	// p is the player the info is being sent to, add confidential info
 	d.Player = t.confPlayerProto(p)
+	if current == p {
+		d.Player.State = ppb.PlayerState_PlayerStateCurrentTurn
+	}
 
 	return d
 }
@@ -602,7 +608,7 @@ func (t *Table) haveWinner() bool {
 // sendUpdateToPlayers sends updates to players as needed
 func (t *Table) sendUpdateToPlayers() {
 	// note that this sends updates to all ActivePlayers, not just the ones playing a hand
-	for _, p := range t.CurrentHandPlayers() {
+	for _, p := range t.ActivePlayers() {
 		in := t.gameDataProto(p)
 		action := actions.NewGameData(in)
 

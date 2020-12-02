@@ -21,6 +21,13 @@ type waitingPlayersState struct {
 }
 
 func (i *waitingPlayersState) Init() error {
+	// add any pending players that are new
+	for _, p := range i.table.pendingPlayers {
+		if _, err := i.AddPlayer(p); err != nil {
+			i.l.Error(err)
+		}
+	}
+
 	return fmt.Errorf("game [%v] waiting for players", i.table.ID)
 }
 

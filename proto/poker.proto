@@ -144,6 +144,20 @@ message GameData {
   Player player = 50;
 }
 
+// PlayerState is the player state according to the server
+enum PlayerState {
+  PlayerStateDefault = 0;
+
+  // PlayerStateStackEmpty means the player has run out of money in the stack
+  PlayerStateStackEmpty = 1;
+
+  // PlayerStateBankEmpty means the player has run out of money in the bank
+  PlayerStateBankEmpty = 2;
+
+  // PlayerStateCurrentTurn marks this player's turn
+  PlayerStateCurrentTurn = 3;
+}
+
 message Player {
   string name = 10;
 
@@ -154,7 +168,7 @@ message Player {
   int64 position = 20;
 
   PlayerMoney money = 30;
-  // PlayerState state = 50;
+  PlayerState state = 50;
 
   // only filled in for the player that matches the requesting player except at
   // the end

@@ -74,6 +74,7 @@ type PokerClient struct {
 	handFinished   bool
 
 	gameState ppb.GameState
+	money     *ppb.PlayerMoney
 
 	conn   *grpc.ClientConn
 	cancel context.CancelFunc
@@ -211,8 +212,9 @@ OUTER:
 			if pc.TableID != id.TableID(in.GetInfo().GetTableID()) {
 				pc.l.Fatalf("Mismatch in tableID; expected: %v; got: %v", pc.TableID, id.TableID(in.GetInfo().GetTableID()))
 			}
+			pc.position = in.GetPlayer().GetPosition()
+			pc.money = in.GetPlayer().GetMoney()
 
-			waitID := id.PlayerID(in.WaitTurnID)
 			waitName := in.WaitTurnName
 			waitNum := in.WaitTurnNum
 
@@ -222,11 +224,26 @@ OUTER:
 			pc.l.Debugf("Current Turn Player (num=%v): %v", waitNum, waitName)
 			pc.l.Debugf("Current State: %v", pc.gameState)
 
-			// Take turn
-			if pc.PlayerID == waitID && pc.lastTurnTaken < waitNum {
-				pc.handFinished = false
-				if err := pc.TakeTurn(ctx, in); err == nil {
-					pc.lastTurnTaken = waitNum
+			switch in.GetPlayer().GetState() {
+			case ppb.PlayerState_PlayerStateStackEmpty:
+				if in.GetInfo().GetGameState() <= ppb.GameState_GameStateWaitingPlayers {
+					if err = pc.BuyIn(ctx, in.GetInfo().GetBigBlind()); err != nil {
+						pc.l.Infof("error buying in: %v", err)
+						os.Exit(1)
+					}
+				}
+
+			case ppb.PlayerState_PlayerStateBankEmpty:
+				pc.l.Info("Ran out of money, exiting...")
+				os.Exit(0)
+
+			case ppb.PlayerState_PlayerStateCurrentTurn:
+
+				if pc.lastTurnTaken < waitNum {
+					pc.handFinished = false
+					if err := pc.TakeTurn(ctx, in); err == nil {
+						pc.lastTurnTaken = waitNum
+					}
 				}
 			}
 
@@ -439,6 +456,28 @@ func (pc *PokerClient) AllIn(ctx context.Context) error {
 	return nil
 }
 
+// BuyIn sends the buyin request
+func (pc *PokerClient) BuyIn(ctx context.Context, bigBlind int64) error {
+	if pc.money.GetStack() > bigBlind {
+		return nil
+	}
+
+	pc.l.Info("Action: BuyIn")
+
+	action := ppb.PlayerAction_PlayerActionBuyIn
+
+	req := &ppb.TakeTurnRequest{
+		ClientInfo:   pc.ClientInfo(),
+		PlayerAction: action,
+	}
+	_, err := pc.client.TakeTurn(ctx, req)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Call calls
 func (pc *PokerClient) Call(ctx context.Context) error {
 	pc.l.Info("Action: Call")
@@ -566,7 +605,7 @@ func (pc *PokerClient) JoinTable(ctx context.Context, wantTableID id.TableID) er
 	}
 
 	if res.GetPosition() < 0 {
-		return fmt.Errorf("received invalid position from server, but no error: %v", pc.position)
+		pc.l.Info("Joined table, but do not have position yet until next hand.")
 	}
 
 	pc.position = res.GetPosition()

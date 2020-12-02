@@ -91,8 +91,12 @@ func (i *baseState) AvailableToJoin() bool {
 	return false
 }
 
-func (i *baseState) AddPlayer(player *player.Player) (pos int, err error) {
-	return -1, fmt.Errorf("cannot add player right now")
+// AddPlayer adds the player to the table
+// In all states but the first, this puts the player in a list of pending players
+func (i *baseState) AddPlayer(p *player.Player) (pos int, err error) {
+	i.table.pendingPlayers = append(i.table.pendingPlayers, p)
+
+	return -1, nil
 }
 
 // AllIn process the allin request
@@ -106,10 +110,14 @@ func (i *baseState) AllIn(p *player.Player) error {
 	return i.table.allin(p)
 }
 
-// BuyIn process the buyin request
+// BuyIn process the buyin request. The player must already be sitting (have position) at the table
 func (i *baseState) BuyIn(p *player.Player) error {
-	// TODO: Allow buyin at any point when available space and play in the next round
-	return fmt.Errorf("cannot buy in right now")
+
+	if p.TablePosition < 0 {
+		return fmt.Errorf("must JoinTable before tyring to buyin")
+	}
+
+	return i.table.buyin(p)
 }
 
 // Bet processes the bet request

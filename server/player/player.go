@@ -56,100 +56,6 @@ func newHandInfo() *handInfo {
 	}
 }
 
-// Stats keeps per-player stats
-type Stats struct {
-	// username for metric exporting
-	username string
-
-	// GamesPlays is the total number of games played
-	gamesPlayed int64
-
-	// GamesWon is the number of games won (no money lost; in the winners list)
-	gamesWon int64
-
-	// Combos is a map of combo to how many times player had it
-	combos map[poker.Combo]int64
-
-	// Actions is a map of action to how many times the player acted
-	actions map[actions.Action]int64
-
-	// TODO: Add money related stats
-	money map[string]int64
-
-	// states records how many times a player reach this state
-	states map[string]int64
-}
-
-// GamesPlayedInc increments games played
-func (s *Stats) GamesPlayedInc() {
-	s.gamesPlayed++
-}
-
-// NewStats returns new stats
-func NewStats(username string) *Stats {
-	return &Stats{
-		username:    username,
-		gamesPlayed: 0,
-		gamesWon:    0,
-		combos:      make(map[poker.Combo]int64),
-		actions:     make(map[actions.Action]int64),
-		money:       make(map[string]int64),
-		states:      make(map[string]int64),
-	}
-}
-
-// StateInc increments the state
-func (s *Stats) StateInc(state string) {
-
-	if _, ok := s.states[state]; !ok {
-		s.states[state] = 0
-	}
-	s.states[state]++
-
-	playerStates.WithLabelValues(s.username, state).Inc()
-}
-
-// MoneySet sets the money stat
-func (s *Stats) MoneySet(stat string, amount int64) {
-
-	switch stat {
-	case "winnings":
-		if _, ok := s.money[stat]; !ok {
-			s.money[stat] = 0
-		}
-		s.money[stat] += amount
-	}
-
-	playerMoney.WithLabelValues(s.username, stat).Set(float64(amount))
-}
-
-// GamesWonInc increments games won
-func (s *Stats) GamesWonInc() {
-	s.gamesWon++
-}
-
-// ComboInc increments the combo count
-func (s *Stats) ComboInc(combo poker.Combo) {
-
-	if _, ok := s.combos[combo]; !ok {
-		s.combos[combo] = 0
-	}
-	s.combos[combo]++
-
-	playerCombos.WithLabelValues(s.username, combo.String()).Inc()
-}
-
-// ActionInc increments the action count
-func (s *Stats) ActionInc(a actions.Action) {
-
-	if _, ok := s.actions[a]; !ok {
-		s.actions[a] = 0
-	}
-	s.actions[a]++
-
-	playerActions.WithLabelValues(s.username, a.String()).Inc()
-}
-
 // Player represents a single player
 type Player struct {
 	ID       id.PlayerID
@@ -172,12 +78,13 @@ type Player struct {
 // New creates a new player
 func New(u users.User) *Player {
 	return &Player{
-		ID:       id.NewPlayerID(),
-		Name:     u.Name,
-		Username: u.Username,
-		money:    NewMoney(u.Bank),
-		HandInfo: newHandInfo(),
-		Stats:    NewStats(u.Username),
+		ID:            id.NewPlayerID(),
+		Name:          u.Name,
+		Username:      u.Username,
+		money:         NewMoney(u.Bank),
+		HandInfo:      newHandInfo(),
+		Stats:         NewStats(u.Username),
+		TablePosition: -1,
 	}
 }
 
@@ -219,13 +126,23 @@ func (p *Player) SetWinnerAndWinnings(w int64) {
 
 // AsProto returns the player as an proto
 // No confidential information is returned here
-func (p *Player) AsProto() *ppb.Player {
-	return &ppb.Player{
+func (p *Player) AsProto(bigBlind, buyin int64) *ppb.Player {
+	s := &ppb.Player{
 		Name:     p.Name,
 		Id:       p.ID.String(),
 		Position: int64(p.TablePosition),
 		Money:    p.money.AsProto(),
+		State:    ppb.PlayerState_PlayerStateDefault,
 	}
+
+	if p.Money().Stack() < bigBlind {
+		s.State = ppb.PlayerState_PlayerStateStackEmpty
+	}
+
+	if p.Money().Bank() < buyin {
+		s.State = ppb.PlayerState_PlayerStateBankEmpty
+	}
+	return s
 }
 
 // Money returns the player's money
