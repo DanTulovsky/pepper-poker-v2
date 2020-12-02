@@ -88,6 +88,11 @@ func New(u users.User) *Player {
 	}
 }
 
+// String returns ...
+func (p *Player) String() string {
+	return p.Username
+}
+
 // InList returns true if the player is in the list l
 func (p *Player) InList(l []*Player) bool {
 	for _, pl := range l {
