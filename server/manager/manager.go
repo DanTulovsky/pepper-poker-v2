@@ -190,7 +190,6 @@ func (m *Manager) processPlayerRequests() {
 
 		case proto.PlayerAction_PlayerActionJoinTable:
 			var pos int
-			m.l.Infof("%#v", p)
 			if tableID, pos, err = m.joinTable(p, t); err != nil {
 				m.l.Error(err)
 				in.ResultC <- actions.NewPlayerActionError(err)

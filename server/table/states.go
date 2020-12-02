@@ -88,7 +88,7 @@ func (i *baseState) WaitingTurnPlayer() *player.Player {
 
 // AvailableToJoin returns true if the table has empty positions
 func (i *baseState) AvailableToJoin() bool {
-	return false
+	return i.table.numAvailablePlayers() < i.table.maxPlayers
 }
 
 // AddPlayer adds the player to the table

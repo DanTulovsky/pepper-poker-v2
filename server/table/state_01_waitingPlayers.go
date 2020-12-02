@@ -27,6 +27,7 @@ func (i *waitingPlayersState) Init() error {
 			i.l.Error(err)
 		}
 	}
+	i.table.pendingPlayers = nil
 
 	return fmt.Errorf("game [%v] waiting for players", i.table.ID)
 }
@@ -67,11 +68,6 @@ func (i *waitingPlayersState) Tick() error {
 	return nil
 }
 
-// AvailableToJoin returns true if the table has empty positions
-func (i *waitingPlayersState) AvailableToJoin() bool {
-	return i.table.numAvailablePlayers() < i.table.maxPlayers
-}
-
 // AddPlayer adds the player to the table and returns the position at the table
 func (i *waitingPlayersState) AddPlayer(p *player.Player) (pos int, err error) {
 	i.lastPlayerAddedTime = time.Now()
@@ -80,7 +76,6 @@ func (i *waitingPlayersState) AddPlayer(p *player.Player) (pos int, err error) {
 		return -1, fmt.Errorf("no available positions at table")
 	}
 
-	i.l.Infof("%#v", p)
 	if !i.table.playerAtTable(p) {
 		// buy in
 		i.l.Infof("[%v] buying into the table ($%v)", p.Name, humanize.Comma(i.table.buyinAmount))
