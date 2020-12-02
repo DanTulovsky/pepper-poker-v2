@@ -452,7 +452,6 @@ func (m *Manager) firstAvailableTable() (*table.Table, error) {
 }
 
 // disconnectPlayer handles a player that disconnected
-// TODO: Handle reconnecting in the client after disconnect
 func (m *Manager) disconnectPlayer(p *player.Player, t *table.Table) error {
 
 	result := make(chan table.ActionResult)

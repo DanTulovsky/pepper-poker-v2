@@ -69,7 +69,7 @@ func (i *initializingState) Tick() error {
 
 	// token expired, we don't have all acks
 	if i.token.Expired() {
-		i.l.Infof("some [%d] players failed to ack, resetting", i.token.NumStillToAck())
+		i.l.Infof("some [%d] players failed to ack, resetting: %v", i.token.NumStillToAck(), i.token.DidNotAckPlayers())
 
 		// TODO: Kick out only those players that failed to ack and then go back to beginning state
 		i.table.reset()

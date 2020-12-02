@@ -53,6 +53,19 @@ func (t *Token) NumStillToAck() int {
 	return len(t.mustack) - len(t.acked)
 }
 
+// DidNotAckPlayers returns the players that have not acked
+func (t *Token) DidNotAckPlayers() []*player.Player {
+	missing := []*player.Player{}
+
+	for _, p := range t.mustack {
+		if _, ok := t.acked[p]; !ok {
+			missing = append(missing, p)
+		}
+	}
+
+	return missing
+}
+
 // HaveAck returns trus if a player acked a token
 func (t *Token) HaveAck(p *player.Player) bool {
 	if _, ok := t.acked[p]; ok {

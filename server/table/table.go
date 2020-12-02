@@ -702,8 +702,8 @@ func (t *Table) playersReady() bool {
 func (t *Table) reset() error {
 	t.l.Info("Table resetting...")
 
+	// Close channels to clients
 	for _, p := range t.ActivePlayers() {
-
 		if p.CommChannel != nil {
 			close(p.CommChannel)
 		}
@@ -711,13 +711,10 @@ func (t *Table) reset() error {
 
 	for i := 0; i < len(t.positions); i++ {
 		t.positions[i] = nil
-
 	}
 
 	t.currentAckToken = nil
 	t.resetStates()
-
-	// Close channels to clients
 
 	t.setState(t.waitingPlayersState)
 	return nil
