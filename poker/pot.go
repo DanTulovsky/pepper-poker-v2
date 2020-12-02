@@ -10,8 +10,7 @@ import (
 // Subpot is one subpot within the pot.
 type Subpot struct {
 	limit int64
-	// TODO: rename string to playerID, or just pass in *player.Player here
-	bets map[id.PlayerID]int64
+	bets  map[id.PlayerID]int64
 }
 
 // NewSubpot creates a new subpot.

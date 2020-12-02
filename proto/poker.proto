@@ -44,6 +44,7 @@ enum PlayerAction {
   PlayerActionAckToken = 8;
   PlayerActionAllIn = 9;
   PlayerActionBuyIn = 10;
+  PlayerActionDisconnect = 11;
 }
 
 message ActionOpts {
@@ -80,6 +81,7 @@ message TakeTurnRequest {
   ActionOpts actionOpts = 30;
 }
 message TakeTurnResponse { string message = 20; }
+message DisconnectResponse { string message = 20; }
 
 // PlayRequest is sent to register for the GameData streaming response
 message PlayRequest {

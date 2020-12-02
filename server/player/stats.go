@@ -22,7 +22,7 @@ type Stats struct {
 	// Actions is a map of action to how many times the player acted
 	actions map[actions.Action]int64
 
-	// TODO: Add money related stats
+	// Money related stats
 	money map[string]int64
 
 	// states records how many times a player reach this state

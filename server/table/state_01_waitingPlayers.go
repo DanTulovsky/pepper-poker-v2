@@ -76,8 +76,7 @@ func (i *waitingPlayersState) AvailableToJoin() bool {
 func (i *waitingPlayersState) AddPlayer(p *player.Player) (pos int, err error) {
 	i.lastPlayerAddedTime = time.Now()
 
-	// TODO: Take into account those watching, check i.table.numPresentPlayer
-	if i.table.numAvailablePlayers() == i.table.maxPlayers {
+	if i.table.numPresentPlayers() == i.table.maxPlayers {
 		return -1, fmt.Errorf("no available positions at table")
 	}
 

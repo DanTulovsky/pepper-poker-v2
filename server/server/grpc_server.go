@@ -205,22 +205,47 @@ func (ps *pokerServer) Play(in *ppb.PlayRequest, stream ppb.PokerServer_PlayServ
 	// start a goroutine to send data back to client
 	// the fromManagerChan get attached to the player itself and allows
 	// anything that has access to the player object to send updates
+	var err error
 OUTER:
 	for {
 		select {
 		case input, ok := <-toPlayerC:
 			if !ok {
 				ps.l.Debug("Lost connection to table player channel")
+				err = fmt.Errorf("Lost connection to table player channel")
 				break OUTER
 			}
-			ps.l.Debugf("Sending data to client (%v): %#v", in.ClientInfo.PlayerName, input.Data.WaitTurnID)
-			if err := stream.Send(input.Data); err != nil {
-				ps.l.Infof("client connection to %v lost", in.ClientInfo.PlayerName)
-				return nil
+			ps.l.Debugf("Sending data to client (%v): %#v", in.ClientInfo.PlayerUsername, input.Data.WaitTurnID)
+			if err = stream.Send(input.Data); err != nil {
+				ps.l.Infof("client connection to %v lost", in.ClientInfo.PlayerUsername)
+				break OUTER
 			}
-			ps.l.Debugf("Sent data to client (%v): %#v", in.ClientInfo.PlayerName, input.Data.WaitTurnID)
+			ps.l.Debugf("Sent data to client (%v): %#v", in.ClientInfo.PlayerUsername, input.Data.WaitTurnID)
 		}
 	}
+
+	// Return any player.Stack() to player.Bank()
+	if err := ps.playerDisconnected(in); err != nil {
+		ps.l.Error(err)
+	}
+
 	ps.l.Info("Client channel closed, exiting thread...")
-	return fmt.Errorf("closing client connection")
+	return err
+}
+
+func (ps *pokerServer) playerDisconnected(in *ppb.PlayRequest) error {
+
+	resultc := make(chan actions.PlayerActionResult)
+	action := actions.NewPlayerAction(ppb.PlayerAction_PlayerActionDisconnect, nil, in.GetClientInfo(), nil, resultc)
+
+	// Send request to manager
+	ps.managerChan <- action
+
+	// block on response, an error here means we failed to subscribe and should exit
+	res := <-resultc
+	if res.Err != nil {
+		return fmt.Errorf("invalid request: %v", res.Err)
+	}
+
+	return nil
 }

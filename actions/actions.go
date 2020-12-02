@@ -76,6 +76,8 @@ func (a Action) String() string {
 		return "Call"
 	case ActionFold:
 		return "Fold"
+	case ActionDisconnect:
+		return "Diconnect"
 	}
 	return ""
 }
@@ -110,4 +112,7 @@ const (
 
 	// ActionBuyIn uses the player's bank to buy into the table (bank -> stack)
 	ActionBuyIn
+
+	// ActionDisconnect is triggered on client disconnect
+	ActionDisconnect
 )

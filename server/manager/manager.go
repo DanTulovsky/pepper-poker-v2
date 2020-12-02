@@ -167,6 +167,15 @@ func (m *Manager) processPlayerRequests() {
 			})
 			in.ResultC <- result
 
+		case proto.PlayerAction_PlayerActionDisconnect:
+			if err = m.disconnectPlayer(p, t); err != nil {
+				m.l.Error(err)
+				in.ResultC <- actions.NewPlayerActionError(err)
+				break
+			}
+			result := actions.NewPlayerActionResult(err, &ppb.DisconnectResponse{})
+			in.ResultC <- result
+
 		case proto.PlayerAction_PlayerActionJoinTable:
 			var pos int
 			if tableID, pos, err = m.joinTable(p, t); err != nil {
@@ -424,6 +433,19 @@ func (m *Manager) firstAvailableTable() (*table.Table, error) {
 	}
 
 	return nil, fmt.Errorf("unable to find free table")
+}
+
+// disconnectPlayer handles a player that disconnected
+func (m *Manager) disconnectPlayer(p *player.Player, t *table.Table) error {
+
+	result := make(chan table.ActionResult)
+	req := table.NewTableAction(actions.ActionDisconnect, result, p, nil)
+	t.TableAction <- req
+
+	// block until response
+	res := <-result
+
+	return res.Err
 }
 
 // addPlayer add the player to the manager instance and make them available for playing games

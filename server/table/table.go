@@ -240,6 +240,10 @@ func (t *Table) processManagerAction(in ActionRequest) {
 		err := t.ackToken(in.Player, token)
 		res = NewTableActionResult(err, nil)
 
+	case actions.ActionDisconnect:
+		err := t.PlayerDisconnected(in.Player)
+		res = NewTableActionResult(err, nil)
+
 	case actions.ActionBuyIn:
 		err := t.State.BuyIn(in.Player)
 		res = NewTableActionResult(err, nil)
@@ -525,18 +529,22 @@ func (t *Table) AvailablePlayers() []*player.Player {
 
 // PresentPlayers returns the players present at the table
 // Present players are all players at the table, including those watching
-// TODO: Implement this
-// func (t *Table) PresentPlayers() []*player.Player {
-// 	players := []*player.Player{}
+func (t *Table) PresentPlayers() []*player.Player {
+	players := []*player.Player{}
 
-// 	for _, p := range t.positions {
-// 		if p != nil {
-// 			players = append(players, p)
-// 		}
-// 	}
+	for _, p := range t.positions {
+		if p != nil {
+			players = append(players, p)
+		}
+	}
 
-// 	return players
-// }
+	return players
+}
+
+// numPresentPlayers returns the number of players at the table
+func (t *Table) numPresentPlayers() int {
+	return len(t.PresentPlayers())
+}
 
 // numActivePlayers returns the number of players at the table
 func (t *Table) numActivePlayers() int {
@@ -558,6 +566,41 @@ func (t *Table) PlayerPosition(p *player.Player) (int, error) {
 	}
 
 	return -1, fmt.Errorf("no such player at this table: %v", p.ID)
+}
+
+// PlayerDisconnected handles a player disconnecting
+func (t *Table) PlayerDisconnected(p *player.Player) error {
+	p.Fold()
+	p.Stats.ActionInc(actions.ActionDisconnect)
+
+	p.SetActionRequired(false)
+
+	// return Stack() to Bank()
+	stack := p.Money().Stack()
+	bank := p.Money().Bank()
+	p.Money().SetStack(0)
+	p.Money().SetBank(bank + stack)
+
+	t.l.Infof("[%v] disconnected, returning [%v] stack to bank (now = %v)", p.Name, stack, p.Money().Bank())
+
+	return nil
+}
+
+func (t *Table) removePlayer(p *player.Player) {
+	var i int
+
+	for _, pl := range t.currentHandPlayers {
+		if pl == p {
+			break
+		}
+		i++
+	}
+
+	copy(t.currentHandPlayers[i:], t.currentHandPlayers[i+1:])                // Shift a[i+1:] left one index.
+	t.currentHandPlayers[len(t.currentHandPlayers)-1] = nil                   // Erase last element (write zero value).
+	t.currentHandPlayers = t.currentHandPlayers[:len(t.currentHandPlayers)-1] // Truncate slice.
+
+	t.positions[i] = nil
 }
 
 // playerAtTable returns true if the player is at this table
