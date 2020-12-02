@@ -94,9 +94,12 @@ func (i *baseState) AvailableToJoin() bool {
 // AddPlayer adds the player to the table
 // In all states but the first, this puts the player in a list of pending players
 func (i *baseState) AddPlayer(p *player.Player) (pos int, err error) {
-	i.table.pendingPlayers = append(i.table.pendingPlayers, p)
+	if p != nil {
+		i.table.pendingPlayers = append(i.table.pendingPlayers, p)
+		return -1, nil
+	}
 
-	return -1, nil
+	return -1, fmt.Errorf("nil player passed to AddPlayer")
 }
 
 // AllIn process the allin request

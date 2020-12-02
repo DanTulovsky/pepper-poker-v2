@@ -177,7 +177,10 @@ func (t *Table) ResetPlayersBets() {
 func (t *Table) Tick() error {
 	t.l.Debug("Tick()")
 
-	t.processManagerActions()
+	// TODO: Processes one action per tick, does this need to change?
+	if err := t.processManagerActions(); err != nil {
+		t.l.Error(err)
+	}
 
 	if err := t.State.Tick(); err != nil {
 		return err
@@ -203,16 +206,23 @@ func (t *Table) clearAckToken() {
 func (t *Table) processManagerActions() error {
 	select {
 	case in := <-t.TableAction:
-		t.l.Debugf("Received table action: %v", in.Action)
-		t.processManagerAction(in)
+		t.l.Debugf("Received table action: %#v", in)
+		if err := t.processManagerAction(in); err != nil {
+			t.l.Errorf("received nil player for %v", in.Action)
+		}
 	default:
 	}
 
 	return nil
 }
 
-func (t *Table) processManagerAction(in ActionRequest) {
+func (t *Table) processManagerAction(in ActionRequest) error {
 	var res ActionResult
+
+	// Awkward...
+	if in.Player == nil && in.Action != actions.ActionInfo && in.Action != actions.ActionAddPlayer {
+		return fmt.Errorf("received nil player for %v", in.Action)
+	}
 
 	switch in.Action {
 	case actions.ActionAddPlayer:
@@ -272,6 +282,8 @@ func (t *Table) processManagerAction(in ActionRequest) {
 	}
 	// send reply back to manager
 	in.resultChan <- res
+
+	return nil
 }
 
 func (t *Table) ackToken(p *player.Player, token string) error {
@@ -583,10 +595,17 @@ func (t *Table) PlayerDisconnected(p *player.Player) error {
 
 	t.l.Infof("[%v] disconnected, returning [%v] stack to bank (now = %v)", p.Name, stack, p.Money().Bank())
 
+	t.l.Infof("[%v] disconnected, removing from table [%v]...", p.Name, t.Name)
+	t.removePlayer(p)
+
 	return nil
 }
 
 func (t *Table) removePlayer(p *player.Player) {
+	if p == nil {
+		return
+	}
+
 	var i int
 
 	for _, pl := range t.currentHandPlayers {
@@ -596,16 +615,17 @@ func (t *Table) removePlayer(p *player.Player) {
 		i++
 	}
 
-	copy(t.currentHandPlayers[i:], t.currentHandPlayers[i+1:])                // Shift a[i+1:] left one index.
-	t.currentHandPlayers[len(t.currentHandPlayers)-1] = nil                   // Erase last element (write zero value).
-	t.currentHandPlayers = t.currentHandPlayers[:len(t.currentHandPlayers)-1] // Truncate slice.
+	if len(t.currentHandPlayers) > 0 {
+		copy(t.currentHandPlayers[i:], t.currentHandPlayers[i+1:])                // Shift a[i+1:] left one index.
+		t.currentHandPlayers[len(t.currentHandPlayers)-1] = nil                   // Erase last element (write zero value).
+		t.currentHandPlayers = t.currentHandPlayers[:len(t.currentHandPlayers)-1] // Truncate slice.
+	}
 
 	t.positions[i] = nil
 }
 
 // playerAtTable returns true if the player is at this table
 func (t *Table) playerAtTable(p *player.Player) bool {
-
 	for _, pos := range t.positions {
 		if p == pos {
 			return true

@@ -2,6 +2,7 @@ package manager
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/DanTulovsky/logger"
@@ -102,7 +103,7 @@ func (m *Manager) startServers(ctx context.Context, serverChan chan actions.Play
 
 // tick is one pass through the manager
 func (m *Manager) tick() error {
-	m.l.Debug("Tick()")
+	// m.l.Debug("Tick()")
 
 	m.processPlayerRequests()
 
@@ -158,10 +159,21 @@ func (m *Manager) processPlayerRequests() {
 
 		case proto.PlayerAction_PlayerActionRegister:
 			if p, err = m.addPlayer(in); err != nil {
+				if errors.Is(err, actions.ErrUserExists) {
+					m.l.Infof("[%v] already registered...", p.Name)
+					// user already registered
+					result := actions.NewPlayerActionResult(nil, &ppb.RegisterResponse{
+						PlayerID: p.ID.String(),
+					})
+					in.ResultC <- result
+					break
+				}
+				// actual error
 				m.l.Error(err)
 				in.ResultC <- actions.NewPlayerActionError(err)
 				break
 			}
+			// new regisration
 			result := actions.NewPlayerActionResult(err, &ppb.RegisterResponse{
 				PlayerID: p.ID.String(),
 			})
@@ -178,6 +190,7 @@ func (m *Manager) processPlayerRequests() {
 
 		case proto.PlayerAction_PlayerActionJoinTable:
 			var pos int
+			m.l.Infof("%#v", p)
 			if tableID, pos, err = m.joinTable(p, t); err != nil {
 				m.l.Error(err)
 				in.ResultC <- actions.NewPlayerActionError(err)
@@ -386,6 +399,10 @@ func (m *Manager) playerBet(p *player.Player, t *table.Table, amount int64) erro
 
 // jointable attempts to join a table
 func (m *Manager) joinTable(p *player.Player, t *table.Table) (tableID id.TableID, pos int, err error) {
+	if p == nil {
+		return "", -1, fmt.Errorf("joinTable received nil player")
+	}
+
 	pos = -1
 
 	// find available table
@@ -436,6 +453,7 @@ func (m *Manager) firstAvailableTable() (*table.Table, error) {
 }
 
 // disconnectPlayer handles a player that disconnected
+// TODO: Handle reconnecting in the client after disconnect
 func (m *Manager) disconnectPlayer(p *player.Player, t *table.Table) error {
 
 	result := make(chan table.ActionResult)
@@ -453,7 +471,7 @@ func (m *Manager) disconnectPlayer(p *player.Player, t *table.Table) error {
 func (m *Manager) addPlayer(in actions.PlayerAction) (*player.Player, error) {
 	username := in.ClientInfo.PlayerUsername
 	if m.havePlayerUsername(username) {
-		return nil, fmt.Errorf("already have player with name [%v]", username)
+		return m.getPlayerByUsername(username), actions.ErrUserExists
 	}
 
 	m.l.Infof("[%v] Checking for playing in userdb...", username)
@@ -477,4 +495,14 @@ func (m *Manager) havePlayerUsername(username string) bool {
 		}
 	}
 	return false
+}
+
+// GetPlayerByUsername returns player by username
+func (m *Manager) getPlayerByUsername(username string) *player.Player {
+	for _, p := range m.players {
+		if p.Username == username {
+			return p
+		}
+	}
+	return nil
 }

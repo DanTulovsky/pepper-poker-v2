@@ -77,7 +77,6 @@ func (i *playingDoneState) Init() error {
 			p.Stats.GamesWonInc()
 			p.SetWinnerAndWinnings(winnings)
 			// Return winnings to the stack
-			// TODO: On disconnect, return money to the bank
 			p.Money().SetStack(p.Money().Stack() + p.Money().Winnings())
 		}
 

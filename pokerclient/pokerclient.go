@@ -567,7 +567,7 @@ func (pc *PokerClient) Register(ctx context.Context) error {
 	var res *ppb.RegisterResponse
 	var err error
 	if res, err = pc.client.Register(ctx, req); err != nil {
-		pc.l.Fatal(err)
+		return err
 	}
 	pc.PlayerID = id.PlayerID(res.GetPlayerID())
 	pc.l.Debugf("playerID: %v", pc.PlayerID)

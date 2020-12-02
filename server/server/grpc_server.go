@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 
 	"github.com/fatih/color"
@@ -11,10 +12,12 @@ import (
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/channelz/service"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
+	"google.golang.org/grpc/status"
 
 	"github.com/DanTulovsky/logger"
 	"github.com/DanTulovsky/pepper-poker-v2/actions"
@@ -116,7 +119,10 @@ func (ps *pokerServer) Register(ctx context.Context, in *ppb.RegisterRequest) (*
 	// block on response
 	res := <-resultc
 	if res.Err != nil {
-		return nil, fmt.Errorf("invalid request: %v", res.Err)
+		if errors.Is(res.Err, actions.ErrUserExists) {
+			return nil, status.Errorf(codes.AlreadyExists, "%v", res.Err)
+		}
+		return nil, status.Errorf(codes.Unknown, "invalid request: %v", res.Err)
 	}
 
 	out := res.Result.(*ppb.RegisterResponse)

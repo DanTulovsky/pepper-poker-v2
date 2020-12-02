@@ -80,6 +80,7 @@ func (i *waitingPlayersState) AddPlayer(p *player.Player) (pos int, err error) {
 		return -1, fmt.Errorf("no available positions at table")
 	}
 
+	i.l.Infof("%#v", p)
 	if !i.table.playerAtTable(p) {
 		// buy in
 		i.l.Infof("[%v] buying into the table ($%v)", p.Name, humanize.Comma(i.table.buyinAmount))
