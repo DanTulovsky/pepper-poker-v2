@@ -596,8 +596,14 @@ func (t *Table) PlayerDisconnected(p *player.Player) error {
 	t.l.Infof("[%v] disconnected, returning [%v] stack to bank (now = %v)", p.Name, stack, p.Money().Bank())
 
 	t.l.Infof("[%v] disconnected, removing from table [%v]...", p.Name, t.Name)
+	pos := p.TablePosition
 	t.removePlayer(p)
 
+	// advance current turn to next player
+	if t.currentTurn == pos {
+		t.l.Info("Advancing player, as disconnected player was current")
+		t.advancePlayer()
+	}
 	return nil
 }
 
@@ -615,13 +621,17 @@ func (t *Table) removePlayer(p *player.Player) {
 		i++
 	}
 
+	t.l.Infof("currentHandPlayers before: %v", t.currentHandPlayers)
 	if len(t.currentHandPlayers) > 0 {
 		copy(t.currentHandPlayers[i:], t.currentHandPlayers[i+1:])                // Shift a[i+1:] left one index.
 		t.currentHandPlayers[len(t.currentHandPlayers)-1] = nil                   // Erase last element (write zero value).
 		t.currentHandPlayers = t.currentHandPlayers[:len(t.currentHandPlayers)-1] // Truncate slice.
 	}
+	t.l.Infof("currentHandPlayers after: %v", t.currentHandPlayers)
 
-	t.positions[i] = nil
+	t.l.Infof("positions before: %v", t.positions)
+	t.positions[p.TablePosition] = nil
+	t.l.Infof("positions after: %v", t.positions)
 }
 
 // playerAtTable returns true if the player is at this table

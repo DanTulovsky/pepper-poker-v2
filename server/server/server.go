@@ -28,8 +28,8 @@ var (
 	insecureGRPCPort = flag.String("insecure_grpc_port", "8082", "port to listen on for insecure grpc")
 	grpcUIPort       = flag.String("grpc_ui_port", "8082", "port for serving grpc ui")
 
-	grpcCrt = flag.String("grpc_crt", "cert/server.crt", "file containg certificate")
-	grpcKey = flag.String("grpc_key", "key/server.key", "file containing key")
+	grpcCrt = flag.String("grpc_crt", "/Users/dant/go/src/github.com/DanTulovsky/pepper-poker-v2/cert/server.crt", "file containg certificate")
+	grpcKey = flag.String("grpc_key", "/Users/dant/go/src/github.com/DanTulovsky/pepper-poker-v2/key/server.key", "file containing key")
 )
 
 // Server is the poker server

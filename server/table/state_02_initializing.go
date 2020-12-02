@@ -85,10 +85,6 @@ func (i *initializingState) Tick() error {
 	return nil
 }
 
-func (i *initializingState) AddPlayer(player *player.Player) (pos int, err error) {
-	return -1, fmt.Errorf("game already started, wait for next round")
-}
-
 // WhoseTurn returns the player whose turn it is.
 func (i *initializingState) WhoseTurn() *player.Player {
 	return nil

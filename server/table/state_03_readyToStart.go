@@ -1,7 +1,6 @@
 package table
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/DanTulovsky/pepper-poker-v2/server/player"
@@ -54,10 +53,6 @@ func (i *readyToStartState) Tick() error {
 
 	i.table.setState(i.table.playingSmallBlindState)
 	return nil
-}
-
-func (i *readyToStartState) AddPlayer(player *player.Player) (pos int, err error) {
-	return -1, fmt.Errorf("game already started, wait for next round")
 }
 
 // WhoseTurn returns the player whose turn it is.
