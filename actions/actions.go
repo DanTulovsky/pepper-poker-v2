@@ -77,7 +77,7 @@ func (a Action) String() string {
 	case ActionFold:
 		return "Fold"
 	case ActionDisconnect:
-		return "Diconnect"
+		return "Disconnect"
 	}
 	return ""
 }
