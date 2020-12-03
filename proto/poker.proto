@@ -125,6 +125,7 @@ message GameInfo {
   int64 maxPlayers = 100;
   int64 minPlayers = 110;
   int64 bigBlind = 120;
+  int64 smallBlind = 125;
   int64 buyin = 130;
 
   // All players, no confidential info

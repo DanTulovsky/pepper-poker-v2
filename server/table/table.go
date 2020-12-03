@@ -177,7 +177,6 @@ func (t *Table) ResetPlayersBets() {
 func (t *Table) Tick() error {
 	t.l.Debug("Tick()")
 
-	// TODO: Processes one action per tick, does this need to change?
 	if err := t.processManagerActions(); err != nil {
 		t.l.Error(err)
 	}
@@ -333,6 +332,7 @@ func (t *Table) infoproto() *ppb.GameInfo {
 		MaxPlayers: int64(i.MaxPlayers),
 		MinPlayers: int64(i.MinPlayers),
 		BigBlind:   t.bigBlind,
+		SmallBlind: t.smallBlind,
 		Buyin:      t.buyinAmount,
 
 		CommunityCards: t.board.AsProto(),
@@ -618,8 +618,12 @@ func (t *Table) removePlayer(p *player.Player) {
 		return
 	}
 
-	var i int
+	// ack any outstanding acks for the playr
+	if t.currentAckToken != nil {
+		t.currentAckToken.Ack(p)
+	}
 
+	var i int
 	for _, pl := range t.currentHandPlayers {
 		if pl == p {
 			break
@@ -627,17 +631,20 @@ func (t *Table) removePlayer(p *player.Player) {
 		i++
 	}
 
-	t.l.Infof("currentHandPlayers before: %v", t.currentHandPlayers)
+	// remove player from currentHandPlayers
+	t.l.Debugf("currentHandPlayers before: %v", t.currentHandPlayers)
 	if len(t.currentHandPlayers) > 0 {
 		copy(t.currentHandPlayers[i:], t.currentHandPlayers[i+1:])                // Shift a[i+1:] left one index.
 		t.currentHandPlayers[len(t.currentHandPlayers)-1] = nil                   // Erase last element (write zero value).
 		t.currentHandPlayers = t.currentHandPlayers[:len(t.currentHandPlayers)-1] // Truncate slice.
 	}
-	t.l.Infof("currentHandPlayers after: %v", t.currentHandPlayers)
+	t.l.Debugf("currentHandPlayers after: %v", t.currentHandPlayers)
 
-	t.l.Infof("positions before: %v", t.positions)
+	// Clear table position
+	t.l.Debugf("positions before: %v", t.positions)
 	t.positions[p.TablePosition] = nil
-	t.l.Infof("positions after: %v", t.positions)
+	t.l.Debugf("positions after: %v", t.positions)
+
 }
 
 // playerAtTable returns true if the player is at this table
