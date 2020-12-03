@@ -1,6 +1,7 @@
 package table
 
 import (
+	"flag"
 	"fmt"
 	"time"
 
@@ -15,6 +16,10 @@ import (
 	"github.com/fatih/color"
 
 	ppb "github.com/DanTulovsky/pepper-poker-v2/proto"
+)
+
+var (
+	tickDelay = flag.Duration("table_tick_delay", time.Millisecond*100, "delay between table ticks")
 )
 
 // Table hosts a game and allows playing multiple rounds
@@ -160,7 +165,7 @@ func (t *Table) Run() error {
 		if err := t.Tick(); err != nil {
 			return err
 		}
-		time.Sleep(time.Millisecond * 100)
+		time.Sleep(*tickDelay)
 	}
 }
 

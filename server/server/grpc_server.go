@@ -110,6 +110,13 @@ type pokerServer struct {
 // Register registers with the server
 func (ps *pokerServer) Register(ctx context.Context, in *ppb.RegisterRequest) (*ppb.RegisterResponse, error) {
 
+	var err error
+	defer func() {
+		if r := recover(); r != nil {
+			err = r.(error)
+		}
+	}()
+
 	resultc := make(chan actions.PlayerActionResult)
 	action := actions.NewPlayerAction(ppb.PlayerAction_PlayerActionRegister, nil, in.GetClientInfo(), nil, resultc)
 
@@ -127,11 +134,18 @@ func (ps *pokerServer) Register(ctx context.Context, in *ppb.RegisterRequest) (*
 
 	out := res.Result.(*ppb.RegisterResponse)
 
-	return out, nil
+	return out, err
 }
 
 // JoinTable joins a table
 func (ps *pokerServer) JoinTable(ctx context.Context, in *ppb.JoinTableRequest) (*ppb.JoinTableResponse, error) {
+
+	var err error
+	defer func() {
+		if r := recover(); r != nil {
+			err = r.(error)
+		}
+	}()
 
 	resultc := make(chan actions.PlayerActionResult)
 	action := actions.NewPlayerAction(ppb.PlayerAction_PlayerActionJoinTable, nil, in.GetClientInfo(), nil, resultc)
@@ -147,11 +161,18 @@ func (ps *pokerServer) JoinTable(ctx context.Context, in *ppb.JoinTableRequest) 
 
 	out := res.Result.(*ppb.JoinTableResponse)
 
-	return out, nil
+	return out, err
 }
 
 // TakeTurn takes a single poker turn
 func (ps *pokerServer) TakeTurn(ctx context.Context, in *ppb.TakeTurnRequest) (*ppb.TakeTurnResponse, error) {
+
+	var err error
+	defer func() {
+		if r := recover(); r != nil {
+			err = r.(error)
+		}
+	}()
 
 	resultc := make(chan actions.PlayerActionResult)
 	action := actions.NewPlayerAction(in.GetPlayerAction(), in.GetActionOpts(), in.GetClientInfo(), nil, resultc)
@@ -166,10 +187,17 @@ func (ps *pokerServer) TakeTurn(ctx context.Context, in *ppb.TakeTurnRequest) (*
 	}
 
 	out := res.Result.(*ppb.TakeTurnResponse)
-	return out, nil
+	return out, err
 }
 
 func (ps *pokerServer) AckToken(ctx context.Context, in *ppb.AckTokenRequest) (*ppb.AckTokenResponse, error) {
+	var err error
+	defer func() {
+		if r := recover(); r != nil {
+			err = r.(error)
+		}
+	}()
+
 	resultc := make(chan actions.PlayerActionResult)
 	opts := &ppb.ActionOpts{
 		AckToken: in.GetToken(),
@@ -186,7 +214,7 @@ func (ps *pokerServer) AckToken(ctx context.Context, in *ppb.AckTokenRequest) (*
 	}
 
 	out := res.Result.(*ppb.AckTokenResponse)
-	return out, nil
+	return out, err
 }
 
 // Play is a server streaming RPC that us used to send GameData back to the client as needed

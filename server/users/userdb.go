@@ -2,7 +2,7 @@ package users
 
 var (
 	userdb = map[string]User{
-		"dan": {
+		"dant": {
 			Bank:     10000,
 			Name:     "dan the lion",
 			Username: "dant",
