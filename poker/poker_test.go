@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/DanTulovsky/deck"
-
 	"github.com/DanTulovsky/pepper-poker-v2/id"
 	ppb "github.com/DanTulovsky/pepper-poker-v2/proto"
 )
@@ -978,6 +977,32 @@ func TestBestHand(t *testing.T) {
 			want: [][]int{{1}, {0}, {4}, {3}, {2}},
 		},
 		{
+			name: "high card 1",
+			playerHands: []*PlayerHand{
+				{
+					Cards: []deck.Card{
+						deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Ace),
+						deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_King),
+						deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Ten),
+						deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Nine),
+						deck.NewCard(ppb.CardSuit_Spade, ppb.CardRank_Seven),
+					},
+					ID: id.NewPlayerID(),
+				},
+				{
+					Cards: []deck.Card{
+						deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Ace),
+						deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_King),
+						deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Nine),
+						deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Seven),
+						deck.NewCard(ppb.CardSuit_Spade, ppb.CardRank_Five),
+					},
+					ID: id.NewPlayerID(),
+				},
+			},
+			want: [][]int{{0}, {1}},
+		},
+		{
 			name: "test1.1",
 			playerHands: []*PlayerHand{
 				{
@@ -1401,6 +1426,45 @@ func TestSortPair(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := SortPair(tt.cards); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("SortPair() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCompareCards(t *testing.T) {
+	tests := []struct {
+		name string
+		one  *Hand
+		two  *Hand
+		want int
+	}{
+		{
+
+			one: &Hand{
+				cards: []deck.Card{
+					deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Ace),
+					deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_King),
+					deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Ten),
+					deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Nine),
+					deck.NewCard(ppb.CardSuit_Spade, ppb.CardRank_Seven),
+				},
+			},
+			two: &Hand{
+				cards: []deck.Card{
+					deck.NewCard(ppb.CardSuit_Heart, ppb.CardRank_Ace),
+					deck.NewCard(ppb.CardSuit_Diamond, ppb.CardRank_King),
+					deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Nine),
+					deck.NewCard(ppb.CardSuit_Club, ppb.CardRank_Seven),
+					deck.NewCard(ppb.CardSuit_Spade, ppb.CardRank_Five),
+				},
+			},
+			want: 1,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := CompareCards(tt.one, tt.two); got != tt.want {
+				t.Errorf("CompareCards() = %v, want %v", got, tt.want)
 			}
 		})
 	}
