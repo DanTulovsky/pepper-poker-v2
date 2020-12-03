@@ -432,9 +432,15 @@ func (t *Table) gameDataProto(p *player.Player) *ppb.GameData {
 
 // advancePlayer advances t.currentPlayer to the next player
 func (t *Table) advancePlayer() {
+
+	if t.numActivePlayers() < 2 {
+		return
+	}
+
 	next := t.playerAfter(t.currentTurn)
-	from := t.positions[t.currentTurn].Name
-	to := t.positions[next].Name
+
+	from := t.positions[t.currentTurn]
+	to := t.positions[next]
 
 	t.l.Infof("Advancing player: %v -> %v", from, to)
 	t.currentTurn = next
@@ -600,7 +606,7 @@ func (t *Table) PlayerDisconnected(p *player.Player) error {
 	t.removePlayer(p)
 
 	// advance current turn to next player
-	if t.currentTurn == pos {
+	if t.currentTurn == pos && t.numActivePlayers() > 1 {
 		t.l.Info("Advancing player, as disconnected player was current")
 		t.advancePlayer()
 	}
