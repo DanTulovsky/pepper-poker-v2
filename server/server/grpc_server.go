@@ -8,6 +8,7 @@ import (
 
 	"github.com/fatih/color"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"google.golang.org/grpc"
@@ -60,6 +61,10 @@ func insecureGRPCServer(managerChan chan actions.PlayerAction) *grpc.Server {
 
 func secureGRPCServer(cert tls.Certificate, managerChan chan actions.PlayerAction) *grpc.Server {
 
+	recoveryOpts := []grpc_recovery.Option{
+		// grpc_recovery.WithRecoveryHandler(customFunc),
+	}
+
 	opts := []grpc.ServerOption{
 		// The following grpc.ServerOption adds an interceptor for all unary
 		// RPCs. To configure an interceptor for streaming RPCs, see:
@@ -69,10 +74,12 @@ func secureGRPCServer(cert tls.Certificate, managerChan chan actions.PlayerActio
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
 			grpc_opentracing.StreamServerInterceptor(),
 			grpc_prometheus.StreamServerInterceptor,
+			grpc_recovery.StreamServerInterceptor(recoveryOpts...),
 		)),
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
 			grpc_opentracing.UnaryServerInterceptor(),
 			grpc_prometheus.UnaryServerInterceptor,
+			grpc_recovery.UnaryServerInterceptor(recoveryOpts...),
 		)),
 	}
 

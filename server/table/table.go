@@ -124,8 +124,7 @@ func New(tableAction chan ActionRequest) *Table {
 		baseState: newBaseState(ppb.GameState_GameStateInitializing, t),
 	}
 	t.readyToStartState = &readyToStartState{
-		baseState:     newBaseState(ppb.GameState_GameStateReadyToStart, t),
-		playerTimeout: t.playerTimeout,
+		baseState: newBaseState(ppb.GameState_GameStateReadyToStart, t),
 	}
 	t.playingSmallBlindState = &playingSmallBlindState{
 		baseState: newBaseState(ppb.GameState_GameStatePlayingSmallBlind, t),
@@ -204,6 +203,25 @@ func (t *Table) setAckToken(tok *acks.Token) {
 func (t *Table) clearAckToken() {
 	t.currentAckToken = nil
 
+}
+
+// FoldIfTurnTimerEnd will fold the player if their turn timer runs out
+func (t *Table) FoldIfTurnTimerEnd(p *player.Player) {
+
+	if t.TurnTimeLeft(p) < 0 {
+		t.l.Infof("[%v] turn timed out (%v), folding...", t.playerTimeout, p.Username)
+		p.Fold()
+	}
+}
+
+// TurnTimeLeft returns the turn time left
+func (t *Table) TurnTimeLeft(p *player.Player) time.Duration {
+
+	if p == nil {
+		return 0
+	}
+
+	return t.playerTimeout - time.Now().Sub(p.WaitSince)
 }
 
 // processManagerActions checks the channel from the manager for any player actions
@@ -419,16 +437,17 @@ func (t *Table) gameDataProto(p *player.Player) *ppb.GameData {
 		PlayerID: p.ID.String(),
 	}
 
-	current := t.State.WaitingTurnPlayer()
-	if current != nil {
-		d.WaitTurnID = current.ID.String()
-		d.WaitTurnName = current.Name
-		d.WaitTurnNum = current.CurrentTurn
+	pl := t.State.WaitingTurnPlayer()
+	if pl != nil {
+		d.WaitTurnID = pl.ID.String()
+		d.WaitTurnName = pl.Name
+		d.WaitTurnNum = pl.CurrentTurn
+		d.WaitTurnTimeLeftSec = int64(t.TurnTimeLeft(pl).Seconds())
 	}
 
 	// p is the player the info is being sent to, add confidential info
 	d.Player = t.confPlayerProto(p)
-	if current == p {
+	if pl == p {
 		d.Player.State = ppb.PlayerState_PlayerStateCurrentTurn
 	}
 
@@ -449,6 +468,11 @@ func (t *Table) advancePlayer() {
 
 	t.l.Infof("Advancing player: %v -> %v", from, to)
 	t.currentTurn = next
+
+	nextPlayer := t.positions[t.currentTurn]
+	if nextPlayer != nil {
+		nextPlayer.WaitSince = time.Now()
+	}
 }
 
 // AvailableToJoin returns true if the table has empty positions
@@ -627,6 +651,8 @@ func (t *Table) removePlayer(p *player.Player) {
 	if t.currentAckToken != nil {
 		t.currentAckToken.Ack(p)
 	}
+
+	p.DisconnectReset()
 
 	var i int
 	for _, pl := range t.currentHandPlayers {

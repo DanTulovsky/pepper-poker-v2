@@ -141,10 +141,11 @@ message GameData {
   string waitTurnID = 20;   // the ID of the player whose turn it is
   string waitTurnName = 30; // the name of the player whose turn it is
   int64 waitTurnNum = 35;   // the turn count of the player whose turn it is
-  string playerID = 40;     // the ID of the calling player
+  int64 waitTurnTimeLeftSec = 40; // turn time left for player
+  string playerID = 50;           // the ID of the calling player
 
   // calling player, includes confidential info
-  Player player = 50;
+  Player player = 60;
 }
 
 // PlayerState is the player state according to the server

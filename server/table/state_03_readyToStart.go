@@ -1,8 +1,6 @@
 package table
 
 import (
-	"time"
-
 	"github.com/DanTulovsky/pepper-poker-v2/server/player"
 	"github.com/dustin/go-humanize"
 	"github.com/prometheus/client_golang/prometheus"
@@ -18,7 +16,6 @@ var (
 
 type readyToStartState struct {
 	baseState
-	playerTimeout time.Duration
 }
 
 func (i *readyToStartState) Init() error {

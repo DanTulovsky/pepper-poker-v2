@@ -2,6 +2,7 @@ package roboclient
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"math/rand"
 	"time"
@@ -16,7 +17,9 @@ import (
 	ppb "github.com/DanTulovsky/pepper-poker-v2/proto"
 )
 
-var ()
+var (
+	turnDelay = flag.Duration("turn_delay", time.Second*0, "delay between turns")
+)
 
 // DeciderFunc is the function that decides what to do
 type DeciderFunc func(data *ppb.GameData) (*actions.PlayerAction, error)
@@ -122,6 +125,7 @@ func (r *RoboClient) takeTurn(paction chan *actions.PlayerAction, presult chan *
 		if err != nil {
 			r.l.Error(err)
 		}
+		time.Sleep(*turnDelay)
 	}
 	paction <- playerAction
 

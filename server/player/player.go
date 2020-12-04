@@ -1,6 +1,8 @@
 package player
 
 import (
+	"time"
+
 	"github.com/DanTulovsky/deck"
 	"github.com/DanTulovsky/pepper-poker-v2/actions"
 	"github.com/DanTulovsky/pepper-poker-v2/id"
@@ -66,6 +68,7 @@ type Player struct {
 	CurrentTurn   int64
 	HandInfo      *handInfo
 	TablePosition int
+	WaitSince     time.Time // time the player becam the active player
 
 	money    *Money
 	iswinner bool
@@ -101,6 +104,11 @@ func (p *Player) InList(l []*Player) bool {
 		}
 	}
 	return false
+}
+
+// DisconnectReset is called after player disconnects
+func (p *Player) DisconnectReset() {
+	p.HandInfo = newHandInfo()
 }
 
 // ResetForBettingRound resets the player for the next betting round (multiple of these inside one hand)

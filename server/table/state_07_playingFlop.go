@@ -53,8 +53,13 @@ func (i *playingFlopState) Tick() error {
 		return nil
 	}
 
-	current := i.table.positions[i.table.currentTurn]
-	if !current.ActionRequired() {
+	p := i.table.positions[i.table.currentTurn]
+	if p == nil {
+		return nil
+	}
+	i.table.FoldIfTurnTimerEnd(p)
+
+	if !p.ActionRequired() {
 		i.table.advancePlayer()
 		return nil
 	}

@@ -217,11 +217,12 @@ OUTER:
 
 			waitName := in.WaitTurnName
 			waitNum := in.WaitTurnNum
+			waitTimeLeft := time.Duration(in.WaitTurnTimeLeftSec * 1000000000)
 
 			pc.gameState = in.GetInfo().GetGameState()
 			ackToken := in.GetInfo().GetAckToken()
 
-			pc.l.Debugf("Current Turn Player (num=%v): %v", waitNum, waitName)
+			pc.l.Debugf("[tt: %v] Current Turn Player (num=%v): %v", waitTimeLeft, waitNum, waitName)
 			pc.l.Debugf("Current State: %v", pc.gameState)
 
 			switch in.GetPlayer().GetState() {
@@ -626,10 +627,14 @@ func (pc *PokerClient) getGameState(in *ppb.GameData) string {
 	gameStartsIn := in.GetInfo().GetGameStartsInSec()
 	buyin := in.GetInfo().GetBuyin()
 
+	waitName := in.WaitTurnName
+	waitTimeLeft := time.Duration(in.WaitTurnTimeLeftSec * 1000000)
+
 	var state strings.Builder
 
 	state.WriteString(fmt.Sprintln("================================================================="))
 	state.WriteString(fmt.Sprintf("%v (pos: %v) %v\n", color.GreenString("My Player:"), pc.position, pc.PlayerUsername))
+	state.WriteString(fmt.Sprintf("%v %v (%v)\n", color.GreenString("Turn:"), waitName, waitTimeLeft))
 	state.WriteString(fmt.Sprintf("%v %v\n", color.YellowString("Table State:"), in.GetInfo().GetGameState()))
 	state.WriteString(fmt.Sprintf("%v $%v\n", color.YellowString("Table Buyin:"), humanize.Comma(buyin)))
 
