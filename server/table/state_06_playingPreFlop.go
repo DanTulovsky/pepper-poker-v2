@@ -1,5 +1,7 @@
 package table
 
+import "time"
+
 type playingPreFlopState struct {
 	baseState
 }
@@ -14,6 +16,7 @@ func (i *playingPreFlopState) Init() error {
 	p := i.table.positions[i.table.currentTurn]
 
 	i.l.Infof("Player %s (%d) goes first", p.Name, i.table.currentTurn)
+	p.WaitSince = time.Now()
 
 	// records players that reached here
 	for _, p := range i.table.CurrentHandActivePlayers() {

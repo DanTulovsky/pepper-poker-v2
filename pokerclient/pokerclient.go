@@ -628,7 +628,7 @@ func (pc *PokerClient) getGameState(in *ppb.GameData) string {
 	buyin := in.GetInfo().GetBuyin()
 
 	waitName := in.WaitTurnName
-	waitTimeLeft := time.Duration(in.WaitTurnTimeLeftSec * 1000000)
+	waitTimeLeft := time.Duration(in.WaitTurnTimeLeftSec * 1000000000)
 
 	var state strings.Builder
 

@@ -1,6 +1,10 @@
 package table
 
-import "github.com/DanTulovsky/deck"
+import (
+	"time"
+
+	"github.com/DanTulovsky/deck"
+)
 
 type playingTurnState struct {
 	baseState
@@ -27,8 +31,9 @@ func (i *playingTurnState) Init() error {
 	// next available player after the button goes first
 	i.table.currentTurn = i.table.playerAfter(i.table.button)
 
-	current := i.table.positions[i.table.currentTurn]
-	i.l.Infof("Player %s (%d) goes first", current.Name, i.table.currentTurn)
+	pnt := i.table.positions[i.table.currentTurn]
+	i.l.Infof("Player %s (%d) goes first", pnt.Name, i.table.currentTurn)
+	pnt.WaitSince = time.Now()
 
 	// records players that reached here
 	for _, p := range i.table.CurrentHandActivePlayers() {
