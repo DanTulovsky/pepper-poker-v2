@@ -58,7 +58,7 @@ func (i *finishedState) Tick() error {
 
 	now := time.Now()
 
-	if i.token.NumStillToAck() > 0 {
+	if i.token.NumStillToAck() > 0 && !i.token.Expired() {
 		status := fmt.Sprintf("Waiting (%v) for %d players to ack...", i.token.TimeRemaining().Truncate(time.Second), i.token.NumStillToAck())
 		if i.statusCache != status {
 			i.l.Infof(status)
