@@ -109,7 +109,7 @@ func New(tableAction chan ActionRequest) *Table {
 
 		defaultAckTimeout: time.Second * 10,
 		playerTimeout:     time.Second * 30,
-		gameEndDelay:      time.Second * 10,
+		gameEndDelay:      time.Second * 30,
 		gameWaitTimeout:   time.Second * 10,
 		stateAdvanceDelay: time.Second * 0,
 	}

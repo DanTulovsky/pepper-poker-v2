@@ -12,6 +12,7 @@ type finishedState struct {
 	baseState
 
 	gameEndDelay time.Duration
+	gameEndTime  time.Time
 
 	token       *acks.Token
 	statusCache string
@@ -27,6 +28,8 @@ func (i *finishedState) Init() error {
 	i.token = acks.New(i.table.CurrentHandPlayers(), i.table.defaultAckTimeout)
 	i.token.StartTime()
 	i.table.setAckToken(i.token)
+
+	i.gameEndTime = time.Now()
 
 	return nil
 }
@@ -53,19 +56,34 @@ func (i *finishedState) StartGame() error {
 
 func (i *finishedState) Tick() error {
 
-	status := fmt.Sprintf("Waiting (%v) for %d players to ack...", i.token.TimeRemaining().Truncate(time.Second), i.token.NumStillToAck())
-	if i.statusCache != status {
-		i.l.Infof(status)
-		i.statusCache = status
+	now := time.Now()
+
+	if i.token.NumStillToAck() > 0 {
+		status := fmt.Sprintf("Waiting (%v) for %d players to ack...", i.token.TimeRemaining().Truncate(time.Second), i.token.NumStillToAck())
+		if i.statusCache != status {
+			i.l.Infof(status)
+			i.statusCache = status
+		}
 	}
+
 	if i.token.AllAcked() || i.token.Expired() {
-		i.table.clearAckToken()
-		i.token = nil
+		r := i.gameEndDelay - now.Sub(i.gameEndTime)
 
-		i.l.Info("Removing players from current hand...")
-		i.table.ClearCurrentHandPlayers()
+		status := fmt.Sprintf("Waiting (%v) before finishing game...", r.Truncate(time.Second))
+		if i.statusCache != status {
+			i.l.Infof(status)
+			i.statusCache = status
+		}
 
-		return i.table.setState(i.table.waitingPlayersState)
+		if r < 0 {
+			i.table.clearAckToken()
+			i.token = nil
+
+			i.l.Info("Removing players from current hand...")
+			i.table.ClearCurrentHandPlayers()
+
+			return i.table.setState(i.table.waitingPlayersState)
+		}
 	}
 
 	return nil
