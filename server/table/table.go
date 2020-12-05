@@ -511,9 +511,7 @@ func (t *Table) setState(s state) error {
 	time.Sleep(t.stateAdvanceDelay)
 	t.State = s
 
-	if err := s.Init(); err != nil {
-		return err
-	}
+	return s.Init()
 }
 
 // AddCurrentHandPlayer adds a player to the currentHandPlayers
