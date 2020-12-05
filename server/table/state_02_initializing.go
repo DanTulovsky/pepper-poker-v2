@@ -63,8 +63,7 @@ func (i *initializingState) Tick() error {
 	if i.token.AllAcked() {
 		i.table.clearAckToken()
 		i.token = nil
-		i.table.setState(i.table.readyToStartState)
-		return nil
+		return i.table.setState(i.table.readyToStartState)
 	}
 
 	// token expired, we don't have all acks

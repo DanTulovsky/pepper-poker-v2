@@ -113,8 +113,7 @@ func (i *playingDoneState) Fold(p *player.Player) error {
 func (i *playingDoneState) Tick() error {
 	i.l.Debugf("Tick(%v)", i.Name())
 
-	i.table.setState(i.table.finishedState)
-	return nil
+	return i.table.setState(i.table.finishedState)
 }
 
 func (i *playingDoneState) WaitingTurnPlayer() *player.Player {

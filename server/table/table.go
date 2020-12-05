@@ -502,7 +502,7 @@ func (t *Table) canAdvanceState() bool {
 }
 
 // setState sets the state of the table
-func (t *Table) setState(s state) {
+func (t *Table) setState(s state) error {
 	var from, to string = "nil", "nil"
 	from = t.State.Name().String()
 	to = s.Name().String()
@@ -511,7 +511,9 @@ func (t *Table) setState(s state) {
 	time.Sleep(t.stateAdvanceDelay)
 	t.State = s
 
-	s.Init()
+	if err := s.Init(); err != nil {
+		return err
+	}
 }
 
 // AddCurrentHandPlayer adds a player to the currentHandPlayers
@@ -770,8 +772,7 @@ func (t *Table) reset() error {
 	t.currentAckToken = nil
 	t.resetStates()
 
-	t.setState(t.waitingPlayersState)
-	return nil
+	return t.setState(t.waitingPlayersState)
 }
 
 func (t *Table) resetStates() {

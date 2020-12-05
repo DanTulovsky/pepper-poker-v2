@@ -65,8 +65,7 @@ func (i *finishedState) Tick() error {
 		i.l.Info("Removing players from current hand...")
 		i.table.ClearCurrentHandPlayers()
 
-		i.table.setState(i.table.waitingPlayersState)
-		return nil
+		return i.table.setState(i.table.waitingPlayersState)
 	}
 
 	return nil

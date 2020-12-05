@@ -47,9 +47,7 @@ func (i *playingBigBlindState) Fold(p *player.Player) error {
 func (i *playingBigBlindState) Tick() error {
 	i.l.Debugf("Tick(%v)", i.Name())
 
-	i.table.setState(i.table.playingPreFlopState)
-
-	return nil
+	return i.table.setState(i.table.playingPreFlopState)
 }
 
 func (i *playingBigBlindState) WaitingTurnPlayer() *player.Player {

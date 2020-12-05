@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/DanTulovsky/pepper-poker-v2/poker"
 	"github.com/DanTulovsky/pepper-poker-v2/server/player"
 	"github.com/dustin/go-humanize"
 )
@@ -29,7 +30,10 @@ func (i *waitingPlayersState) Init() error {
 	}
 	i.table.pendingPlayers = nil
 
-	return fmt.Errorf("game [%v] waiting for players", i.table.ID)
+	i.table.board = poker.NewBoard()
+
+	return nil
+
 }
 
 func (i *waitingPlayersState) Tick() error {
@@ -54,9 +58,8 @@ func (i *waitingPlayersState) Tick() error {
 				i.table.AddCurrentHandPlayer(p)
 			}
 
-			i.table.setState(i.table.initializingState)
 			i.cache = ""
-			return nil
+			return i.table.setState(i.table.initializingState)
 		}
 	}
 

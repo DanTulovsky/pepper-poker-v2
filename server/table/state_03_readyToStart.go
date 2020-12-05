@@ -48,8 +48,7 @@ func (i *readyToStartState) Init() error {
 func (i *readyToStartState) Tick() error {
 	i.l.Debugf("Tick(%v)", i.Name())
 
-	i.table.setState(i.table.playingSmallBlindState)
-	return nil
+	return i.table.setState(i.table.playingSmallBlindState)
 }
 
 // WhoseTurn returns the player whose turn it is.

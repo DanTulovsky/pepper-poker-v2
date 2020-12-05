@@ -46,12 +46,11 @@ func (i *playingTurnState) Tick() error {
 	i.l.Debugf("Tick(%v)", i.Name())
 
 	if i.table.haveWinner() {
-		i.table.setState(i.table.playingDoneState)
+		return i.table.setState(i.table.playingDoneState)
 	}
 
 	if i.table.canAdvanceState() {
-		i.table.setState(i.table.playingRiverState)
-		return nil
+		return i.table.setState(i.table.playingRiverState)
 	}
 
 	p := i.table.positions[i.table.currentTurn]
