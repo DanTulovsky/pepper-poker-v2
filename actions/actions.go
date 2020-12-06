@@ -61,11 +61,13 @@ func NewGameData(in *ppb.GameData) GameData {
 	}
 }
 
-// Action describes a possible table action
-type Action int
+// TableAction describes a possible table action
+type TableAction int
 
-func (a Action) String() string {
+func (a TableAction) String() string {
 	switch a {
+	case ActionNone:
+		return ""
 	case ActionBet:
 		return "Bet"
 	case ActionBuyIn:
@@ -83,8 +85,11 @@ func (a Action) String() string {
 }
 
 const (
+	// ActionNone is the default
+	ActionNone TableAction = iota
+
 	// ActionAddPlayer adds a new player to the table
-	ActionAddPlayer Action = iota
+	ActionAddPlayer
 
 	// ActionRegisterPlayerCC adds the player comm channel for sending updates
 	ActionRegisterPlayerCC

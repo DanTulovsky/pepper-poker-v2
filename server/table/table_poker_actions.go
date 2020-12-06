@@ -12,7 +12,7 @@ import (
 var ()
 
 // bet bets, 'a' is used to keep track of stats only
-func (t *Table) bet(p *player.Player, bet int64, a actions.Action) error {
+func (t *Table) bet(p *player.Player, bet int64, a actions.TableAction) error {
 	if bet > p.Money().Stack() {
 		return fmt.Errorf("not enough money to bet $%v; have: $%v", humanize.Comma(bet), humanize.Comma(p.Money().Stack()))
 	}
@@ -46,7 +46,7 @@ func (t *Table) bet(p *player.Player, bet int64, a actions.Action) error {
 	}
 
 	// Success
-	p.Stats.ActionInc(a) // covers bet, call, allin, check
+	p.SetLastAction(a, bet) // covers bet, call, allin, check
 	p.SetActionRequired(false)
 	p.CurrentTurn++
 	return nil
@@ -85,7 +85,7 @@ func (t *Table) check(p *player.Player) error {
 
 func (t *Table) fold(p *player.Player) error {
 	p.Fold()
-	p.Stats.ActionInc(actions.ActionFold)
+	p.SetLastAction(actions.ActionFold, 0)
 
 	p.SetActionRequired(false)
 	p.CurrentTurn++

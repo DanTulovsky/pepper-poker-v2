@@ -19,7 +19,7 @@ type ActionInfoResult struct {
 
 // ActionRequest is sent to the table
 type ActionRequest struct {
-	Action actions.Action
+	Action actions.TableAction
 	Player *player.Player
 	Opts   interface{}
 
@@ -27,7 +27,7 @@ type ActionRequest struct {
 }
 
 // NewTableAction returns a table action
-func NewTableAction(action actions.Action, ch chan ActionResult, p *player.Player, opts interface{}) ActionRequest {
+func NewTableAction(action actions.TableAction, ch chan ActionResult, p *player.Player, opts interface{}) ActionRequest {
 	return ActionRequest{
 		Action:     action,
 		Player:     p,

@@ -89,10 +89,6 @@ func (i *finishedState) Tick() error {
 	return nil
 }
 
-func (i *finishedState) AddPlayer(player *player.Player) (pos int, err error) {
-	return -1, fmt.Errorf("game already finished, wait for next hand")
-}
-
 func (i *finishedState) WaitingTurnPlayer() *player.Player {
 	return nil
 }

@@ -20,7 +20,7 @@ type Stats struct {
 	combos map[poker.Combo]int64
 
 	// Actions is a map of action to how many times the player acted
-	actions map[actions.Action]int64
+	actions map[actions.TableAction]int64
 
 	// Money related stats
 	money map[string]int64
@@ -41,7 +41,7 @@ func NewStats(username string) *Stats {
 		gamesPlayed: 0,
 		gamesWon:    0,
 		combos:      make(map[poker.Combo]int64),
-		actions:     make(map[actions.Action]int64),
+		actions:     make(map[actions.TableAction]int64),
 		money:       make(map[string]int64),
 		states:      make(map[string]int64),
 	}
@@ -89,7 +89,7 @@ func (s *Stats) ComboInc(combo poker.Combo) {
 }
 
 // ActionInc increments the action count
-func (s *Stats) ActionInc(a actions.Action) {
+func (s *Stats) ActionInc(a actions.TableAction) {
 
 	if _, ok := s.actions[a]; !ok {
 		s.actions[a] = 0

@@ -443,6 +443,7 @@ func (t *Table) gameDataProto(p *player.Player) *ppb.GameData {
 		d.WaitTurnName = pl.Name
 		d.WaitTurnNum = pl.CurrentTurn
 		d.WaitTurnTimeLeftSec = int64(t.TurnTimeLeft(pl).Seconds())
+		d.WaitTurnTimeMaxSec = int64(t.playerTimeout.Seconds())
 	}
 
 	// p is the player the info is being sent to, add confidential info
@@ -511,7 +512,14 @@ func (t *Table) setState(s state) error {
 	time.Sleep(t.stateAdvanceDelay)
 	t.State = s
 
+	// t.resetPlayerActions()
 	return s.Init()
+}
+
+func (t *Table) resetPlayerActions() {
+	for _, p := range t.ActivePlayers() {
+		p.SetLastAction(actions.ActionNone, 0)
+	}
 }
 
 // AddCurrentHandPlayer adds a player to the currentHandPlayers

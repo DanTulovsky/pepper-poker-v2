@@ -664,7 +664,7 @@ func (pc *PokerClient) getGameState(in *ppb.GameData) string {
 		if p.GetId() == pc.PlayerID.String() {
 			me = color.HiGreenString("(me) ")
 		}
-		state.WriteString(fmt.Sprintf("  %v%v\n", me, p.GetName()))
+		state.WriteString(fmt.Sprintf("  %v%v (last_action: %v ($%v))\n", me, p.GetName(), p.GetLastAction().GetAction(), p.GetLastAction().GetAmount()))
 	}
 	state.WriteString(fmt.Sprintln("================================================================="))
 

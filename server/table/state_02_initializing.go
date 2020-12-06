@@ -60,7 +60,7 @@ func (i *initializingState) Init() error {
 func (i *initializingState) Tick() error {
 	i.l.Debugf("Tick(%v)", i.Name())
 
-	if i.token.AllAcked() {
+	if i.token.AllAcked() || i.token.NumStillToAck() == 0 {
 		i.table.clearAckToken()
 		i.token = nil
 		return i.table.setState(i.table.readyToStartState)

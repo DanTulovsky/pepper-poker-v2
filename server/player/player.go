@@ -58,6 +58,12 @@ func newHandInfo() *handInfo {
 	}
 }
 
+// LastAction describes the last action of the player
+type LastAction struct {
+	Action ppb.PlayerAction
+	Amount int64
+}
+
 // Player represents a single player
 type Player struct {
 	ID       id.PlayerID
@@ -65,8 +71,10 @@ type Player struct {
 	Username string
 
 	// Keeps track of how many turns the player took, used to sync the client
-	CurrentTurn   int64
-	HandInfo      *handInfo
+	CurrentTurn int64
+	HandInfo    *handInfo
+
+	LastAction    LastAction
 	TablePosition int
 	WaitSince     time.Time // time the player becam the active player
 
@@ -146,6 +154,10 @@ func (p *Player) AsProto(bigBlind, buyin int64) *ppb.Player {
 		Position: int64(p.TablePosition),
 		Money:    p.money.AsProto(),
 		State:    ppb.PlayerState_PlayerStateDefault,
+		LastAction: &ppb.LastAction{
+			Action: p.LastAction.Action,
+			Amount: p.LastAction.Amount,
+		},
 	}
 
 	if p.Money().Stack() < bigBlind {
@@ -161,6 +173,29 @@ func (p *Player) AsProto(bigBlind, buyin int64) *ppb.Player {
 // Money returns the player's money
 func (p *Player) Money() *Money {
 	return p.money
+}
+
+// SetLastAction sets the last action done by the player
+func (p *Player) SetLastAction(a actions.TableAction, amount int64) {
+	la := LastAction{}
+
+	switch a {
+	case actions.ActionCall:
+		la.Action = ppb.PlayerAction_PlayerActionCall
+	case actions.ActionBet:
+		la.Action = ppb.PlayerAction_PlayerActionBet
+		la.Amount = amount
+	case actions.ActionCheck:
+		la.Action = ppb.PlayerAction_PlayerActionCheck
+	case actions.ActionFold:
+		la.Action = ppb.PlayerAction_PlayerActionFold
+	case actions.ActionAllIn:
+		la.Action = ppb.PlayerAction_PlayerActionAllIn
+		la.Amount = amount
+	}
+
+	p.LastAction = la
+	p.Stats.ActionInc(a)
 }
 
 // AddHoleCard deals adds a card to the player's hole

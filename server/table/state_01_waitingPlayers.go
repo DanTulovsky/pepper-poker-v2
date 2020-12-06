@@ -44,7 +44,7 @@ func (i *waitingPlayersState) Tick() error {
 
 	numAvailablePlayers := i.table.numAvailablePlayers()
 
-	status = fmt.Sprintf("Table [%v] waiting for players... (players: %d)", i.table.ID, numAvailablePlayers)
+	status = fmt.Sprintf("Table [%v] waiting for players... (players: %d)", i.table.Name, numAvailablePlayers)
 
 	if numAvailablePlayers >= i.table.minPlayers && i.table.playersReady() {
 		wait := i.gameWaitTimeout - now.Sub(i.lastPlayerAddedTime)
