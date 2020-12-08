@@ -46,6 +46,8 @@ func (i *playingDoneState) Init() error {
 		log.Fatal("Somehow all players managed to fold, how can that be?")
 	}
 	i.table.pot.Finalize(levels)
+	// set winners on the table to return to clients
+	i.table.winners = levels
 
 	// Set winners
 	for _, p := range i.table.CurrentHandPlayers() {

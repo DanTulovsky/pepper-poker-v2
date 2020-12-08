@@ -26,7 +26,8 @@ var (
 	httpPort         = flag.String("http_port", "8081", "port to listen on")
 	secureGRPCPort   = flag.String("secure_grpc_port", "8443", "port to listen on for secure grpc")
 	insecureGRPCPort = flag.String("insecure_grpc_port", "8082", "port to listen on for insecure grpc")
-	grpcUIPort       = flag.String("grpc_ui_port", "8082", "port for serving grpc ui")
+	grpcUIPort       = flag.String("grpc_ui_port", "8080", "port for serving grpc ui")
+	staticDir        = flag.String("static_dir", "server/static/", "location of static http files")
 
 	grpcCrt = flag.String("grpc_crt", "/Users/dant/go/src/github.com/DanTulovsky/pepper-poker-v2/cert/server.crt", "file containg certificate")
 	grpcKey = flag.String("grpc_key", "/Users/dant/go/src/github.com/DanTulovsky/pepper-poker-v2/key/server.key", "file containing key")
@@ -93,7 +94,11 @@ func Run(ctx context.Context, managerChan chan actions.PlayerAction) error {
 		Handler: http.Handler(h),
 	}
 
+	// Static files handler
+	fs := http.FileServer(http.Dir(*staticDir))
+
 	// HTTP request routing
+	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", fs))
 	r.PathPrefix("/debug").Handler(channelz.CreateHandler("/debug", fmt.Sprintf(":%s", *insecureGRPCPort)))
 	r.PathPrefix("/metrics").Handler(promhttp.Handler())
 	r.PathPrefix("/").Handler(och)
@@ -105,7 +110,11 @@ func Run(ctx context.Context, managerChan chan actions.PlayerAction) error {
 
 	go s.grpcServe()
 	go s.httpServe()
-	go s.startGRPCUI(ctx)
+	go func() {
+		if err := s.startGRPCUI(ctx); err != nil {
+			s.l.Fatal(err)
+		}
+	}()
 
 	wg.Wait()
 
@@ -115,18 +124,19 @@ func Run(ctx context.Context, managerChan chan actions.PlayerAction) error {
 func (s *Server) startGRPCUI(ctx context.Context) error {
 
 	// embedded grpc ui client
-	cc, err := grpc.DialContext(ctx, ":8080", grpc.WithBlock(), grpc.WithInsecure())
+	cc, err := grpc.DialContext(ctx, fmt.Sprintf(":%s", *insecureGRPCPort), grpc.WithBlock(), grpc.WithInsecure())
 	if err != nil {
 		return err
 	}
 
-	grpcui, err := standalone.HandlerViaReflection(ctx, cc, ":8080")
+	grpcui, err := standalone.HandlerViaReflection(ctx, cc, fmt.Sprintf(":%s", *insecureGRPCPort))
 	if err != nil {
 		return fmt.Errorf("failed on grpcui handler: %v", err)
 	}
 
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%s", *grpcUIPort))
 	s.l.Infof("serving grpc ui on :%s", *grpcUIPort)
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%s", *grpcUIPort))
+
 	if err := http.Serve(listener, grpcui); err != nil {
 		log.Fatalf("Failed to serve web UI: %v", err)
 	}

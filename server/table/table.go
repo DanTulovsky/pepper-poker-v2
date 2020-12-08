@@ -73,6 +73,7 @@ type Table struct {
 	deck                             *deck.Deck
 	buyinAmount                      int64
 	currentHand                      int64 // allows tracking metrics by hand
+	winners                          []poker.Winners
 
 	// how long to wait for player to make a move
 	playerTimeout time.Duration
@@ -367,11 +368,27 @@ func (t *Table) infoproto() *ppb.GameInfo {
 
 	gi.Players = t.playersProto()
 	gi.Winners = t.winnersProto()
+	gi.WinningIds = t.winningPlayersProto()
 
 	return gi
 }
 
+func (t *Table) winningPlayersProto() []*ppb.Winners {
+	w := []*ppb.Winners{}
+
+	for _, l := range t.winners {
+		thislevel := &ppb.Winners{}
+		for _, id := range l {
+			thislevel.Ids = append(thislevel.Ids, id.String())
+		}
+		w = append(w, thislevel)
+	}
+
+	return w
+}
+
 // winnersProto returns the winners of the hand
+// TODO: Delete
 func (t *Table) winnersProto() []string {
 	winners := []string{}
 
@@ -512,7 +529,7 @@ func (t *Table) setState(s state) error {
 	time.Sleep(t.stateAdvanceDelay)
 	t.State = s
 
-	// t.resetPlayerActions()
+	t.resetPlayerActions()
 	return s.Init()
 }
 

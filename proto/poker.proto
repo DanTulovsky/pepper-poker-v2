@@ -131,7 +131,10 @@ message GameInfo {
   // All players, no confidential info
   repeated Player players = 140;
   repeated string winners = 150;
+  repeated Winners winning_ids = 160;
 }
+
+message Winners { repeated string ids = 10; }
 
 // GameData is sent to the client, it tells the client when it's their turn and
 // provides the current state

@@ -1,8 +1,15 @@
 package server
 
 import (
+	"flag"
 	"fmt"
+	"html/template"
 	"net/http"
+	"path"
+)
+
+var (
+	templateDir = flag.String("template_dir", "server/templates/", "html template dir")
 )
 
 func httpServer(handler http.Handler, port string) *http.Server {
@@ -18,55 +25,16 @@ func httpServer(handler http.Handler, port string) *http.Server {
 type HTTPHandler struct {
 }
 
+type indexPage struct {
+}
+
 func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html")
+	// w.Header().Set("Content-Type", "text/html")
 
-	// 	before := `
-	// <!DOCTYPE html>
-	// <html>
+	data := &indexPage{}
 
-	// <head>
-	//   <meta charset="utf-8">
-	//   <title></title>
-	//   <meta name="author" content="">
-	//   <meta name="description" content="">
-	//   <meta name="viewport" content="width=device-width, initial-scale=1">
+	file := "index.html"
+	tmpl := template.Must(template.ParseFiles(path.Join(*templateDir, file)))
 
-	//   <link href="css/style.css" rel="stylesheet">
-	// </head>
-
-	// <body>
-	// 	`
-
-	// 	after := `
-	// </body>
-
-	// </html>
-	// `
-	// // g.mgr is the game server
-	// fmt.Fprintln(w, before)
-	// fmt.Fprintf(w, "<h3>pepper-poker server (%s)</h3>", h.mgr.Version())
-
-	// for _, t := range h.mgr.Tables() {
-	// 	allinfo, err := t.GetAllTurnLogs()
-	// 	if err != nil {
-	// 		fmt.Fprintf(w, "error getting turn logs: %v", err)
-	// 	}
-
-	// 	for _, info := range allinfo {
-	// 		m := jsonpb.Marshaler{
-	// 			EmitDefaults: true,
-	// 			Indent:       "  ",
-	// 		}
-	// 		data, _ := m.MarshalToString(info)
-	// 		fmt.Fprintln(w, "<p>")
-	// 		fmt.Fprintln(w, "<pre>")
-	// 		fmt.Fprintf(w, "%v", data)
-	// 		fmt.Fprintln(w, "</pre>")
-	// 		fmt.Fprintln(w, "</p>")
-	// 		fmt.Fprintln(w, "<hr>")
-	// 	}
-	// }
-	// fmt.Fprintln(w, after)
-
+	tmpl.Execute(w, data)
 }
