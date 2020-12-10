@@ -5,8 +5,9 @@ import (
 	"flag"
 
 	"github.com/DanTulovsky/logger"
-	"github.com/DanTulovsky/pepper-poker-v2/server/manager"
 	"github.com/fatih/color"
+
+	"github.com/DanTulovsky/pepper-poker-v2/server/manager"
 )
 
 var ()
@@ -25,4 +26,5 @@ func main() {
 	if err := m.Run(ctx); err != nil {
 		logg.Fatal(err)
 	}
+
 }
