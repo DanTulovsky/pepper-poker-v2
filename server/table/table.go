@@ -483,7 +483,16 @@ func (t *Table) gameDataProto(p *player.Player) *ppb.GameData {
 // advancePlayer advances t.currentPlayer to the next player
 func (t *Table) advancePlayer() {
 
-	if t.numActivePlayers() < 2 {
+	if len(t.CurrentHandActivePlayers()) < 2 {
+		// handle the degenrate case where a player disconnects in a two player game
+		// and the disconnected player was currentPlayer and is now nil
+
+		for _, p := range t.CurrentHandActivePlayers() {
+			// there is only one current
+			t.currentTurn = p.TablePosition
+			p.WaitSince = time.Now()
+		}
+
 		return
 	}
 
@@ -668,7 +677,7 @@ func (t *Table) PlayerDisconnected(p *player.Player) error {
 	t.removePlayer(p)
 
 	// advance current turn to next player
-	if t.currentTurn == pos && t.numActivePlayers() > 1 {
+	if t.currentTurn == pos {
 		t.l.Info("Advancing player, as disconnected player was current")
 		t.advancePlayer()
 	}

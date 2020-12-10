@@ -12,7 +12,6 @@ func (i *playingPreFlopState) Init() error {
 	i.table.SetPlayersActionRequired()
 
 	// properly set from the previous state
-	// TODO: If player disconnects before this, p is nil; handle it.
 	p := i.table.positions[i.table.currentTurn]
 
 	i.l.Infof("Player %s (%d) goes first", p.Name, i.table.currentTurn)
