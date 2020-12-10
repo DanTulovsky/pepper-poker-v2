@@ -802,6 +802,7 @@ func (t *Table) reset() error {
 	for _, p := range t.ActivePlayers() {
 		if p.CommChannel != nil {
 			close(p.CommChannel)
+			p.CommChannel = nil // otherwise when player rejoins, server tries to send on closed channel
 		}
 	}
 
