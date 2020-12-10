@@ -26,12 +26,14 @@ type HTTPHandler struct {
 }
 
 type indexPage struct {
+	Welcome string
 }
 
 func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// w.Header().Set("Content-Type", "text/html")
 
-	data := &indexPage{}
+	data := &indexPage{
+		Welcome: "Welcome to pepper-poker...",
+	}
 
 	file := "index.html"
 	tmpl := template.Must(template.ParseFiles(path.Join(*templateDir, file)))

@@ -350,8 +350,9 @@ func (t *Table) infoproto() *ppb.GameInfo {
 		TableName: i.Name,
 		TableID:   t.ID.String(),
 
-		GameState:       t.State.Name(),
-		GameStartsInSec: int64(t.gameStartsInTime.Seconds()),
+		GameState:          t.State.Name(),
+		GameStartsInSec:    int64(t.gameStartsInTime.Seconds()),
+		GameStartsInMaxSec: int64(t.gameWaitTimeout.Seconds()),
 
 		MaxPlayers: int64(i.MaxPlayers),
 		MinPlayers: int64(i.MinPlayers),
@@ -366,8 +367,12 @@ func (t *Table) infoproto() *ppb.GameInfo {
 		gi.AckToken = t.currentAckToken.String()
 	}
 
-	gi.Players = t.playersProto()
-	gi.Winners = t.winnersProto()
+	if t.State == t.finishedState || t.State == t.playingDoneState {
+		gi.Players = t.confPlayersProto()
+	} else {
+		gi.Players = t.playersProto()
+	}
+
 	gi.WinningIds = t.winningPlayersProto()
 
 	return gi
@@ -387,28 +392,23 @@ func (t *Table) winningPlayersProto() []*ppb.Winners {
 	return w
 }
 
-// winnersProto returns the winners of the hand
-// TODO: Delete
-func (t *Table) winnersProto() []string {
-	winners := []string{}
-
-	for _, p := range t.CurrentHandPlayers() {
-		if !p.IsWinner() {
-			continue
-		}
-
-		winners = append(winners, p.ID.String())
-	}
-
-	return winners
-}
-
 // playersProto returns all active players as a proto
 // no confidential information is included
 func (t *Table) playersProto() []*ppb.Player {
 	players := []*ppb.Player{}
 	for _, p := range t.CurrentHandPlayers() {
 		players = append(players, t.playerProto(p))
+	}
+
+	return players
+}
+
+// confPlayersProto returns all active players as a proto
+// confidential information is included
+func (t *Table) confPlayersProto() []*ppb.Player {
+	players := []*ppb.Player{}
+	for _, p := range t.CurrentHandPlayers() {
+		players = append(players, t.confPlayerProto(p))
 	}
 
 	return players
@@ -441,6 +441,14 @@ func (t *Table) confPlayerProto(p *player.Player) *ppb.Player {
 	pl.Money.MinBetThisRound = t.minBetThisRound
 	pl.Money.Pot = t.pot.GetTotal()
 	pl.GetMoney().BetThisHand = t.pot.GetBet(p.ID)
+
+	// PlayerHand is only set at the end
+	if p.PlayerHand() != nil {
+		for _, c := range p.PlayerHand().Hand.Cards() {
+			pl.Hand = append(pl.Hand, c.ToProto())
+		}
+		pl.Combo = p.PlayerHand().Hand.Combo().String()
+	}
 
 	pl.Card = deck.CardsToProto(p.Hole())
 	return pl

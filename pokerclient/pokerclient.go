@@ -498,10 +498,13 @@ func (pc *PokerClient) Call(ctx context.Context) error {
 }
 
 // IsWinner returns true if the players appears in the winners proto
-func (pc *PokerClient) IsWinner(p *ppb.Player, winners []string) bool {
-	for _, w := range winners {
-		if p.Id == w {
-			return true
+func (pc *PokerClient) IsWinner(p *ppb.Player, winners []*ppb.Winners) bool {
+	// TODO: Fix this
+	for _, level := range winners {
+		for _, w := range level.Ids {
+			if p.Id == w {
+				return true
+			}
 		}
 	}
 	return false
@@ -517,7 +520,7 @@ func (pc *PokerClient) PrintHandResults(in *ppb.GameData) error {
 			isme = "(me) "
 		}
 
-		if pc.IsWinner(p, in.GetInfo().GetWinners()) {
+		if pc.IsWinner(p, in.GetInfo().GetWinningIds()) {
 			iswinner = "[winner] "
 		}
 

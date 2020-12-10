@@ -77,6 +77,12 @@ func (i *playingDoneState) Init() error {
 			i.l.Infof("[%v] is a Winner ([%v] %v)", p.Name, combo, cards)
 
 			p.Stats.GamesWonInc()
+
+			// winner is someone who ends up with more money than they started with.
+			if i.table.pot.GetBet(p.ID) >= winnings {
+				winnings = 0 // did not actulaly win anything
+			}
+
 			p.SetWinnerAndWinnings(winnings)
 			// Return winnings to the stack
 			p.Money().SetStack(p.Money().Stack() + p.Money().Winnings())

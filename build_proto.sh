@@ -1,5 +1,5 @@
 # C#
-protoc-from-source \
+protoc \
   -I ~/go/src/github.com/DanTulovsky/pepper-poker-v2/proto \
   --csharp_out="/Users/dant/Unity Local/Projects/pepper-poker/Assets/Scripts/Generated/" \
   --grpc_out="/Users/dant/Unity Local/Projects/pepper-poker/Assets/Scripts/Generated/" \

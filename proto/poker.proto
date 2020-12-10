@@ -118,6 +118,7 @@ message GameInfo {
   string tableID = 20;
   GameState gameState = 30;
   int64 gameStartsInSec = 40;
+  int64 gameStartsInMaxSec = 45;
   string ackToken = 50;
 
   CommunityCards CommunityCards = 60;
@@ -130,7 +131,6 @@ message GameInfo {
 
   // All players, no confidential info
   repeated Player players = 140;
-  repeated string winners = 150;
   repeated Winners winning_ids = 160;
 }
 
