@@ -122,6 +122,7 @@ func (p *Player) DisconnectReset() {
 // ResetForBettingRound resets the player for the next betting round (multiple of these inside one hand)
 func (p *Player) ResetForBettingRound() {
 	p.Money().SetBetThisRound(0)
+	p.Money().SetWinnings(0)
 }
 
 // PlayerHand sets the player's final hand
