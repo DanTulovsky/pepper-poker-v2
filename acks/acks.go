@@ -32,8 +32,8 @@ func (t *Token) String() string {
 	return t.id
 }
 
-// StartTime starts the ack timer
-func (t *Token) StartTime() {
+// StartTimer starts the ack timer
+func (t *Token) StartTimer() {
 	t.start = time.Now()
 }
 

@@ -154,19 +154,23 @@ func (p *Player) AsProto(bigBlind, buyin int64) *ppb.Player {
 		Id:       p.ID.String(),
 		Position: int64(p.TablePosition),
 		Money:    p.money.AsProto(),
-		State:    ppb.PlayerState_PlayerStateDefault,
+		State:    []ppb.PlayerState{ppb.PlayerState_PlayerStateDefault},
 		LastAction: &ppb.LastAction{
 			Action: p.LastAction.Action,
 			Amount: p.LastAction.Amount,
 		},
 	}
 
+	if p.Folded() {
+		s.State = append(s.State, ppb.PlayerState_PlayerStateFolded)
+	}
+
 	if p.Money().Stack() < bigBlind {
-		s.State = ppb.PlayerState_PlayerStateStackEmpty
+		s.State = append(s.State, ppb.PlayerState_PlayerStateStackEmpty)
 	}
 
 	if p.Money().Bank() < buyin {
-		s.State = ppb.PlayerState_PlayerStateBankEmpty
+		s.State = append(s.State, ppb.PlayerState_PlayerStateBankEmpty)
 	}
 	return s
 }

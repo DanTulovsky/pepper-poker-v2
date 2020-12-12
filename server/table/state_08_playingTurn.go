@@ -29,7 +29,7 @@ func (i *playingTurnState) Init() error {
 	i.l.Infof("Dealing the turn... [%v]", c)
 
 	// next available player after the button goes first
-	i.table.currentTurn = i.table.playerAfter(i.table.button)
+	i.table.currentTurn = i.table.playerAfter(i.table.buttonPosition)
 
 	pnt := i.table.positions[i.table.currentTurn]
 	i.l.Infof("Player %s (%d) goes first", pnt.Name, i.table.currentTurn)

@@ -129,9 +129,13 @@ message GameInfo {
   int64 smallBlind = 125;
   int64 buyin = 130;
 
+  int64 buttonPosition = 140;
+  int64 smallBlindPosition = 150;
+  int64 bigBlindPosition = 160;
+
   // All players, no confidential info
-  repeated Player players = 140;
-  repeated Winners winning_ids = 160;
+  repeated Player players = 170;
+  repeated Winners winning_ids = 180;
 }
 
 message Winners { repeated string ids = 10; }
@@ -149,21 +153,24 @@ message GameData {
   string playerID = 50; // the ID of the calling player
 
   // calling player, includes confidential info
-  Player player = 60;
+  Player player = 100;
 }
 
 // PlayerState is the player state according to the server
 enum PlayerState {
   PlayerStateDefault = 0;
 
+  // PlayerStateFolded denotes a player that folded
+  PlayerStateFolded = 1;
+
   // PlayerStateStackEmpty means the player has run out of money in the stack
-  PlayerStateStackEmpty = 1;
+  PlayerStateStackEmpty = 2;
 
   // PlayerStateBankEmpty means the player has run out of money in the bank
-  PlayerStateBankEmpty = 2;
+  PlayerStateBankEmpty = 3;
 
   // PlayerStateCurrentTurn marks this player's turn
-  PlayerStateCurrentTurn = 3;
+  PlayerStateCurrentTurn = 4;
 }
 
 message Player {
@@ -176,7 +183,7 @@ message Player {
   int64 position = 20;
 
   PlayerMoney money = 30;
-  PlayerState state = 50;
+  repeated PlayerState state = 50;
 
   // only filled in for the player that matches the requesting player except at
   // the end

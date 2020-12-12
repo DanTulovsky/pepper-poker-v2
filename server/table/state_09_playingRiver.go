@@ -29,7 +29,7 @@ func (i *playingRiverState) Init() error {
 	i.l.Infof("Dealing the river... [%v]", c)
 
 	// next available player after the button goes first
-	i.table.currentTurn = i.table.playerAfter(i.table.button)
+	i.table.currentTurn = i.table.playerAfter(i.table.buttonPosition)
 
 	p := i.table.positions[i.table.currentTurn]
 	i.l.Infof("Player %s (%d) goes first", p.Name, i.table.currentTurn)

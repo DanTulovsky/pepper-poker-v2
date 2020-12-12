@@ -63,8 +63,10 @@ type Table struct {
 
 	// index into the positions array
 	currentTurn int
-	// the current button, index into positions array
-	button                           int
+	// the current buttonPosition, index into positions array
+	buttonPosition                       int
+	bigBlindPosition, smallBlindPosition int
+
 	bigBlindPlayer, smallBlindPlayer *player.Player
 	bigBlind, smallBlind             int64
 	minBetThisRound                  int64
@@ -103,10 +105,10 @@ func New(tableAction chan ActionRequest) *Table {
 		maxPlayers: 7,
 		minPlayers: 2,
 
-		button:      -1,
-		smallBlind:  5,
-		bigBlind:    10,
-		buyinAmount: 1000,
+		buttonPosition: -1,
+		smallBlind:     5,
+		bigBlind:       10,
+		buyinAmount:    1000,
 
 		defaultAckTimeout: time.Second * 10,
 		playerTimeout:     time.Second * 30,
@@ -154,6 +156,7 @@ func New(tableAction chan ActionRequest) *Table {
 	}
 
 	t.State = t.waitingPlayersState
+	t.State.Init()
 
 	return t
 }
@@ -360,6 +363,10 @@ func (t *Table) infoproto() *ppb.GameInfo {
 		SmallBlind: t.smallBlind,
 		Buyin:      t.buyinAmount,
 
+		ButtonPosition:     int64(t.buttonPosition),
+		SmallBlindPosition: int64(t.smallBlindPosition),
+		BigBlindPosition:   int64(t.bigBlindPosition),
+
 		CommunityCards: t.board.AsProto(),
 	}
 
@@ -474,7 +481,7 @@ func (t *Table) gameDataProto(p *player.Player) *ppb.GameData {
 	// p is the player the info is being sent to, add confidential info
 	d.Player = t.confPlayerProto(p)
 	if pl == p {
-		d.Player.State = ppb.PlayerState_PlayerStateCurrentTurn
+		d.Player.State = append(d.Player.State, ppb.PlayerState_PlayerStateCurrentTurn)
 	}
 
 	return d

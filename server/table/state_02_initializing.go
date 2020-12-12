@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/DanTulovsky/deck"
 	"github.com/DanTulovsky/pepper-poker-v2/acks"
-	"github.com/DanTulovsky/pepper-poker-v2/poker"
 	"github.com/DanTulovsky/pepper-poker-v2/server/player"
 )
 
@@ -22,16 +20,16 @@ func (i *initializingState) Init() error {
 
 	i.table.currentHand++
 
-	i.table.button = i.table.playerAfter(i.table.button)
-	sb := i.table.playerAfter(i.table.button)
-	bb := i.table.playerAfter(sb)
+	i.table.buttonPosition = i.table.playerAfter(i.table.buttonPosition)
+	i.table.smallBlindPosition = i.table.playerAfter(i.table.buttonPosition)
+	i.table.bigBlindPosition = i.table.playerAfter(i.table.smallBlindPosition)
 
-	i.table.currentTurn = sb
+	i.table.smallBlindPlayer = i.table.positions[i.table.smallBlindPosition]
+	i.table.bigBlindPlayer = i.table.positions[i.table.bigBlindPosition]
 
-	i.table.smallBlindPlayer = i.table.positions[sb]
-	i.table.bigBlindPlayer = i.table.positions[bb]
+	i.table.currentTurn = i.table.smallBlindPosition
 
-	i.l.Infof("button: %v", i.table.positions[i.table.button].Name)
+	i.l.Infof("button: %v", i.table.positions[i.table.buttonPosition].Name)
 	i.l.Infof("smallBlind: %v", i.table.smallBlindPlayer.Name)
 	i.l.Infof("bigBlind: %v", i.table.bigBlindPlayer.Name)
 
@@ -41,17 +39,11 @@ func (i *initializingState) Init() error {
 	}
 
 	// reset board, pot and deck
-	i.table.board = poker.NewBoard()
-	i.table.deck = deck.NewShuffledDeck()
-	i.table.pot = poker.NewPot()
 	i.table.ResetPlayersBets()
-
-	// reset any existing acks
-	i.table.clearAckToken()
 
 	// Used to get an ack before game starts
 	i.token = acks.New(i.table.CurrentHandPlayers(), i.table.defaultAckTimeout)
-	i.token.StartTime()
+	i.token.StartTimer()
 	i.table.setAckToken(i.token)
 
 	return nil

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/DanTulovsky/deck"
 	"github.com/DanTulovsky/pepper-poker-v2/poker"
 	"github.com/DanTulovsky/pepper-poker-v2/server/player"
 	"github.com/dustin/go-humanize"
@@ -31,6 +32,13 @@ func (i *waitingPlayersState) Init() error {
 	i.table.pendingPlayers = nil
 
 	i.table.board = poker.NewBoard()
+	i.table.pot = poker.NewPot()
+
+	i.l.Info("Shuffling the deck...")
+	i.table.deck = deck.NewShuffledDeck()
+
+	// reset any existing acks
+	i.table.clearAckToken()
 
 	return nil
 

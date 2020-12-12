@@ -26,7 +26,7 @@ func (i *finishedState) Init() error {
 
 	// Used to get an ack before game ends
 	i.token = acks.New(i.table.CurrentHandPlayers(), i.table.defaultAckTimeout)
-	i.token.StartTime()
+	i.token.StartTimer()
 	i.table.setAckToken(i.token)
 
 	i.gameEndTime = time.Now()

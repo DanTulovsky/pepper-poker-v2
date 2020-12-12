@@ -192,6 +192,16 @@ func (pc *PokerClient) Play(ctx context.Context, donec chan bool, errc chan erro
 	}
 }
 
+// HasState returns true if s is in states
+func (pc *PokerClient) HasState(states []ppb.PlayerState, s ppb.PlayerState) bool {
+	for _, state := range states {
+		if state == s {
+			return true
+		}
+	}
+	return false
+}
+
 // processGameData receives GameData on the channel and acts on it
 func (pc *PokerClient) processGameData(ctx context.Context, exitc chan bool) error {
 	var err error
@@ -225,8 +235,9 @@ OUTER:
 			pc.l.Debugf("[tt: %v] Current Turn Player (num=%v): %v", waitTimeLeft, waitNum, waitName)
 			pc.l.Debugf("Current State: %v", pc.gameState)
 
-			switch in.GetPlayer().GetState() {
-			case ppb.PlayerState_PlayerStateStackEmpty:
+			state := in.GetPlayer().GetState()
+			switch {
+			case pc.HasState(state, ppb.PlayerState_PlayerStateStackEmpty):
 				if in.GetInfo().GetGameState() <= ppb.GameState_GameStateWaitingPlayers {
 					if err = pc.BuyIn(ctx, in.GetInfo().GetBigBlind()); err != nil {
 						pc.l.Infof("error buying in: %v", err)
@@ -234,11 +245,11 @@ OUTER:
 					}
 				}
 
-			case ppb.PlayerState_PlayerStateBankEmpty:
+			case pc.HasState(state, ppb.PlayerState_PlayerStateBankEmpty):
 				pc.l.Info("Ran out of money, exiting...")
 				os.Exit(0)
 
-			case ppb.PlayerState_PlayerStateCurrentTurn:
+			case pc.HasState(state, ppb.PlayerState_PlayerStateCurrentTurn):
 
 				if pc.lastTurnTaken < waitNum {
 					pc.handFinished = false
