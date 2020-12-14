@@ -58,7 +58,9 @@ func (i *waitingPlayersState) Tick() error {
 		} else {
 			i.l.Info("Adding players to current hand...")
 			for _, p := range i.table.AvailablePlayers() {
-				i.table.AddCurrentHandPlayer(p)
+				if !p.InList(i.table.currentHandPlayers) {
+					i.table.AddCurrentHandPlayer(p)
+				}
 			}
 
 			i.cache = ""

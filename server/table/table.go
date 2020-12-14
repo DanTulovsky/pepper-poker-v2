@@ -712,20 +712,20 @@ func (t *Table) removePlayer(p *player.Player) {
 		i++
 	}
 
-	// remove player from currentHandPlayers
-	t.l.Debugf("currentHandPlayers before: %v", t.currentHandPlayers)
-	if len(t.currentHandPlayers) > 0 {
-		copy(t.currentHandPlayers[i:], t.currentHandPlayers[i+1:])                // Shift a[i+1:] left one index.
-		t.currentHandPlayers[len(t.currentHandPlayers)-1] = nil                   // Erase last element (write zero value).
-		t.currentHandPlayers = t.currentHandPlayers[:len(t.currentHandPlayers)-1] // Truncate slice.
+	if p.InList(t.currentHandPlayers) {
+		// remove player from currentHandPlayers
+		t.l.Debugf("currentHandPlayers before: %v", t.currentHandPlayers)
+		if len(t.currentHandPlayers) > 0 {
+			copy(t.currentHandPlayers[i:], t.currentHandPlayers[i+1:])                // Shift a[i+1:] left one index.
+			t.currentHandPlayers[len(t.currentHandPlayers)-1] = nil                   // Erase last element (write zero value).
+			t.currentHandPlayers = t.currentHandPlayers[:len(t.currentHandPlayers)-1] // Truncate slice.
+		}
+		t.l.Debugf("currentHandPlayers after: %v", t.currentHandPlayers)
 	}
-	t.l.Debugf("currentHandPlayers after: %v", t.currentHandPlayers)
-
 	// Clear table position
 	t.l.Debugf("positions before: %v", t.positions)
 	t.positions[p.TablePosition] = nil
 	t.l.Debugf("positions after: %v", t.positions)
-
 }
 
 // playerAtTable returns true if the player is at this table

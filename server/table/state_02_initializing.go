@@ -60,11 +60,20 @@ func (i *initializingState) Tick() error {
 
 	// token expired, we don't have all acks
 	if i.token.Expired() {
-		i.l.Infof("some [%d] players failed to ack, resetting: %v", i.token.NumStillToAck(), i.token.DidNotAckPlayers())
+		failed := i.token.DidNotAckPlayers()
+		i.l.Infof("[%d] players (%v) failed to ack, removing them", i.token.NumStillToAck(), i.token.DidNotAckPlayers())
+
+		for _, p := range failed {
+			i.l.Infof("removing disconnected player: %v", p.Name)
+			i.table.removePlayer(p)
+		}
 
 		// TODO: Kick out only those players that failed to ack and then go back to beginning state
-		i.table.reset()
+		// i.table.reset()
+
+		i.table.setState(i.table.waitingPlayersState)
 		return nil
+
 	}
 
 	status := fmt.Sprintf("Waiting (%v) for %d players to ack...", i.token.TimeRemaining().Truncate(time.Second), i.token.NumStillToAck())
