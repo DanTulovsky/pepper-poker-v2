@@ -34,7 +34,7 @@ func (i *initializingState) Init() error {
 	i.l.Infof("bigBlind: %v", i.table.bigBlindPlayer.Name)
 
 	i.l.Info("Initializing player information for the hand...")
-	for _, p := range i.table.CurrentHandPlayers() {
+	for _, p := range i.table.ActivePlayers() {
 		p.Init()
 	}
 
