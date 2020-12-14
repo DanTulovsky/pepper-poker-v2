@@ -403,8 +403,8 @@ func (t *Table) winningPlayersProto() []*ppb.Winners {
 // no confidential information is included
 func (t *Table) playersProto() []*ppb.Player {
 	players := []*ppb.Player{}
-	// for _, p := range t.CurrentHandPlayers() {
-	for _, p := range t.AvailablePlayers() {
+
+	for _, p := range t.ActivePlayers() {
 		players = append(players, t.playerProto(p))
 	}
 
@@ -415,7 +415,7 @@ func (t *Table) playersProto() []*ppb.Player {
 // confidential information is included
 func (t *Table) confPlayersProto() []*ppb.Player {
 	players := []*ppb.Player{}
-	for _, p := range t.CurrentHandPlayers() {
+	for _, p := range t.ActivePlayers() {
 		players = append(players, t.confPlayerProto(p))
 	}
 
@@ -597,7 +597,7 @@ func (t *Table) ClearCurrentHandPlayers() {
 }
 
 // ActivePlayers returns the players at the table
-// Active players are present at the table and playing the current hand
+// Active players are present at the table
 func (t *Table) ActivePlayers() []*player.Player {
 	players := []*player.Player{}
 
