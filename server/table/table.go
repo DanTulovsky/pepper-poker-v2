@@ -819,6 +819,7 @@ func (t *Table) playersReady() bool {
 }
 
 // reset resets the table completely
+// TODO: Remove?
 func (t *Table) reset() error {
 	t.l.Info("Table resetting...")
 

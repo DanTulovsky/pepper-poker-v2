@@ -117,6 +117,10 @@ func (p *Player) InList(l []*Player) bool {
 // DisconnectReset is called after player disconnects
 func (p *Player) DisconnectReset() {
 	p.HandInfo = newHandInfo()
+	if p.CommChannel != nil {
+		close(p.CommChannel)
+		p.CommChannel = nil
+	}
 }
 
 // ResetForBettingRound resets the player for the next betting round (multiple of these inside one hand)
