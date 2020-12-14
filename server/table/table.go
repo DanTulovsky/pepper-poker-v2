@@ -3,6 +3,7 @@ package table
 import (
 	"flag"
 	"fmt"
+	"math/rand"
 	"time"
 
 	"github.com/DanTulovsky/deck"
@@ -35,9 +36,6 @@ type Table struct {
 
 	// players playing the current hand
 	currentHandPlayers []*player.Player
-
-	// pendingPlayers are those that want to buyin and join the next hand
-	pendingPlayers []*player.Player
 
 	maxPlayers int
 	minPlayers int
@@ -103,16 +101,18 @@ func New(tableAction chan ActionRequest) *Table {
 		currentHandPlayers: []*player.Player{},
 
 		maxPlayers: 7,
-		minPlayers: 2,
+		minPlayers: 3,
 
-		buttonPosition: -1,
-		smallBlind:     5,
-		bigBlind:       10,
-		buyinAmount:    1000,
+		buttonPosition:     -1,
+		smallBlindPosition: -1,
+		bigBlindPosition:   -1,
+		smallBlind:         5,
+		bigBlind:           10,
+		buyinAmount:        1000,
 
 		defaultAckTimeout: time.Second * 10,
 		playerTimeout:     time.Second * 30,
-		gameEndDelay:      time.Second * 30,
+		gameEndDelay:      time.Second * 10,
 		gameWaitTimeout:   time.Second * 10,
 		stateAdvanceDelay: time.Second * 0,
 	}
@@ -403,7 +403,8 @@ func (t *Table) winningPlayersProto() []*ppb.Winners {
 // no confidential information is included
 func (t *Table) playersProto() []*ppb.Player {
 	players := []*ppb.Player{}
-	for _, p := range t.CurrentHandPlayers() {
+	// for _, p := range t.CurrentHandPlayers() {
+	for _, p := range t.AvailablePlayers() {
 		players = append(players, t.playerProto(p))
 	}
 
@@ -749,6 +750,22 @@ func (t *Table) nextAvailablePosition() int {
 		}
 	}
 	return -1
+}
+
+func (t *Table) randomAvailablePosition() int {
+	positions := []int{}
+
+	for i, p := range t.positions {
+		if p == nil {
+			positions = append(positions, i)
+		}
+	}
+
+	if len(positions) == 0 {
+		return -1
+	}
+
+	return positions[rand.Intn(len(positions))]
 }
 
 // SetPlayersActionRequired resets the actionRequired attribute on players before each state

@@ -37,7 +37,7 @@ func (t *Table) bet(p *player.Player, bet int64, a actions.TableAction) error {
 			t.minBetThisRound = p.Money().BetThisRound()
 
 			// reset any players that have put in less than this so they get to go again
-			for _, p := range t.ActivePlayers() {
+			for _, p := range t.currentHandPlayers {
 				if !p.AllIn() && !p.Folded() && p.Money().BetThisRound() < t.minBetThisRound {
 					p.SetActionRequired(true)
 				}

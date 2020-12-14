@@ -23,14 +23,6 @@ type waitingPlayersState struct {
 }
 
 func (i *waitingPlayersState) Init() error {
-	// add any pending players that are new
-	for _, p := range i.table.pendingPlayers {
-		if _, err := i.AddPlayer(p); err != nil {
-			i.l.Error(err)
-		}
-	}
-	i.table.pendingPlayers = nil
-
 	i.table.board = poker.NewBoard()
 	i.table.pot = poker.NewPot()
 
@@ -39,6 +31,9 @@ func (i *waitingPlayersState) Init() error {
 
 	// reset any existing acks
 	i.table.clearAckToken()
+
+	i.table.bigBlindPosition = -1
+	i.table.smallBlindPosition = -1
 
 	return nil
 
@@ -69,6 +64,8 @@ func (i *waitingPlayersState) Tick() error {
 			i.cache = ""
 			return i.table.setState(i.table.initializingState)
 		}
+	} else {
+		i.table.gameStartsInTime = 0 // not yet ready to count down
 	}
 
 	if status != i.cache {
@@ -95,7 +92,7 @@ func (i *waitingPlayersState) AddPlayer(p *player.Player) (pos int, err error) {
 		}
 
 		i.l.Infof("Addting player [%v] to table [%v]", p.Name, i.table.Name)
-		i.table.positions[i.table.nextAvailablePosition()] = p
+		i.table.positions[i.table.randomAvailablePosition()] = p
 		p.TablePosition, err = i.table.PlayerPosition(p)
 		return i.table.PlayerPosition(p)
 	}

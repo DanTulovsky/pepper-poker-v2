@@ -6,6 +6,7 @@ import (
 	"github.com/DanTulovsky/logger"
 	"github.com/DanTulovsky/pepper-poker-v2/actions"
 	"github.com/DanTulovsky/pepper-poker-v2/server/player"
+	"github.com/dustin/go-humanize"
 	"github.com/fatih/color"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -93,13 +94,38 @@ func (i *baseState) AvailableToJoin() bool {
 
 // AddPlayer adds the player to the table
 // In all states but the first, this puts the player in a list of pending players
+// func (i *baseState) AddPlayer(p *player.Player) (pos int, err error) {
+// 	if p != nil {
+// 		i.table.pendingPlayers = append(i.table.pendingPlayers, p)
+// 		return -1, nil
+// 	}
+
+// 	return -1, fmt.Errorf("nil player passed to AddPlayer")
+// }
+
+// AddPlayer adds the player to the table and returns the position at the table
 func (i *baseState) AddPlayer(p *player.Player) (pos int, err error) {
-	if p != nil {
-		i.table.pendingPlayers = append(i.table.pendingPlayers, p)
-		return -1, nil
+	if i.table.numPresentPlayers() == i.table.maxPlayers {
+		return -1, fmt.Errorf("no available positions at table")
 	}
 
-	return -1, fmt.Errorf("nil player passed to AddPlayer")
+	if !i.table.playerAtTable(p) {
+		pos := i.table.randomAvailablePosition()
+		i.table.positions[pos] = p
+		p.TablePosition, err = i.table.PlayerPosition(p)
+
+		// buy in
+		i.l.Infof("[%v] buying into the table ($%v)", p.Name, humanize.Comma(i.table.buyinAmount))
+		if err := i.BuyIn(p); err != nil {
+			i.table.removePlayer(p)
+			return -1, err
+		}
+
+		i.l.Infof("Addting player [%v] to table [%v]", p.Name, i.table.Name)
+		return i.table.PlayerPosition(p)
+	}
+
+	return -1, fmt.Errorf("player already at the table: %v (%v)", p.Name, p.ID)
 }
 
 // AllIn process the allin request
