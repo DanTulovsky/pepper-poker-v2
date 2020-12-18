@@ -172,10 +172,10 @@ func (p *Player) AsProto(bigBlind, buyin int64) *ppb.Player {
 
 	if p.Money().Stack() < bigBlind {
 		s.State = append(s.State, ppb.PlayerState_PlayerStateStackEmpty)
-	}
 
-	if p.Money().Bank() < buyin {
-		s.State = append(s.State, ppb.PlayerState_PlayerStateBankEmpty)
+		if p.Money().Bank() < buyin {
+			s.State = append(s.State, ppb.PlayerState_PlayerStateBankEmpty)
+		}
 	}
 	return s
 }
