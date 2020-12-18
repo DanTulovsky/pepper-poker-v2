@@ -3,7 +3,9 @@ package manager
 import (
 	"context"
 	"errors"
+	"flag"
 	"fmt"
+	"time"
 
 	"github.com/DanTulovsky/logger"
 	"github.com/DanTulovsky/pepper-poker-v2/actions"
@@ -19,6 +21,8 @@ import (
 )
 
 var (
+	tickDelay = flag.Duration("manager_tick_delay", time.Millisecond*10, "delay between manager ticks")
+
 	numTables = 1
 )
 
@@ -107,7 +111,7 @@ func (m *Manager) tick() error {
 
 	m.processPlayerRequests()
 
-	// time.Sleep(time.Millisecond * 500)
+	time.Sleep(*tickDelay)
 
 	return nil
 }

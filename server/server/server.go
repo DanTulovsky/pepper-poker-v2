@@ -24,6 +24,7 @@ import (
 
 var (
 	httpPort         = flag.String("http_port", "8081", "port to listen on")
+	pprofPort        = flag.String("pprof_port", "6060", "port for pprof")
 	secureGRPCPort   = flag.String("secure_grpc_port", "8443", "port to listen on for secure grpc")
 	insecureGRPCPort = flag.String("insecure_grpc_port", "8082", "port to listen on for insecure grpc")
 	grpcUIPort       = flag.String("grpc_ui_port", "8080", "port for serving grpc ui")
@@ -110,6 +111,8 @@ func Run(ctx context.Context, managerChan chan actions.PlayerAction) error {
 
 	go s.grpcServe()
 	go s.httpServe()
+	go s.startPprof()
+
 	go func() {
 		if err := s.startGRPCUI(ctx); err != nil {
 			s.l.Fatal(err)
@@ -117,6 +120,14 @@ func Run(ctx context.Context, managerChan chan actions.PlayerAction) error {
 	}()
 
 	wg.Wait()
+
+	return nil
+}
+func (s *Server) startPprof() error {
+	pprofMux := http.DefaultServeMux
+	http.DefaultServeMux = http.NewServeMux()
+
+	log.Println(http.ListenAndServe(fmt.Sprintf("localhost:%s", *pprofPort), pprofMux))
 
 	return nil
 }

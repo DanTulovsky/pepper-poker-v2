@@ -8,6 +8,8 @@ import (
 	"github.com/fatih/color"
 
 	"github.com/DanTulovsky/pepper-poker-v2/server/manager"
+
+	_ "net/http/pprof"
 )
 
 var ()
