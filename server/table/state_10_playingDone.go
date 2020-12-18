@@ -99,6 +99,8 @@ func (i *playingDoneState) Init() error {
 			p.Stats.StateInc("done")
 		}
 	}
+
+	i.initrun = true
 	return nil
 }
 
@@ -119,6 +121,11 @@ func (i *playingDoneState) Fold(p *player.Player) error {
 }
 
 func (i *playingDoneState) Tick() error {
+	if !i.initrun {
+		i.Init()
+		return nil
+	}
+
 	i.l.Debugf("Tick(%v)", i.Name())
 
 	return i.table.setState(i.table.finishedState)

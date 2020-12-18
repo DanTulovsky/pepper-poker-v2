@@ -21,10 +21,17 @@ func (i *playingPreFlopState) Init() error {
 	for _, p := range i.table.CurrentHandActivePlayers() {
 		p.Stats.StateInc("preflop")
 	}
+
+	i.initrun = true
 	return nil
 }
 
 func (i *playingPreFlopState) Tick() error {
+	if !i.initrun {
+		i.Init()
+		return nil
+	}
+
 	i.l.Debugf("Tick(%v)", i.Name())
 
 	if i.table.haveWinner() {

@@ -41,10 +41,17 @@ func (i *playingFlopState) Init() error {
 	for _, p := range i.table.CurrentHandActivePlayers() {
 		p.Stats.StateInc("flop")
 	}
+
+	i.initrun = true
 	return nil
 }
 
 func (i *playingFlopState) Tick() error {
+	if !i.initrun {
+		i.Init()
+		return nil
+	}
+
 	i.l.Debugf("Tick(%v)", i.Name())
 
 	if i.table.haveWinner() {

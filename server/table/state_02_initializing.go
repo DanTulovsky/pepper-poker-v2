@@ -46,10 +46,16 @@ func (i *initializingState) Init() error {
 	i.token.StartTimer()
 	i.table.setAckToken(i.token)
 
+	i.initrun = true
 	return nil
 }
 
 func (i *initializingState) Tick() error {
+	if !i.initrun {
+		i.Init()
+		return nil
+	}
+
 	i.l.Debugf("Tick(%v)", i.Name())
 
 	if i.token.AllAcked() || i.token.NumStillToAck() == 0 {
@@ -67,9 +73,6 @@ func (i *initializingState) Tick() error {
 			i.l.Infof("removing disconnected player: %v", p.Name)
 			i.table.removePlayer(p)
 		}
-
-		// TODO: Kick out only those players that failed to ack and then go back to beginning state
-		// i.table.reset()
 
 		i.table.setState(i.table.waitingPlayersState)
 		return nil
@@ -96,4 +99,5 @@ func (i *initializingState) WaitingTurnPlayer() *player.Player {
 
 func (i *initializingState) Reset() {
 	i.token = nil
+	i.initrun = false
 }

@@ -25,6 +25,8 @@ func (i *playingBigBlindState) Init() error {
 	}
 
 	i.table.advancePlayer()
+
+	i.initrun = true
 	return nil
 }
 
@@ -45,6 +47,11 @@ func (i *playingBigBlindState) Fold(p *player.Player) error {
 }
 
 func (i *playingBigBlindState) Tick() error {
+	if !i.initrun {
+		i.Init()
+		return nil
+	}
+
 	i.l.Debugf("Tick(%v)", i.Name())
 
 	return i.table.setState(i.table.playingPreFlopState)

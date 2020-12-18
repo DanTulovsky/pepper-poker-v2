@@ -35,11 +35,20 @@ func (i *waitingPlayersState) Init() error {
 	i.table.bigBlindPosition = -1
 	i.table.smallBlindPosition = -1
 
-	return nil
+	for _, p := range i.table.ActivePlayers() {
+		p.Init()
+	}
 
+	i.initrun = true
+	return nil
 }
 
 func (i *waitingPlayersState) Tick() error {
+	if !i.initrun {
+		i.Init()
+		return nil
+	}
+
 	i.l.Debugf("Tick(%v)", i.Name())
 
 	now := time.Now()
@@ -102,9 +111,10 @@ func (i *waitingPlayersState) AddPlayer(p *player.Player) (pos int, err error) {
 	return -1, fmt.Errorf("player already at the table: %v (%v)", p.Name, p.ID)
 }
 
-// Reset resets for next roung
+// Reset resets for next round
 func (i *waitingPlayersState) Reset() {
 	i.lastPlayerAddedTime = time.Now()
+	i.initrun = false
 }
 
 func (i *waitingPlayersState) WaitingTurnPlayer() *player.Player {

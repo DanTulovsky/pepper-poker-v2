@@ -31,6 +31,7 @@ func (i *finishedState) Init() error {
 
 	i.gameEndTime = time.Now()
 
+	i.initrun = true
 	return nil
 }
 
@@ -55,6 +56,10 @@ func (i *finishedState) StartGame() error {
 }
 
 func (i *finishedState) Tick() error {
+	if !i.initrun {
+		i.Init()
+		return nil
+	}
 
 	now := time.Now()
 
@@ -82,6 +87,7 @@ func (i *finishedState) Tick() error {
 			i.l.Info("Removing players from current hand...")
 			i.table.ClearCurrentHandPlayers()
 
+			i.table.resetStates()
 			return i.table.setState(i.table.waitingPlayersState)
 		}
 	}

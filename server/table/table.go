@@ -101,7 +101,7 @@ func New(tableAction chan ActionRequest) *Table {
 		currentHandPlayers: []*player.Player{},
 
 		maxPlayers: 7,
-		minPlayers: 3,
+		minPlayers: 2,
 
 		buttonPosition:     -1,
 		smallBlindPosition: -1,
@@ -185,15 +185,16 @@ func (t *Table) ResetPlayersBets() {
 func (t *Table) Tick() error {
 	t.l.Debug("Tick()")
 
-	if err := t.processManagerActions(); err != nil {
-		t.l.Error(err)
-	}
+	t.sendUpdateToPlayers()
 
 	if err := t.State.Tick(); err != nil {
 		return err
 	}
 
-	t.sendUpdateToPlayers()
+	if err := t.processManagerActions(); err != nil {
+		t.l.Error(err)
+	}
+
 	return nil
 }
 
@@ -555,7 +556,8 @@ func (t *Table) setState(s state) error {
 	t.State = s
 
 	t.resetPlayerActions()
-	return s.Init()
+	return nil
+	// return s.Init()
 }
 
 func (t *Table) resetPlayerActions() {
@@ -841,6 +843,7 @@ func (t *Table) reset() error {
 	return t.setState(t.waitingPlayersState)
 }
 
+// TODO: Is this needed?
 func (t *Table) resetStates() {
 
 	t.waitingPlayersState.Reset()

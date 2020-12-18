@@ -42,8 +42,9 @@ type state interface {
 
 // baseState for common functions
 type baseState struct {
-	name  ppb.GameState
-	table *Table
+	name    ppb.GameState
+	table   *Table
+	initrun bool
 
 	l *logger.Logger
 }
@@ -74,6 +75,7 @@ func (i *baseState) Name() ppb.GameState {
 
 // Resets restes for next round
 func (i *baseState) Reset() {
+	i.initrun = false
 }
 
 // WaitingTurnPlayer returns the player whose turn it is.

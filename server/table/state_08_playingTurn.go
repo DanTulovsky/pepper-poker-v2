@@ -39,10 +39,17 @@ func (i *playingTurnState) Init() error {
 	for _, p := range i.table.CurrentHandActivePlayers() {
 		p.Stats.StateInc("turn")
 	}
+
+	i.initrun = true
 	return nil
 }
 
 func (i *playingTurnState) Tick() error {
+	if !i.initrun {
+		i.Init()
+		return nil
+	}
+
 	i.l.Debugf("Tick(%v)", i.Name())
 
 	if i.table.haveWinner() {

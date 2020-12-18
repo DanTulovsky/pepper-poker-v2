@@ -25,6 +25,8 @@ func (i *playingSmallBlindState) Init() error {
 	}
 
 	i.table.advancePlayer()
+
+	i.initrun = true
 	return nil
 }
 
@@ -45,6 +47,11 @@ func (i *playingSmallBlindState) Fold(p *player.Player) error {
 }
 
 func (i *playingSmallBlindState) Tick() error {
+	if !i.initrun {
+		i.Init()
+		return nil
+	}
+
 	i.l.Debugf("Tick(%v)", i.Name())
 
 	return i.table.setState(i.table.playingBigBlindState)

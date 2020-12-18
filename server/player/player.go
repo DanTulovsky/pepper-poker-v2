@@ -121,6 +121,7 @@ func (p *Player) DisconnectReset() {
 		close(p.CommChannel)
 		p.CommChannel = nil
 	}
+	p.SetLastAction(actions.TableAction(ppb.PlayerAction_PlayerActionNone), 0)
 }
 
 // ResetForBettingRound resets the player for the next betting round (multiple of these inside one hand)
@@ -221,6 +222,7 @@ func (p *Player) Hole() []deck.Card {
 func (p *Player) Init() {
 	p.iswinner = false
 	p.HandInfo = newHandInfo()
+	p.SetLastAction(actions.TableAction(ppb.PlayerAction_PlayerActionNone), 0)
 }
 
 // SetActionRequired sets action required

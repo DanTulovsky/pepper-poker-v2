@@ -42,10 +42,16 @@ func (i *readyToStartState) Init() error {
 		i.l.Infof("  [%v ($%v)]: %v", p.Name, humanize.Comma(p.Money().Stack()), p.Hole())
 	}
 
+	i.initrun = true
 	return nil
 }
 
 func (i *readyToStartState) Tick() error {
+	if !i.initrun {
+		i.Init()
+		return nil
+	}
+
 	i.l.Debugf("Tick(%v)", i.Name())
 
 	return i.table.setState(i.table.playingSmallBlindState)
