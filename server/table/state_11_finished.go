@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/DanTulovsky/pepper-poker-v2/acks"
+	"github.com/DanTulovsky/pepper-poker-v2/poker"
 	"github.com/DanTulovsky/pepper-poker-v2/server/player"
 )
 
@@ -88,6 +89,8 @@ func (i *finishedState) Tick() error {
 			i.table.ClearCurrentHandPlayers()
 
 			i.table.resetStates()
+			// Stop sending old hand info to players... could be done better...
+			i.table.board = poker.NewBoard()
 			return i.table.setState(i.table.waitingPlayersState)
 		}
 	}
