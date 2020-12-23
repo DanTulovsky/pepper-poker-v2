@@ -1,0 +1,149 @@
+adminService:
+  annotations: {}
+  create: true
+  port: 8877
+  type: ClusterIP
+affinity: {}
+ambassadorConfig: ""
+authService:
+  create: true
+autoscaling:
+  enabled: false
+  maxReplicas: 5
+  metrics:
+  - resource:
+      name: cpu
+      target:
+        averageUtilization: 60
+        type: Utilization
+    type: Resource
+  - resource:
+      name: memory
+      target:
+        averageUtilization: 60
+        type: Utilization
+    type: Resource
+  minReplicas: 2
+crds:
+  create: true
+  enabled: true
+  keep: true
+createDevPortalMappings: true
+daemonSet: false
+deploymentAnnotations: {}
+deploymentLabels: {}
+deploymentStrategy:
+  type: RollingUpdate
+dnsPolicy: ClusterFirst
+enableAES: true
+env: {}
+envRaw: {}
+fullnameOverride: ""
+hostNetwork: false
+image:
+  pullPolicy: IfNotPresent
+  repository: docker.io/datawire/aes
+  tag: 1.9.1
+imagePullSecrets: []
+initContainers: []
+licenseKey:
+  value: eyJhbGciOiJQUzUxMiIsInR5cCI6IkpXVCJ9.eyJsaWNlbnNlX2tleV92ZXJzaW9uIjoidjIiLCJjdXN0b21lcl9pZCI6ImRhbnRAd2V0c25vdy5jb20tMTYwMTczOTkwNCIsImN1c3RvbWVyX2VtYWlsIjoiZGFudEB3ZXRzbm93LmNvbSIsImVuYWJsZWRfZmVhdHVyZXMiOlsiIiwiZmlsdGVyIiwicmF0ZWxpbWl0IiwidHJhZmZpYyIsImRldnBvcnRhbCJdLCJlbmZvcmNlZF9saW1pdHMiOlt7ImwiOiJkZXZwb3J0YWwtc2VydmljZXMiLCJ2Ijo1fSx7ImwiOiJyYXRlbGltaXQtc2VydmljZSIsInYiOjV9LHsibCI6ImF1dGhmaWx0ZXItc2VydmljZSIsInYiOjV9LHsibCI6InRyYWZmaWMtdXNlcnMiLCJ2Ijo1fV0sIm1ldGFkYXRhIjp7fSwiZXhwIjoxNjMzMjc1OTA0LCJpYXQiOjE2MDE3Mzk5MDQsIm5iZiI6MTYwMTczOTkwNH0.Icy-rnMaYaTQ2AkyB_hB1qAoaJJuQ4gSFvai6ywGijq5XmEhXsX22qrm7Pem4SYVL1v0HB_8XSqS9k8MfrasYZupZQcqcIJHhDmjiO4AdKGOzB2JdiGe340iFzgcZOGEEyG6qMP32dFBS4jNhRtqWnBc5EmwOrpQhl7ue7DwQ0lTXQGdEdB43mzztqH_kL_AbW79HOwPU0fxPAHZbGEfGM6LJwIkOxTM5TMgVtAXkTfPOUl3Z9wN2Vxj5d8e2owrhguAd9czCumFJD69Fl-lMHgBpi6v6xt20-p7HwJR0fkaHpB-gm-Iu_sgSYn7yPLtUvfxE_CCzlcYmlmsDGL5Mw
+  annotations: {}
+  createSecret: true
+livenessProbe:
+  failureThreshold: 3
+  initialDelaySeconds: 30
+  periodSeconds: 3
+metrics:
+  serviceMonitor:
+    enabled: false
+nameOverride: ""
+namespaceOverride: ""
+nodeSelector: {}
+podAnnotations: {}
+podDisruptionBudget: {}
+podLabels: {}
+priorityClassName: ""
+prometheusExporter:
+  enabled: false
+  pullPolicy: IfNotPresent
+  repository: prom/statsd-exporter
+  resources: {}
+  tag: v0.8.1
+rateLimit:
+  create: true
+rbac:
+  create: true
+  podSecurityPolicies: []
+readinessProbe:
+  failureThreshold: 3
+  initialDelaySeconds: 30
+  periodSeconds: 3
+redis:
+  affinity: {}
+  annotations:
+    deployment: {}
+    service: {}
+  create: true
+  image:
+    pullPolicy: IfNotPresent
+    repository: redis
+    tag: 5.0.1
+  nodeSelector: {}
+  resources: {}
+  tolerations: {}
+registry:
+  create: false
+replicaCount: 3
+resources:
+  limits:
+    cpu: 1000m
+    memory: 600Mi
+  requests:
+    cpu: 200m
+    memory: 300Mi
+scope:
+  singleNamespace: false
+security:
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+  podSecurityContext:
+    runAsUser: 8888
+  podSecurityPolicy: {}
+service:
+  annotations:
+    service.beta.kubernetes.io/linode-loadbalancer-proxy-protocol: v2
+  externalIPs: []
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+  - name: https
+    port: 443
+    targetPort: 8443
+  type: LoadBalancer
+  externalTrafficPolicy: Local
+serviceAccount:
+  create: true
+servicePreview:
+  enabled: false
+  trafficAgent:
+    image: {}
+    injector:
+      crtPEM: ""
+      enabled: true
+      keyPEM: ""
+    port: 9900
+    serviceAccountName: traffic-agent
+    singleNamespace: true
+  trafficManager:
+    image: {}
+    serviceAccountName: traffic-manager
+sidecarContainers: []
+test:
+  enabled: true
+  image: busybox
+tolerations: []
+volumeMounts: []
+volumes: []
+

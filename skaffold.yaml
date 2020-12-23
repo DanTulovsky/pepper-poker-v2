@@ -1,0 +1,21 @@
+apiVersion: skaffold/v1beta13
+kind: Config
+build:
+  artifacts:
+    - image: "docker.io/mrwetsnow/pepper-poker"
+  tagPolicy:
+    # sha256: {}
+    # gitCommit: {}
+    dateTime:
+      format: "2006-01-02_15-04-05.999_MST"
+      timezone: "Local"
+deploy:
+  statusCheckDeadlineSeconds: 600
+  kubectl:
+    manifests:
+      # ambassador installed via helm
+      # - k8s/05-ambassador-config.yaml
+      # - k8s/20-service-http.yaml
+      # - k8s/21-service-grpc.yaml
+      - k8s/30-pepper-poker-deployment.yaml
+      # - k8s/40-statsd-sink.yaml

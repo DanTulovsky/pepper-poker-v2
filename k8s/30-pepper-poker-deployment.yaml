@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pepper-poker
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  minReadySeconds: 30
+  selector:
+    matchLabels:
+      app: pepper-poker
+  template:
+    metadata:
+      labels:
+        app: pepper-poker
+    spec:
+      imagePullSecrets:
+      - name: regcred
+      containers:
+        - name: pepper-poker
+          image: docker.io/mrwetsnow/pepper-poker
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "250m"
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+          ports:
+            - name: http
+              containerPort: 8081
+              protocol: TCP
+            - name: grpc
+              containerPort: 8443
+              protocol: TCP
+            - name: grpc-insecure
+              containerPort: 8082
+              protocol: TCP
+            - name: pprof
+              containerPort: 6060
+              protocol: TCP
+            - name: grpc-ui
+              containerPort: 8080
+              protocol: TCP
+          readinessProbe:
+            exec:
+              command:
+                [
+                  "/bin/grpc_health_probe",
+                  "-addr=:8443",
+                  "-tls",
+                  "-tls-no-verify",
+                ]
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 2
+            successThreshold: 2
+            failureThreshold: 2
+          livenessProbe:
+            exec:
+              command:
+                [
+                  "/bin/grpc_health_probe",
+                  "-addr=:8443",
+                  "-tls",
+                  "-tls-no-verify",
+                ]
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 2
+            successThreshold: 1
+            failureThreshold: 2
+          command: ["/app/server.bin"]
+          args:
+            [
+              "--http_port=8081",
+              "--secure_grpc_port=8443",
+              "--pprof_port=6060",
+              "--insecure_grpc_port=8082",
+              "--grpc_ui_port=8080",
+              "--grpc_key=/etc/key/server.key",
+              "--grpc_crt=/etc/cert/server.crt",
+              "--static_dir=/app/server/static/",
+              "--template_dir=/app/server/templates/",
+            ]

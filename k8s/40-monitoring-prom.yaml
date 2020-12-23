@@ -1,0 +1,48 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: ambassador-monitor
+  namespace: default
+  labels:
+    release: kube-prometheus-1608759028
+spec:
+  namespaceSelector:
+    any: true
+  selector:
+    matchLabels:
+      service: ambassador-admin
+  endpoints:
+  - port: ambassador-admin
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: pepper-poker-monitor
+  namespace: default
+  labels:
+    release: kube-prometheus-1608759028
+spec:
+  namespaceSelector:
+    any: true
+  selector:
+    matchLabels:
+      service: pepper-poker-http-service
+  endpoints:
+  - port: http
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: grafana-monitor
+  namespace: default
+  labels:
+    release: kube-prometheus-1608759028
+spec:
+  namespaceSelector:
+    any: true
+  selector:
+    matchLabels:
+      service: grafana
+  endpoints:
+  - port: service

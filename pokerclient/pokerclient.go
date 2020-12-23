@@ -39,8 +39,10 @@ import (
 var (
 	grpcCrt            = flag.String("grpc_crt", "../../../cert/server.crt", "file containg certificate")
 	httpPort           = flag.String("http_port", "", "port to listen on, random if empty")
-	secureServerAddr   = flag.String("server_address", "localhost:8443", "tls server address and port")
-	insecureServerAddr = flag.String("insecure_server_address", "localhost:8082", "insecure server address and port")
+	secureServerAddr   = flag.String("server_address", "localhost", "tls server address")
+	insecureServerAddr = flag.String("insecure_server_address", "localhost", "insecure server address")
+	secureServerPort   = flag.String("server_port", "8443", "tls server port")
+	insecureServerPort = flag.String("insecure_server_port", "8082", "insecure server port")
 	showCardImages     = flag.Bool("show_card_images", false, "set to true to display card images in terminal")
 
 	ui *input.UI = &input.UI{
@@ -129,24 +131,27 @@ func New(ctx context.Context, username, password string, insecure bool, actions 
 	}
 
 	grpc_prometheus.EnableClientHandlingTimeHistogram()
-	serverAdd := *insecureServerAddr
+	realServerAddr := *insecureServerAddr
+	realServerPort := *insecureServerPort
 
 	if !insecure {
+		realServerAddr = *secureServerAddr
+		realServerPort = *secureServerPort
+
 		var err error
-		tlsCredentials, err := loadTLSCredentials()
+		tlsCredentials, err := loadTLSCredentials(realServerAddr)
 		if err != nil {
 			return nil, err
 		}
-
 		opts = append(opts, grpc.WithTransportCredentials(tlsCredentials))
-		serverAdd = *secureServerAddr
 	} else {
 		logger.Warn("Using an insecure connection to the server!")
 		opts = append(opts, grpc.WithInsecure())
 	}
 
 	var err error
-	if pc.conn, err = grpc.Dial(serverAdd, opts...); err != nil {
+	pc.l.Infof("Connecting to server: %v:%v", realServerAddr, realServerPort)
+	if pc.conn, err = grpc.Dial(realServerAddr+":"+realServerPort, opts...); err != nil {
 		return nil, err
 	}
 	pc.client = ppb.NewPokerServerClient(pc.conn)
@@ -695,7 +700,7 @@ func (pc *PokerClient) protoToCards(cards []*ppb.Card) []deck.Card {
 	return nc
 }
 
-func loadTLSCredentials() (credentials.TransportCredentials, error) {
+func loadTLSCredentials(serverAddr string) (credentials.TransportCredentials, error) {
 	// Load certificate of the CA who signed server's certificate
 	pemServerCA, err := ioutil.ReadFile(*grpcCrt)
 	if err != nil {
@@ -712,6 +717,7 @@ func loadTLSCredentials() (credentials.TransportCredentials, error) {
 		RootCAs: certPool,
 		// Does not do hostname verification
 		InsecureSkipVerify: true,
+		ServerName:         serverAddr,
 	}
 
 	return credentials.NewTLS(config), nil

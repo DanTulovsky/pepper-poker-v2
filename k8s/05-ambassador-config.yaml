@@ -1,0 +1,59 @@
+apiVersion: getambassador.io/v2
+kind: KubernetesEndpointResolver
+metadata:
+  name: endpoint
+---
+apiVersion: getambassador.io/v2
+kind: Mapping
+metadata:
+  name: pepper-poker-grpc-server-mapping
+spec:
+  prefix: /poker.PokerServer/
+  rewrite: /poker.PokerServer/
+  service: pepper-poker-grpc-service.default:8082
+  grpc: True
+  # tls: upstream
+  headers:
+    :authority: pepper-poker.wetsnow.com
+  resolver: endpoint
+  load_balancer:
+    policy: least_request
+---
+apiVersion: getambassador.io/v2
+kind: Mapping
+metadata:
+  name: pepper-poker-grpcreflect
+spec:
+  grpc: true
+  # tls: upstream
+  prefix: /grpc.
+  rewrite: /grpc.
+  service: pepper-poker-grpc-service.default:8082
+  headers:
+    :authority: pepper-poker.wetsnow.com
+  resolver: endpoint
+  load_balancer:
+    policy: least_request
+---
+apiVersion: getambassador.io/v2
+kind: Mapping
+metadata:
+  name: pepper-poker-http-server-mapping
+spec:
+  prefix: /
+  service: pepper-poker-http-service.default.svc.cluster.local:8081
+  # tls: upstream
+  host: "pepper-poker.wetsnow.com"
+  resolver: endpoint
+  load_balancer:
+    policy: least_request
+---
+apiVersion: getambassador.io/v2
+kind: Mapping
+metadata:
+  name: grafana
+spec:
+  prefix: /
+  host: grafana.wetsnow.com
+  resolver: endpoint
+  service: grafana.monitoring:80
