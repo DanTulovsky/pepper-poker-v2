@@ -11,10 +11,16 @@ spec:
   hostname: pepper-poker.wetsnow.com
   tlsSecret:
     name: pepper-poker.wetsnow.com
-  # tls:
-  #   hosts:
-  #   - "pepper-poker.wetsnow.com"
-  #   alpn_protocols: h2,http/1.1
+---
+apiVersion: getambassador.io/v2
+kind: TLSContext
+metadata:
+  name: pepper-poker.wetsnow.com-context # for the host above
+spec:
+  hosts:
+  - "pepper-poker.wetsnow.com"
+  secret: pepper-poker.wetsnow.com
+  alpn_protocols: h2,http/1.1 # required for C# grpc client
 ---
 apiVersion: getambassador.io/v2
 kind: Host
@@ -29,27 +35,3 @@ spec:
   hostname: grafana.wetsnow.com
   tlsSecret:
     name: grafana.wetsnow.com
----
-apiVersion: getambassador.io/v2
-kind: TLSContext
-metadata:
-  name: pepper-poker.wetsnow.com-context
-spec:
-  hosts:
-  - "pepper-poker.wetsnow.com"
-  secret: pepper-poker.wetsnow.com
-  alpn_protocols: h2,http/1.1
-# #   tls:
-#     hosts:
-#     - "grafana.wetsnow.com"
-# ---
-# apiVersion: getambassador.io/v2
-# kind: Host
-# metadata:
-#   name: li.wetsnow.com
-# spec:
-#   acmeProvider:
-#     email: dant@wetsnow.com
-#   hostname: li.wetsnow.com
-#   tlsSecret:
-#     name: li.wetsnow.com
