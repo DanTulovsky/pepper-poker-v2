@@ -14,7 +14,6 @@ spec:
   # tls:
   #   hosts:
   #   - "pepper-poker.wetsnow.com"
-  #   - "grafana.wetsnow.com"
   #   alpn_protocols: h2,http/1.1
 ---
 apiVersion: getambassador.io/v2
@@ -30,6 +29,16 @@ spec:
   hostname: grafana.wetsnow.com
   tlsSecret:
     name: grafana.wetsnow.com
+---
+apiVersion: getambassador.io/v2
+kind: TLSContext
+metadata:
+  name: pepper-poker.wetsnow.com-context
+spec:
+  hosts:
+  - "pepper-poker.wetsnow.com"
+  secret: pepper-poker.wetsnow.com
+  alpn_protocols: h2,http/1.1
 # #   tls:
 #     hosts:
 #     - "grafana.wetsnow.com"
