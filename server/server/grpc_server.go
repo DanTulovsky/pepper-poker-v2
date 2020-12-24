@@ -259,7 +259,7 @@ OUTER:
 			}
 			ps.l.Debugf("Sending data to client (%v): %#v", in.ClientInfo.PlayerUsername, input.Data.WaitTurnID)
 			if err = stream.Send(input.Data); err != nil {
-				ps.l.Infof("client connection to %v lost", in.ClientInfo.PlayerUsername)
+				ps.l.Infof("client connection to %v lost: %v", in.ClientInfo.PlayerUsername, err)
 				break OUTER
 			}
 			ps.l.Debugf("Sent data to client (%v): %#v", in.ClientInfo.PlayerUsername, input.Data.WaitTurnID)

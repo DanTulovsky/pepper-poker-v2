@@ -17,5 +17,5 @@ deploy:
       # - k8s/05-ambassador-config.yaml
       # - k8s/20-service-http.yaml
       # - k8s/21-service-grpc.yaml
-      - k8s/30-pepper-poker-deployment.yaml
+      - k8s/30-poker-deployment.yaml
       # - k8s/40-statsd-sink.yaml

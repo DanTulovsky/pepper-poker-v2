@@ -313,7 +313,7 @@ OUTER:
 			return fmt.Errorf("EOF received from server, exiting GameData thread")
 		}
 		if err != nil {
-			pc.l.Fatal("error receiving from server")
+			pc.l.Fatalf("error receiving from server: %v", err)
 		}
 		// send the server message to main thread for processing
 		pc.l.Debug("sending server data to main thread...")

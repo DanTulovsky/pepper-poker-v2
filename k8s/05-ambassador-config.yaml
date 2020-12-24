@@ -10,7 +10,8 @@ metadata:
 spec:
   prefix: /poker.PokerServer/
   rewrite: /poker.PokerServer/
-  service: pepper-poker-grpc-service.default:8082
+  service: https://pepper-poker-grpc-service.default:8443
+  timeout_ms: 0 # required for grpc
   grpc: True
   # tls: upstream
   headers:
@@ -28,7 +29,7 @@ spec:
   # tls: upstream
   prefix: /grpc.
   rewrite: /grpc.
-  service: pepper-poker-grpc-service.default:8082
+  service: https://pepper-poker-grpc-service.default:8443
   headers:
     :authority: pepper-poker.wetsnow.com
   resolver: endpoint

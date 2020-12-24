@@ -1193,6 +1193,13 @@ node-exporter:
   serviceMonitor:
     enabled: true
     jobLabel: jobLabel
+    relabelings:
+    - action: replace
+      regex: (.*)
+      replacement: $1
+      sourceLabels:
+      - __meta_kubernetes_pod_node_name
+      targetLabel: kubernetes_node
 
   extraArgs:
     collector.filesystem.ignored-mount-points: "^/(dev|proc|sys|var/lib/docker/.+)($|/)"
@@ -1451,7 +1458,11 @@ kubelet:
     ## Metric relabeling
     ## ref: https://prometheus.io/docs/prometheus/latest/configuration/configuration/#metric_relabel_configs
     ##
-    metricRelabelings: []
+    metricRelabelings:
+    - action: replace
+      sourceLabels:
+      - node
+      targetLabel: instance
 
     ## Relabel configs
     ## ref: https://prometheus.io/docs/prometheus/latest/configuration/configuration/#relabel_config

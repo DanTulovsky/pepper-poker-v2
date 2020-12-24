@@ -9,8 +9,8 @@ metadata:
     name: pepper-poker-grpc-service
 spec:
   ports:
-    - port: 8443
-      targetPort: grpc
+    - port: 8443   # no targetPort for headless service
+      # targetPort: grpc
       protocol: TCP
       name: grpc
     - port: 8082
@@ -20,3 +20,5 @@ spec:
   selector:
     app: pepper-poker
   type: ClusterIP
+  clusterIP: None  # headless service
+

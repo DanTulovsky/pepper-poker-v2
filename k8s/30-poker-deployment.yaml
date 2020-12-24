@@ -22,6 +22,11 @@ spec:
       - name: regcred
       containers:
         - name: pepper-poker
+          env:
+            - name: GRPC_GO_LOG_SEVERITY_LEVEL
+              value: "info"
+            - name: GRPC_GO_LOG_VERBOSITY_LEVEL
+              value: "99"
           image: docker.io/mrwetsnow/pepper-poker
           resources:
             requests:
