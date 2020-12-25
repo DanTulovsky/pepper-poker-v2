@@ -19,7 +19,7 @@ require (
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
 	github.com/ozankasikci/go-image-merge v0.2.2 // indirect
 	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2
-	github.com/prometheus/client_golang v1.8.0
+	github.com/prometheus/client_golang v1.9.0
 	github.com/qeesung/image2ascii v1.0.1 // indirect
 	github.com/rantav/go-grpc-channelz v0.0.2
 	github.com/tcnksm/go-input v0.0.0-20180404061846-548a7d7a8ee8
