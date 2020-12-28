@@ -394,10 +394,6 @@ datasources:
      url: http://kube-prometheus-prometheus:9090
      access: proxy
      isDefault: true
-   - name: LinkerdPrometheus
-     type: prometheus
-     url: http://linkerd-prometheus.linkerd:9090
-     access: proxy
 
 ## Configure notifiers
 ## ref: http://docs.grafana.org/administration/provisioning/#alert-notification-channels
@@ -452,22 +448,6 @@ dashboards:
       gnetId: 10434
       revision: 1
       datasource: Prometheus
-    linkerd-heatlth:
-      gnetId: 3986
-      revision: 1
-      datasource: LinkerdPrometheus
-    linkerd-vis:
-      gnetId: 3983
-      revision: 1
-      datasource: LinkerdPrometheus
-    linkerd-authority:
-      gnetId: 10706
-      revision: 2
-      datasource: LinkerdPrometheus
-    linkerd-route:
-      gnetId: 11868
-      revision: 1
-      datasource: LinkerdPrometheus
     helm-exporter:
       gnetId: 9367
       revision: 2

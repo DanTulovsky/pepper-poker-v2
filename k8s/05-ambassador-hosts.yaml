@@ -71,20 +71,6 @@ spec:
   alpn_protocols: h2,http/1.1 # required for C# grpc client
 ---
 apiVersion: getambassador.io/v2
-kind: Host
-metadata:
-  name: linkerd.wetsnow.com
-spec:
-  acmeProvider:
-    email: dant@wetsnow.com
-  requestPolicy:
-    insecure:
-      action: Reject
-  hostname: linkerd.wetsnow.com
-  tlsSecret:
-    name: linkerd.wetsnow.com
----
-apiVersion: getambassador.io/v2
 kind: TLSContext
 metadata:
   name: linkerd.wetsnow.com-context # for the host above

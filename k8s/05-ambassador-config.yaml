@@ -68,20 +68,4 @@ spec:
   host: keycloak.wetsnow.com
   resolver: endpoint
   service: keycloak.auth:8080
----
-apiVersion: getambassador.io/v2
-kind: Mapping
-metadata:
-  name: linkerd
-spec:
-  prefix: /
-  host: linkerd.wetsnow.com
-  add_linkerd_headers: true
-  resolver: endpoint
-  host_rewrite: linkerd-web.linkerd.svc.cluster.local:8084
-  service: linkerd-web.linkerd.svc.cluster.local:8084
-  allow_upgrade:
-  - websocket
-
-
 
