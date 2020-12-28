@@ -10,7 +10,7 @@ metadata:
 spec:
   prefix: /poker.PokerServer/
   rewrite: /poker.PokerServer/
-  service: https://pepper-poker-grpc-service.default:8443
+  service: https://pepper-poker-grpc-service.poker:8443
   timeout_ms: 0 # required for grpc
   grpc: True
   # tls: upstream
@@ -29,7 +29,7 @@ spec:
   # tls: upstream
   prefix: /grpc.
   rewrite: /grpc.
-  service: https://pepper-poker-grpc-service.default:8443
+  service: https://pepper-poker-grpc-service.poker:8443
   headers:
     :authority: pepper-poker.wetsnow.com
   resolver: endpoint
@@ -42,7 +42,7 @@ metadata:
   name: pepper-poker-http-server-mapping
 spec:
   prefix: /
-  service: pepper-poker-http-service.default.svc.cluster.local:8081
+  service: pepper-poker-http-service.poker:8081
   # tls: upstream
   host: "pepper-poker.wetsnow.com"
   resolver: endpoint
@@ -62,10 +62,12 @@ spec:
 apiVersion: getambassador.io/v2
 kind: Mapping
 metadata:
-  name: keycloak
+  name: login
 spec:
   prefix: /
-  host: keycloak.wetsnow.com
+  host: login.wetsnow.com
   resolver: endpoint
   service: keycloak.auth:8080
+
+
 

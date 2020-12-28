@@ -11,6 +11,7 @@ postgresql:
 pgpool:
   enableLogConnections: true
   enableLogPerNodeStatement: true
+  customUsersSecret: postgresql-pgpool-secret
 
 metrics:
   enabled: true

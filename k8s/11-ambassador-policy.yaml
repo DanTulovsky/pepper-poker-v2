@@ -17,21 +17,3 @@ spec:
             - "profile"
             # - "roles"
             # - "web-origins"
----
-apiVersion: getambassador.io/v2
-kind: FilterPolicy
-metadata:
-  name: linkerd-policy
-  namespace: ambassador
-spec:
-  rules:
-    - host: "linkerd.wetsnow.com"
-      path: "*"
-      filters:
-        - name: keycloak-linkerd-filter ## Enter the Filter name from above
-          arguments:
-            scope:
-            - "email"
-            - "profile"
-            # - "roles"
-            # - "web-origins"

@@ -49,35 +49,25 @@ spec:
 apiVersion: getambassador.io/v2
 kind: Host
 metadata:
-  name: keycloak.wetsnow.com
+  name: login.wetsnow.com
 spec:
   acmeProvider:
     email: dant@wetsnow.com
   requestPolicy:
     insecure:
       action: Reject
-  hostname: keycloak.wetsnow.com
+  hostname: login.wetsnow.com
   tlsSecret:
-    name: keycloak.wetsnow.com
+    name: login.wetsnow.com
 ---
 apiVersion: getambassador.io/v2
 kind: TLSContext
 metadata:
-  name: keycloak.wetsnow.com-context # for the host above
+  name: login.wetsnow.com-context # for the host above
 spec:
   hosts:
-  - "keycloak.wetsnow.com"
-  secret: keycloak.wetsnow.com
-  alpn_protocols: h2,http/1.1 # required for C# grpc client
----
-apiVersion: getambassador.io/v2
-kind: TLSContext
-metadata:
-  name: linkerd.wetsnow.com-context # for the host above
-spec:
-  hosts:
-  - "linkerd.wetsnow.com"
-  secret: linkerd.wetsnow.com
+  - "login.wetsnow.com"
+  secret: login.wetsnow.com
   alpn_protocols: h2,http/1.1 # required for C# grpc client
 ---
 apiVersion: getambassador.io/v2

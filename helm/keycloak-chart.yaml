@@ -602,7 +602,7 @@ metrics:
 postgresql:
   ## Whether to deploy a postgresql server to satisfy the applications database requirements. To use an external database set this to false and configure the externalDatabase parameters
   ##
-  enabled: true
+  enabled: false
   ## PostgreSQL user (has superuser privileges if username is `postgres`)
   ## ref: https://github.com/bitnami/bitnami-docker-postgresql/blob/master/README.md#setting-the-root-password-on-first-run
   ##
@@ -627,7 +627,7 @@ postgresql:
 externalDatabase:
   ## Database host
   ##
-  host: ""
+  host: "postgresql-postgresql-ha-pgpool.db"
   ## Database port
   ##
   port: 5432
@@ -636,7 +636,7 @@ externalDatabase:
   user: bn_keycloak
   ## Database password
   ##
-  password: ""
+  password: "some-password"
   ## Database name
   ##
   database: bitnami_keycloak
