@@ -2,22 +2,6 @@
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: ambassador-monitor
-  namespace: ambassador
-  labels:
-    release: kube-prometheus-1608759028
-spec:
-  namespaceSelector:
-    any: true
-  selector:
-    matchLabels:
-      service: ambassador-admin
-  endpoints:
-  - port: ambassador-admin
----
-apiVersion: monitoring.coreos.com/v1
-kind: ServiceMonitor
-metadata:
   name: pepper-poker-monitor
   namespace: poker
   labels:
