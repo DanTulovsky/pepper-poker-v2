@@ -7,6 +7,7 @@ require (
 	github.com/DanTulovsky/logger v0.0.0-20201122193752-91fc867e7ce8
 	github.com/Pallinder/go-randomdata v1.2.0
 	github.com/common-nighthawk/go-figure v0.0.0-20200609044655-c4b36f998cf2
+	github.com/digitalocean/clusterlint v0.2.4 // indirect
 	github.com/dustin/go-humanize v1.0.0
 	github.com/fatih/color v1.10.0
 	github.com/fullstorydev/grpcui v1.1.0

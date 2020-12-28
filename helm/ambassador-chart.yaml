@@ -113,6 +113,10 @@ security:
 service:
   annotations:
     service.beta.kubernetes.io/linode-loadbalancer-proxy-protocol: v2
+    service.beta.kubernetes.io/do-loadbalancer-enable-proxy-protocol: "true"
+    service.beta.kubernetes.io/do-loadbalancer-hostname: "do.wetsnow.com"
+    service.beta.kubernetes.io/do-loadbalancer-algorithm: "least_connections"
+    service.beta.kubernetes.io/do-loadbalancer-protocol: "tcp"
   externalIPs: []
   ports:
   - name: http

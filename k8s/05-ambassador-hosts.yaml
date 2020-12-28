@@ -45,3 +45,77 @@ spec:
   - "grafana.wetsnow.com"
   secret: grafana.wetsnow.com
   alpn_protocols: h2,http/1.1 # required for C# grpc client
+---
+apiVersion: getambassador.io/v2
+kind: Host
+metadata:
+  name: keycloak.wetsnow.com
+spec:
+  acmeProvider:
+    email: dant@wetsnow.com
+  requestPolicy:
+    insecure:
+      action: Reject
+  hostname: keycloak.wetsnow.com
+  tlsSecret:
+    name: keycloak.wetsnow.com
+---
+apiVersion: getambassador.io/v2
+kind: TLSContext
+metadata:
+  name: keycloak.wetsnow.com-context # for the host above
+spec:
+  hosts:
+  - "keycloak.wetsnow.com"
+  secret: keycloak.wetsnow.com
+  alpn_protocols: h2,http/1.1 # required for C# grpc client
+---
+apiVersion: getambassador.io/v2
+kind: Host
+metadata:
+  name: linkerd.wetsnow.com
+spec:
+  acmeProvider:
+    email: dant@wetsnow.com
+  requestPolicy:
+    insecure:
+      action: Reject
+  hostname: linkerd.wetsnow.com
+  tlsSecret:
+    name: linkerd.wetsnow.com
+---
+apiVersion: getambassador.io/v2
+kind: TLSContext
+metadata:
+  name: linkerd.wetsnow.com-context # for the host above
+spec:
+  hosts:
+  - "linkerd.wetsnow.com"
+  secret: linkerd.wetsnow.com
+  alpn_protocols: h2,http/1.1 # required for C# grpc client
+---
+apiVersion: getambassador.io/v2
+kind: Host
+metadata:
+  name: do.wetsnow.com
+spec:
+  acmeProvider:
+    email: dant@wetsnow.com
+  requestPolicy:
+    insecure:
+      action: Reject
+  hostname: do.wetsnow.com
+  tlsSecret:
+    name: do.wetsnow.com
+---
+apiVersion: getambassador.io/v2
+kind: TLSContext
+metadata:
+  name: do.wetsnow.com-context # for the host above
+spec:
+  hosts:
+  - "do.wetsnow.com"
+  secret: do.wetsnow.com
+  alpn_protocols: h2,http/1.1 # required for C# grpc client
+
+

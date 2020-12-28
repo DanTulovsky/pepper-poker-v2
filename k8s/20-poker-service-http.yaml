@@ -2,6 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: pepper-poker-http-service
+  namespace: poker
   labels:
     name: pepper-poker-http-service
     service: pepper-poker-http-service

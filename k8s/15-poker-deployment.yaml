@@ -1,0 +1,90 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pepper-poker
+  namespace: poker
+spec:
+  minReadySeconds: 30
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pepper-poker
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: pepper-poker
+    spec:
+      containers:
+      - args:
+        - --http_port=8081
+        - --secure_grpc_port=8443
+        - --pprof_port=6060
+        - --insecure_grpc_port=8082
+        - --grpc_ui_port=8080
+        - --grpc_key=/etc/key/server.key
+        - --grpc_crt=/etc/cert/server.crt
+        - --static_dir=/app/server/static/
+        - --template_dir=/app/server/templates/
+        command:
+        - /app/server.bin
+        env:
+        - name: GRPC_GO_LOG_SEVERITY_LEVEL
+          value: info
+        - name: GRPC_GO_LOG_VERBOSITY_LEVEL
+          value: "0"
+        image: docker.io/mrwetsnow/pepper-poker
+        livenessProbe:
+          exec:
+            command:
+            - /bin/grpc_health_probe
+            - -addr=:8443
+            - -tls
+            - -tls-no-verify
+          failureThreshold: 2
+          initialDelaySeconds: 10
+          periodSeconds: 15
+          successThreshold: 1
+          timeoutSeconds: 2
+        name: pepper-poker
+        ports:
+        - containerPort: 8081
+          name: http
+          protocol: TCP
+        - containerPort: 8443
+          name: grpc
+          protocol: TCP
+        - containerPort: 8082
+          name: grpc-insecure
+          protocol: TCP
+        - containerPort: 6060
+          name: pprof
+          protocol: TCP
+        - containerPort: 8080
+          name: grpc-ui
+          protocol: TCP
+        readinessProbe:
+          exec:
+            command:
+            - /bin/grpc_health_probe
+            - -addr=:8443
+            - -tls
+            - -tls-no-verify
+          failureThreshold: 2
+          initialDelaySeconds: 10
+          periodSeconds: 15
+          successThreshold: 2
+          timeoutSeconds: 2
+        resources:
+          limits:
+            cpu: 500m
+            memory: 128Mi
+          requests:
+            cpu: 250m
+            memory: 64Mi
+      imagePullSecrets:
+      - name: regcred

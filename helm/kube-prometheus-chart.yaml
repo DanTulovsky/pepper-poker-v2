@@ -13,11 +13,11 @@ global:
 
 ## String to partially override prometheus.fullname template (will maintain the release name)
 ##
-nameOverride: prometheus
+# nameOverride: prometheus
 
 ## String to fully override prometheus.fullname template
 ##
-# fullnameOverride:
+# fullnameOverride: prometheus
 
 ## Role Based Access
 ## ref: https://kubernetes.io/docs/admin/authorization/rbac/
@@ -85,7 +85,7 @@ operator:
     ##
     type: ClusterIP
     port: 8080
-    # clusterIP: None
+    clusterIP: None
 
     ## Specify the nodePort value for the LoadBalancer and NodePort service types.
     ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport
@@ -321,7 +321,7 @@ prometheus:
     ##
     type: ClusterIP
     port: 9090
-    # clusterIP: None
+    clusterIP: None
 
     ## Specify the nodePort value for the LoadBalancer and NodePort service types.
     ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport
@@ -894,7 +894,7 @@ alertmanager:
     ##
     type: ClusterIP
     port: 9093
-    # clusterIP: None
+    clusterIP: None
 
     ## Specify the nodePort value for the LoadBalancer and NodePort service types.
     ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport
@@ -1392,7 +1392,7 @@ coreDns:
 kubeProxy:
   ## Create a ServiceMonitor to scrape kube-proxy service
   ##
-  enabled: true
+  enabled: false // doesn't work on DO, metrics served on localhost
 
   ## If your kube-proxy is not deployed as a pod, specify IPs it can be found on
   ##
