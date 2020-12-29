@@ -70,6 +70,16 @@ spec:
   host: login.wetsnow.com
   resolver: endpoint
   service: keycloak.auth:8080
+---
+apiVersion: getambassador.io/v2
+kind: Mapping
+metadata:
+  name: wetsnow.com
+spec:
+  prefix: /
+  host: www.wetsnow.com
+  resolver: endpoint
+  service: nginx.web:80
 
 
 
