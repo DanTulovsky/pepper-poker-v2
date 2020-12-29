@@ -1,7 +1,0 @@
-apiVersion: getambassador.io/v2
-kind:  Module
-metadata:
-  name:  ambassador
-spec:
-  config:
-    use_proxy_proto: true
