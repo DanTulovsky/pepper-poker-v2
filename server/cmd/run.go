@@ -14,6 +14,10 @@ import (
 
 var ()
 
+const (
+	version = "0.1.1"
+)
+
 func main() {
 
 	flag.Parse()
@@ -21,7 +25,7 @@ func main() {
 
 	ctx := context.Background()
 
-	logg.Info("Starting server...")
+	logg.Infof("Starting server (version: %v)...", version)
 
 	m := manager.New()
 
