@@ -30,11 +30,6 @@ import (
 func insecureGRPCServer(managerChan chan actions.PlayerAction) *grpc.Server {
 
 	opts := []grpc.ServerOption{
-		// The following grpc.ServerOption adds an interceptor for all unary
-		// RPCs. To configure an interceptor for streaming RPCs, see:
-		// https://godoc.org/google.golang.org/grpc#StreamInterceptor
-		// Enable TLS for all incoming connections.
-		// grpc.Creds(credentials.NewServerTLSFromCert(&cert)),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
 			// grpc_auth.StreamServerInterceptor(pokerAuthFunc),
 			grpc_opentracing.StreamServerInterceptor(),
@@ -48,7 +43,7 @@ func insecureGRPCServer(managerChan chan actions.PlayerAction) *grpc.Server {
 	}
 
 	insecureServer := grpc.NewServer(opts...)
-	ps := newPokerServer(managerChan)
+	ps := newPokerServer("insecure", managerChan)
 	ppb.RegisterPokerServerServer(insecureServer, ps)
 	reflection.Register(insecureServer)
 
@@ -70,9 +65,6 @@ func secureGRPCServer(cert tls.Certificate, managerChan chan actions.PlayerActio
 	}
 
 	opts := []grpc.ServerOption{
-		// The following grpc.ServerOption adds an interceptor for all unary
-		// RPCs. To configure an interceptor for streaming RPCs, see:
-		// https://godoc.org/google.golang.org/grpc#StreamInterceptor
 		// Enable TLS for all incoming connections.
 		grpc.Creds(credentials.NewServerTLSFromCert(&cert)),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
@@ -90,7 +82,7 @@ func secureGRPCServer(cert tls.Certificate, managerChan chan actions.PlayerActio
 	}
 
 	secureServer := grpc.NewServer(opts...)
-	ps := newPokerServer(managerChan)
+	ps := newPokerServer("secure", managerChan)
 	ppb.RegisterPokerServerServer(secureServer, ps)
 	reflection.Register(secureServer)
 
@@ -105,15 +97,18 @@ func secureGRPCServer(cert tls.Certificate, managerChan chan actions.PlayerActio
 	return secureServer
 }
 
-func newPokerServer(managerChan chan actions.PlayerAction) *pokerServer {
+func newPokerServer(name string, managerChan chan actions.PlayerAction) *pokerServer {
 	return &pokerServer{
+		name:        name,
 		managerChan: managerChan,
-		l:           logger.New("grpc_handler", color.New(color.FgMagenta)),
+		l:           logger.New(fmt.Sprintf("%v grpc_handler", name), color.New(color.FgMagenta)),
 	}
 }
 
 // pokerServer is the grpc server
 type pokerServer struct {
+	name string
+
 	// used to send data to the manager
 	managerChan chan actions.PlayerAction
 
@@ -122,6 +117,7 @@ type pokerServer struct {
 
 // Register registers with the server
 func (ps *pokerServer) Register(ctx context.Context, in *ppb.RegisterRequest) (*ppb.RegisterResponse, error) {
+	ps.l.Info("Received Register RPC")
 
 	var err error
 	defer func() {
@@ -152,6 +148,7 @@ func (ps *pokerServer) Register(ctx context.Context, in *ppb.RegisterRequest) (*
 
 // JoinTable joins a table
 func (ps *pokerServer) JoinTable(ctx context.Context, in *ppb.JoinTableRequest) (*ppb.JoinTableResponse, error) {
+	ps.l.Info("Received JoinTable RPC")
 
 	var err error
 	defer func() {
@@ -179,6 +176,7 @@ func (ps *pokerServer) JoinTable(ctx context.Context, in *ppb.JoinTableRequest) 
 
 // TakeTurn takes a single poker turn
 func (ps *pokerServer) TakeTurn(ctx context.Context, in *ppb.TakeTurnRequest) (*ppb.TakeTurnResponse, error) {
+	ps.l.Info("Received TakeTurn RPC")
 
 	var err error
 	defer func() {
@@ -204,6 +202,8 @@ func (ps *pokerServer) TakeTurn(ctx context.Context, in *ppb.TakeTurnRequest) (*
 }
 
 func (ps *pokerServer) AckToken(ctx context.Context, in *ppb.AckTokenRequest) (*ppb.AckTokenResponse, error) {
+	ps.l.Info("Received AckToken RPC")
+
 	var err error
 	defer func() {
 		if r := recover(); r != nil {
@@ -232,6 +232,7 @@ func (ps *pokerServer) AckToken(ctx context.Context, in *ppb.AckTokenRequest) (*
 
 // Play is a server streaming RPC that us used to send GameData back to the client as needed
 func (ps *pokerServer) Play(in *ppb.PlayRequest, stream ppb.PokerServer_PlayServer) error {
+	ps.l.Info("Received Play RPC")
 
 	// Create a channel that the game can send data back to the client on
 	// it is read in the goroutine started below
