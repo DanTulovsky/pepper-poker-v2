@@ -16,12 +16,14 @@ import (
 	"time"
 
 	"github.com/common-nighthawk/go-figure"
+	"github.com/coreos/go-oidc"
 	"github.com/dustin/go-humanize"
 	"github.com/fatih/color"
 	"github.com/phayes/freeport"
 	"github.com/tcnksm/go-input"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/oauth"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
@@ -45,6 +47,8 @@ var (
 	insecureServerPort = flag.String("insecure_server_port", "8082", "insecure server port")
 	showCardImages     = flag.Bool("show_card_images", false, "set to true to display card images in terminal")
 
+	oidcProvider *oidc.Provider
+
 	ui *input.UI = &input.UI{
 		Writer: os.Stdout,
 		Reader: os.Stdin,
@@ -52,8 +56,9 @@ var (
 )
 
 const (
-	game    string = "Pepper-Poker"
-	version string = "0.1-pre-alpha"
+	game            = "Pepper-Poker"
+	version         = "0.1-pre-alpha"
+	oidcProviderURL = "https://login.wetsnow.com"
 )
 
 // PokerClient is the poker client
@@ -143,7 +148,24 @@ func New(ctx context.Context, username, password string, insecure bool, actions 
 		if err != nil {
 			return nil, err
 		}
+
+		// oid section
+
+		// provider, err = oidc.NewProvider(ctx, oidcProviderURL)
+		// if err != nil {
+		// 	return nil, err
+		// }
+
+		token, err := getAuthToken(ctx, username, password)
+		if err != nil {
+			return nil, err
+		}
+		logger.Infof("%#v", token)
+
+		rpcCredentials := oauth.NewOauthAccess(token)
+
 		opts = append(opts, grpc.WithTransportCredentials(tlsCredentials))
+		opts = append(opts, grpc.WithPerRPCCredentials(rpcCredentials))
 	} else {
 		logger.Warn("Using an insecure connection to the server!")
 		opts = append(opts, grpc.WithInsecure())

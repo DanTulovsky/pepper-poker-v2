@@ -8,6 +8,7 @@ import (
 
 	"github.com/fatih/color"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
@@ -35,18 +36,20 @@ func insecureGRPCServer(managerChan chan actions.PlayerAction) *grpc.Server {
 		// Enable TLS for all incoming connections.
 		// grpc.Creds(credentials.NewServerTLSFromCert(&cert)),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
+			// grpc_auth.StreamServerInterceptor(pokerAuthFunc),
 			grpc_opentracing.StreamServerInterceptor(),
 			grpc_prometheus.StreamServerInterceptor,
 		)),
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
+			// grpc_auth.UnaryServerInterceptor(pokerAuthFunc),
 			grpc_opentracing.UnaryServerInterceptor(),
 			grpc_prometheus.UnaryServerInterceptor,
 		)),
 	}
 
 	insecureServer := grpc.NewServer(opts...)
-	pokerServer := newPokerServer(managerChan)
-	ppb.RegisterPokerServerServer(insecureServer, pokerServer)
+	ps := newPokerServer(managerChan)
+	ppb.RegisterPokerServerServer(insecureServer, ps)
 	reflection.Register(insecureServer)
 
 	service.RegisterChannelzServiceToServer(insecureServer)
@@ -73,11 +76,13 @@ func secureGRPCServer(cert tls.Certificate, managerChan chan actions.PlayerActio
 		// Enable TLS for all incoming connections.
 		grpc.Creds(credentials.NewServerTLSFromCert(&cert)),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
+			grpc_auth.StreamServerInterceptor(pokerAuthFunc),
 			grpc_opentracing.StreamServerInterceptor(),
 			grpc_prometheus.StreamServerInterceptor,
 			grpc_recovery.StreamServerInterceptor(recoveryOpts...),
 		)),
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
+			grpc_auth.UnaryServerInterceptor(pokerAuthFunc),
 			grpc_opentracing.UnaryServerInterceptor(),
 			grpc_prometheus.UnaryServerInterceptor,
 			grpc_recovery.UnaryServerInterceptor(recoveryOpts...),
@@ -85,8 +90,8 @@ func secureGRPCServer(cert tls.Certificate, managerChan chan actions.PlayerActio
 	}
 
 	secureServer := grpc.NewServer(opts...)
-	pokerServer := newPokerServer(managerChan)
-	ppb.RegisterPokerServerServer(secureServer, pokerServer)
+	ps := newPokerServer(managerChan)
+	ppb.RegisterPokerServerServer(secureServer, ps)
 	reflection.Register(secureServer)
 
 	service.RegisterChannelzServiceToServer(secureServer)
