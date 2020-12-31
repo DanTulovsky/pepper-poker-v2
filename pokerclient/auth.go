@@ -13,7 +13,7 @@ const (
 
 func oauthClientConfig() *oauth2.Config {
 	conf := &oauth2.Config{
-		ClientID: "pepper-poker-grpc",
+		ClientID: "pepper-poker-grpc.wetsnow.com",
 		// ClientSecret: "YOUR_CLIENT_SECRET",
 		Scopes: []string{"openid"},
 		Endpoint: oauth2.Endpoint{
