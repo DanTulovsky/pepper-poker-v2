@@ -1,25 +1,18 @@
 apiVersion: v1
 kind: Service
 metadata:
-  # annotations:
-    # cloud.google.com/app-protocols: '{"grpc":"HTTP2"}'
-    # cloud.google.com/neg: '{"ingress": true}'
   name: pepper-poker-grpc-service
   namespace: poker
   labels:
     name: pepper-poker-grpc-service
 spec:
   ports:
-    - port: 8443   # no targetPort for headless service
+    - port: 8443 # no targetPort for headless service
       # targetPort: grpc
       protocol: TCP
       name: grpc
-    - port: 8082
-      targetPort: grpc-insecure
-      protocol: TCP
-      name: grpc-insecure
   selector:
     app: pepper-poker
   type: ClusterIP
-  clusterIP: None  # headless service
+  clusterIP: None # headless service
 
