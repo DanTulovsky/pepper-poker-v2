@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	gocloak "github.com/Nerzal/gocloak/v7"
 	"github.com/fatih/color"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
@@ -126,6 +127,10 @@ func (ps *pokerServer) Register(ctx context.Context, in *ppb.RegisterRequest) (*
 		}
 	}()
 
+	// Username is set by the authentication library into the context
+	cinfo := in.GetClientInfo()
+	cinfo.PlayerUsername = *ctx.Value(uinfoType("uinfo")).(*gocloak.UserInfo).PreferredUsername
+
 	resultc := make(chan actions.PlayerActionResult)
 	action := actions.NewPlayerAction(ppb.PlayerAction_PlayerActionRegister, nil, in.GetClientInfo(), nil, resultc)
 
@@ -157,6 +162,9 @@ func (ps *pokerServer) JoinTable(ctx context.Context, in *ppb.JoinTableRequest) 
 		}
 	}()
 
+	cinfo := in.GetClientInfo()
+	cinfo.PlayerUsername = *ctx.Value(uinfoType("uinfo")).(*gocloak.UserInfo).PreferredUsername
+
 	resultc := make(chan actions.PlayerActionResult)
 	action := actions.NewPlayerAction(ppb.PlayerAction_PlayerActionJoinTable, nil, in.GetClientInfo(), nil, resultc)
 
@@ -185,6 +193,9 @@ func (ps *pokerServer) TakeTurn(ctx context.Context, in *ppb.TakeTurnRequest) (*
 		}
 	}()
 
+	cinfo := in.GetClientInfo()
+	cinfo.PlayerUsername = *ctx.Value(uinfoType("uinfo")).(*gocloak.UserInfo).PreferredUsername
+
 	resultc := make(chan actions.PlayerActionResult)
 	action := actions.NewPlayerAction(in.GetPlayerAction(), in.GetActionOpts(), in.GetClientInfo(), nil, resultc)
 
@@ -211,6 +222,9 @@ func (ps *pokerServer) AckToken(ctx context.Context, in *ppb.AckTokenRequest) (*
 		}
 	}()
 
+	cinfo := in.GetClientInfo()
+	cinfo.PlayerUsername = *ctx.Value(uinfoType("uinfo")).(*gocloak.UserInfo).PreferredUsername
+
 	resultc := make(chan actions.PlayerActionResult)
 	opts := &ppb.ActionOpts{
 		AckToken: in.GetToken(),
@@ -233,6 +247,9 @@ func (ps *pokerServer) AckToken(ctx context.Context, in *ppb.AckTokenRequest) (*
 // Play is a server streaming RPC that us used to send GameData back to the client as needed
 func (ps *pokerServer) Play(in *ppb.PlayRequest, stream ppb.PokerServer_PlayServer) error {
 	ps.l.Info("Received Play RPC")
+
+	cinfo := in.GetClientInfo()
+	cinfo.PlayerUsername = *stream.Context().Value(uinfoType("uinfo")).(*gocloak.UserInfo).PreferredUsername
 
 	// Create a channel that the game can send data back to the client on
 	// it is read in the goroutine started below
@@ -273,7 +290,7 @@ OUTER:
 	}
 
 	// Return any player.Stack() to player.Bank()
-	if err := ps.playerDisconnected(in); err != nil {
+	if err := ps.playerDisconnected(cinfo); err != nil {
 		ps.l.Error(err)
 	}
 
@@ -281,10 +298,10 @@ OUTER:
 	return err
 }
 
-func (ps *pokerServer) playerDisconnected(in *ppb.PlayRequest) error {
+func (ps *pokerServer) playerDisconnected(cinfo *ppb.ClientInfo) error {
 
 	resultc := make(chan actions.PlayerActionResult)
-	action := actions.NewPlayerAction(ppb.PlayerAction_PlayerActionDisconnect, nil, in.GetClientInfo(), nil, resultc)
+	action := actions.NewPlayerAction(ppb.PlayerAction_PlayerActionDisconnect, nil, cinfo, nil, resultc)
 
 	// Send request to manager
 	ps.managerChan <- action

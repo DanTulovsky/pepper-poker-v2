@@ -21,29 +21,28 @@ type User struct {
 
 	Name     string
 	Username string
-	Token    string
 }
 
 // Load returns a user based on the username and token
-func Load(username string, token string) (User, error) {
+func Load(username string) (User, error) {
 
 	// TODO: read from external database
-	return loadFromStatic(username, token)
+	return loadFromStatic(username)
 
 }
 
 // load loads from the external db
-func loadFromStatic(username, token string) (User, error) {
+func loadFromStatic(username string) (User, error) {
 
-	if !Check(username, token) {
-		return User{}, fmt.Errorf("invalid login for [%v]", username)
+	if !Check(username) {
+		return User{}, fmt.Errorf("invalid user [%v]", username)
 	}
 
 	return userdb[username], nil
 }
 
-// Check returns true if the username and token are valid
-func Check(username, token string) bool {
+// Check returns true if the username is a valid user
+func Check(username string) bool {
 	if _, ok := userdb[username]; !ok {
 		authchecks.WithLabelValues("failure").Inc()
 		return false

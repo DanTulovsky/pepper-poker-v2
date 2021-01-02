@@ -150,7 +150,7 @@ func (m *Manager) processPlayerRequests() {
 
 		m.l.Infof("[%v] Received request from player: %#v", playerUsername, playerAction.String())
 
-		if !users.Check(playerUsername, in.ClientInfo.Password) {
+		if !users.Check(playerUsername) {
 			err = fmt.Errorf("invalid username or password")
 			in.ResultC <- actions.NewPlayerActionError(err)
 			return
@@ -477,7 +477,7 @@ func (m *Manager) addPlayer(in actions.PlayerAction) (*player.Player, error) {
 	}
 
 	m.l.Infof("[%v] Checking for playing in userdb...", username)
-	u, err := users.Load(username, in.ClientInfo.Password)
+	u, err := users.Load(username)
 	if err != nil {
 		return nil, err
 	}

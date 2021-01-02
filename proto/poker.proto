@@ -96,7 +96,6 @@ message ClientInfo {
   string playerName = 20;
   string playerUsername = 30;
   string tableID = 40;
-  string password = 50;
 }
 
 enum GameState {

@@ -188,7 +188,6 @@ func New(ctx context.Context, username, password string, insecure bool, actions 
 func (pc *PokerClient) ClientInfo() *ppb.ClientInfo {
 	return &ppb.ClientInfo{
 		PlayerUsername: pc.PlayerUsername,
-		Password:       pc.PlayerPassword,
 		PlayerID:       pc.PlayerID.String(),
 		TableID:        pc.TableID.String(),
 	}

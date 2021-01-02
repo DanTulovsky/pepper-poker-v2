@@ -10,6 +10,7 @@ require (
 	github.com/common-nighthawk/go-figure v0.0.0-20200609044655-c4b36f998cf2
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/davecgh/go-spew v1.1.1
+	github.com/dgrijalva/jwt-go/v4 v4.0.0-preview1
 	github.com/dustin/go-humanize v1.0.0
 	github.com/fatih/color v1.10.0
 	github.com/fullstorydev/grpcui v1.1.0

@@ -38,6 +38,23 @@ spec:
             - name: GRPC_GO_LOG_VERBOSITY_LEVEL
               value: "0"
           image: docker.io/mrwetsnow/pepper-poker:latest
+          name: pepper-poker
+          ports:
+            - containerPort: 8081
+              name: http
+              protocol: TCP
+            - containerPort: 8443
+              name: grpc
+              protocol: TCP
+            # - containerPort: 8082
+            #   name: grpc-insecure
+            #   protocol: TCP
+            - containerPort: 6060
+              name: pprof
+              protocol: TCP
+            - containerPort: 8080
+              name: grpc-ui
+              protocol: TCP
           livenessProbe:
             exec:
               command:
@@ -52,23 +69,6 @@ spec:
             periodSeconds: 15
             successThreshold: 1
             timeoutSeconds: 2
-          name: pepper-poker
-          ports:
-            - containerPort: 8081
-              name: http
-              protocol: TCP
-            - containerPort: 8443
-              name: grpc
-              protocol: TCP
-            - containerPort: 8082
-              name: grpc-insecure
-              protocol: TCP
-            - containerPort: 6060
-              name: pprof
-              protocol: TCP
-            - containerPort: 8080
-              name: grpc-ui
-              protocol: TCP
           readinessProbe:
             exec:
               command:
