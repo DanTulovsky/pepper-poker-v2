@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 
 	gocloak "github.com/Nerzal/gocloak/v7"
 	"github.com/davecgh/go-spew/spew"
@@ -12,19 +13,13 @@ import (
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/DanTulovsky/pepper-poker-v2/auth"
 )
 
 var (
-	cloakClient   = gocloak.NewClient(oidcProviderURL)
+	cloakClient   = gocloak.NewClient(auth.OIDCProviderURL)
 	expectedRoles = []string{"user"}
-)
-
-const (
-	// TODO: combine with client
-	oidcProviderURL = "https://login.wetsnow.com"
-	realm           = "wetsnow"
-	audience        = "pepper-poker-grpc"
-	client          = "pepper-poker-grpc.wetsnow.com"
 )
 
 func roleInList(role string, roles []string) bool {
@@ -61,7 +56,7 @@ func validateRoles(claims jwt.MapClaims) error {
 
 	var clientMap map[string]interface{}
 
-	if clientMap, ok = resourceAccess[client].(map[string]interface{}); !ok {
+	if clientMap, ok = resourceAccess[auth.ClientID].(map[string]interface{}); !ok {
 		return fmt.Errorf("client key missing")
 	}
 
@@ -88,7 +83,8 @@ func validateRoles(claims jwt.MapClaims) error {
 
 func validateToken(ctx context.Context, token, realm string) (*jwt.Token, error) {
 
-	t, claims, err := cloakClient.DecodeAccessToken(ctx, token, realm, audience)
+	// This calls out to login.wetsnow.com for cert info
+	t, claims, err := cloakClient.DecodeAccessToken(ctx, token, realm, auth.Audience)
 	if err != nil {
 		return nil, err
 	}
@@ -98,29 +94,24 @@ func validateToken(ctx context.Context, token, realm string) (*jwt.Token, error)
 
 	// This calls out to the server
 	log.Printf("retrospecting token...")
-	res, err := cloakClient.RetrospectToken(ctx, token, "pepper-poker.wetsnow.com", "b24e6370-2c12-44d2-85db-43fb79ab3382", "wetsnow")
+	res, err := cloakClient.RetrospectToken(ctx, token, "pepper-poker.wetsnow.com", os.Getenv("PEPPER_POKER_CLIENT_SECRET"), "wetsnow")
 	if err != nil {
 		log.Printf("error retrospecting: %v", err)
 		return nil, err
 	}
 	if !*res.Active {
-		spew.Dump(res)
 		return nil, fmt.Errorf("provided access token not valid")
 	}
+	log.Print("Introspection response...")
+	spew.Dump(res)
 
-	vHelper := jwt.NewValidationHelper(jwt.WithAudience(audience))
+	vHelper := jwt.NewValidationHelper(jwt.WithAudience(auth.Audience), jwt.WithIssuer(auth.Issuer))
 
 	// offline validation (this does almost no validation by default)
 	if err := claims.Valid(vHelper); err != nil {
 		log.Print(err)
 		spew.Dump(claims)
 		return nil, err
-	}
-
-	// TODO: Create custom validator to check roles?
-	for key, value := range *claims {
-		log.Printf("%v: %v", key, value)
-
 	}
 
 	if err := validateRoles(*claims); err != nil {
@@ -137,18 +128,11 @@ func pokerAuthFunc(ctx context.Context) (context.Context, error) {
 		return nil, err
 	}
 
-	// m, ok := metadata.FromIncomingContext(ctx)
-	// if !ok {
-	// 	return nil, fmt.Errorf("error retrieving metadata from context")
-	// }
-
-	// log.Printf("%#v", m)
-
-	if _, err = validateToken(ctx, tokenStr, realm); err != nil {
+	if _, err = validateToken(ctx, tokenStr, auth.Realm); err != nil {
 		return nil, status.Errorf(codes.Unauthenticated, "invalid auth token: %v", err)
 	}
 
-	uinfo, err := cloakClient.GetUserInfo(ctx, tokenStr, realm)
+	uinfo, err := cloakClient.GetUserInfo(ctx, tokenStr, auth.Realm)
 	if err != nil {
 		spew.Dump(uinfo)
 		return nil, err
@@ -156,8 +140,6 @@ func pokerAuthFunc(ctx context.Context) (context.Context, error) {
 	grpc_ctxtags.Extract(ctx).Set("auth.sub", uinfo.Sub)
 
 	newCtx := context.WithValue(ctx, uinfoType("uinfo"), uinfo)
-
-	// claims := userClaimFromToken(token)
 
 	return newCtx, nil
 }

@@ -37,6 +37,11 @@ spec:
               value: info
             - name: GRPC_GO_LOG_VERBOSITY_LEVEL
               value: "0"
+            - name: PEPPER_POKER_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: pepper-poker-secrets
+                  key: PEPPER_POKER_CLIENT_SECRET
           image: docker.io/mrwetsnow/pepper-poker:latest
           name: pepper-poker
           ports:

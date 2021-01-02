@@ -4,28 +4,12 @@ import (
 	"context"
 
 	"golang.org/x/oauth2"
+
+	"github.com/DanTulovsky/pepper-poker-v2/auth"
 )
 
-const (
-	authURL  = "https://login.wetsnow.com/auth/realms/wetsnow/protocol/openid-connect/auth"
-	tokenURL = "https://login.wetsnow.com/auth/realms/wetsnow/protocol/openid-connect/token"
-)
-
-func oauthClientConfig() *oauth2.Config {
-	conf := &oauth2.Config{
-		ClientID: "pepper-poker-grpc.wetsnow.com",
-		// ClientSecret: "YOUR_CLIENT_SECRET",
-		Scopes: []string{"openid"},
-		Endpoint: oauth2.Endpoint{
-			AuthURL:  authURL,
-			TokenURL: tokenURL,
-		},
-	}
-	return conf
-}
-
+// getAuthToken gets an auth token based on the username and password of the client
 func getAuthToken(ctx context.Context, username, password string) (*oauth2.Token, error) {
-
-	conf := oauthClientConfig()
+	conf := auth.OAuthClientConfig()
 	return conf.PasswordCredentialsToken(ctx, username, password)
 }
