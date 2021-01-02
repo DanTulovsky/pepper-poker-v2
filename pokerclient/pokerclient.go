@@ -32,6 +32,7 @@ import (
 
 	"github.com/DanTulovsky/deck"
 	"github.com/DanTulovsky/logger"
+	"github.com/DanTulovsky/pepper-poker-v2/auth"
 	"github.com/DanTulovsky/pepper-poker-v2/id"
 	"github.com/DanTulovsky/pepper-poker-v2/pokerclient/actions"
 
@@ -93,6 +94,8 @@ type PokerClient struct {
 	actionResult chan *actions.PlayerActionResult
 	inputWanted  chan *ppb.GameData
 
+	authClient *auth.Client
+
 	l *logger.Logger
 }
 
@@ -121,6 +124,7 @@ func New(ctx context.Context, username, password string, insecure bool, actions 
 		inputWanted:    inputWanted,
 		lastTurnTaken:  -1, // server starts at 0
 		datac:          make(chan *ppb.GameData),
+		authClient:     auth.NewClient(),
 	}
 
 	opts := []grpc.DialOption{
@@ -156,7 +160,7 @@ func New(ctx context.Context, username, password string, insecure bool, actions 
 		// 	return nil, err
 		// }
 
-		token, err := getAuthToken(ctx, username, password)
+		token, err := pc.authClient.GetAuthToken(ctx, username, password)
 		if err != nil {
 			return nil, err
 		}

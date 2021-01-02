@@ -24,6 +24,7 @@ import (
 
 	"github.com/DanTulovsky/logger"
 	"github.com/DanTulovsky/pepper-poker-v2/actions"
+	"github.com/DanTulovsky/pepper-poker-v2/auth"
 
 	ppb "github.com/DanTulovsky/pepper-poker-v2/proto"
 )
@@ -59,7 +60,7 @@ func insecureGRPCServer(managerChan chan actions.PlayerAction) *grpc.Server {
 	return insecureServer
 }
 
-func secureGRPCServer(cert tls.Certificate, managerChan chan actions.PlayerAction) *grpc.Server {
+func secureGRPCServer(cert tls.Certificate, authClient *auth.Server, managerChan chan actions.PlayerAction) *grpc.Server {
 
 	recoveryOpts := []grpc_recovery.Option{
 		// grpc_recovery.WithRecoveryHandler(customFunc),
@@ -69,13 +70,13 @@ func secureGRPCServer(cert tls.Certificate, managerChan chan actions.PlayerActio
 		// Enable TLS for all incoming connections.
 		grpc.Creds(credentials.NewServerTLSFromCert(&cert)),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
-			grpc_auth.StreamServerInterceptor(pokerAuthFunc),
+			grpc_auth.StreamServerInterceptor(authClient.PokerAuthFunc),
 			grpc_opentracing.StreamServerInterceptor(),
 			grpc_prometheus.StreamServerInterceptor,
 			grpc_recovery.StreamServerInterceptor(recoveryOpts...),
 		)),
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
-			grpc_auth.UnaryServerInterceptor(pokerAuthFunc),
+			grpc_auth.UnaryServerInterceptor(authClient.PokerAuthFunc),
 			grpc_opentracing.UnaryServerInterceptor(),
 			grpc_prometheus.UnaryServerInterceptor,
 			grpc_recovery.UnaryServerInterceptor(recoveryOpts...),
@@ -129,7 +130,7 @@ func (ps *pokerServer) Register(ctx context.Context, in *ppb.RegisterRequest) (*
 
 	// Username is set by the authentication library into the context
 	cinfo := in.GetClientInfo()
-	cinfo.PlayerUsername = *ctx.Value(uinfoType("uinfo")).(*gocloak.UserInfo).PreferredUsername
+	cinfo.PlayerUsername = *ctx.Value(auth.UinfoType("uinfo")).(*gocloak.UserInfo).PreferredUsername
 
 	resultc := make(chan actions.PlayerActionResult)
 	action := actions.NewPlayerAction(ppb.PlayerAction_PlayerActionRegister, nil, in.GetClientInfo(), nil, resultc)
@@ -163,7 +164,7 @@ func (ps *pokerServer) JoinTable(ctx context.Context, in *ppb.JoinTableRequest) 
 	}()
 
 	cinfo := in.GetClientInfo()
-	cinfo.PlayerUsername = *ctx.Value(uinfoType("uinfo")).(*gocloak.UserInfo).PreferredUsername
+	cinfo.PlayerUsername = *ctx.Value(auth.UinfoType("uinfo")).(*gocloak.UserInfo).PreferredUsername
 
 	resultc := make(chan actions.PlayerActionResult)
 	action := actions.NewPlayerAction(ppb.PlayerAction_PlayerActionJoinTable, nil, in.GetClientInfo(), nil, resultc)
@@ -194,7 +195,7 @@ func (ps *pokerServer) TakeTurn(ctx context.Context, in *ppb.TakeTurnRequest) (*
 	}()
 
 	cinfo := in.GetClientInfo()
-	cinfo.PlayerUsername = *ctx.Value(uinfoType("uinfo")).(*gocloak.UserInfo).PreferredUsername
+	cinfo.PlayerUsername = *ctx.Value(auth.UinfoType("uinfo")).(*gocloak.UserInfo).PreferredUsername
 
 	resultc := make(chan actions.PlayerActionResult)
 	action := actions.NewPlayerAction(in.GetPlayerAction(), in.GetActionOpts(), in.GetClientInfo(), nil, resultc)
@@ -223,7 +224,7 @@ func (ps *pokerServer) AckToken(ctx context.Context, in *ppb.AckTokenRequest) (*
 	}()
 
 	cinfo := in.GetClientInfo()
-	cinfo.PlayerUsername = *ctx.Value(uinfoType("uinfo")).(*gocloak.UserInfo).PreferredUsername
+	cinfo.PlayerUsername = *ctx.Value(auth.UinfoType("uinfo")).(*gocloak.UserInfo).PreferredUsername
 
 	resultc := make(chan actions.PlayerActionResult)
 	opts := &ppb.ActionOpts{
@@ -249,7 +250,7 @@ func (ps *pokerServer) Play(in *ppb.PlayRequest, stream ppb.PokerServer_PlayServ
 	ps.l.Info("Received Play RPC")
 
 	cinfo := in.GetClientInfo()
-	cinfo.PlayerUsername = *stream.Context().Value(uinfoType("uinfo")).(*gocloak.UserInfo).PreferredUsername
+	cinfo.PlayerUsername = *stream.Context().Value(auth.UinfoType("uinfo")).(*gocloak.UserInfo).PreferredUsername
 
 	// Create a channel that the game can send data back to the client on
 	// it is read in the goroutine started below

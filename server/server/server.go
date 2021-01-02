@@ -20,6 +20,7 @@ import (
 
 	"github.com/DanTulovsky/logger"
 	"github.com/DanTulovsky/pepper-poker-v2/actions"
+	"github.com/DanTulovsky/pepper-poker-v2/auth"
 )
 
 var (
@@ -41,7 +42,8 @@ type Server struct {
 	secureGRPCListener   net.Listener
 	insecureGRPCListener net.Listener
 
-	http *http.Server
+	authClient *auth.Server
+	http       *http.Server
 
 	// Used to send data to the manager on incoming user requests
 	managerChan chan actions.PlayerAction
@@ -65,7 +67,7 @@ func New(tls tls.Certificate, handler http.Handler, secureGRPCPort, insecureGRPC
 	}
 
 	return &Server{
-		secureGRPCServer:   secureGRPCServer(tls, managerChan),
+		secureGRPCServer:   secureGRPCServer(tls, auth.NewServerClient(), managerChan),
 		insecureGRPCServer: insecureGRPCServer(managerChan),
 		http:               httpServer(handler, httpPort),
 
