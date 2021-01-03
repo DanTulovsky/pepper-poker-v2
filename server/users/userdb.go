@@ -7,6 +7,11 @@ var (
 			Name:     "dan the lion",
 			Username: "dant",
 		},
+		"mrwetsnow": {
+			Bank:     10000,
+			Name:     "cold and sharp",
+			Username: "mrwetsnow",
+		},
 		"shishi": {
 			Bank:     10000,
 			Name:     "shishi the chameleon",

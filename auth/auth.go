@@ -131,6 +131,9 @@ func (s *Server) validateToken(ctx context.Context, token, realm string) (*jwt.T
 
 	// This calls out to the server
 	s.l.Debug("retrospecting token...")
+	if os.Getenv(clientSecretENV) == "" {
+		s.l.Fatalf("Please set the [%v] environment variable...", clientSecretENV)
+	}
 	res, err := s.cloakClient.RetrospectToken(ctx, token, "pepper-poker.wetsnow.com", os.Getenv(clientSecretENV), realm)
 	if err != nil {
 		return nil, err

@@ -153,13 +153,6 @@ func New(ctx context.Context, username, password string, insecure bool, actions 
 			return nil, err
 		}
 
-		// oid section
-
-		// provider, err = oidc.NewProvider(ctx, oidcProviderURL)
-		// if err != nil {
-		// 	return nil, err
-		// }
-
 		token, err := pc.authClient.GetAuthToken(ctx, username, password)
 		if err != nil {
 			return nil, err
