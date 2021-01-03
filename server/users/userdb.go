@@ -9,7 +9,7 @@ var (
 		},
 		"mrwetsnow": {
 			Bank:     10000,
-			Name:     "cold and sharp",
+			Name:     "mrwetsnow the druid",
 			Username: "mrwetsnow",
 		},
 		"shishi": {
