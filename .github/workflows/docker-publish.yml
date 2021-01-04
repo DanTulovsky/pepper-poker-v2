@@ -73,7 +73,7 @@ jobs:
 
           docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
           docker push $IMAGE_ID:$VERSION
-          
+
       - name: Install doctl
         uses: digitalocean/action-doctl@v2
         with:
@@ -81,10 +81,9 @@ jobs:
 
       - name: Save DigitalOcean kubeconfig with short-lived credentials
         run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 cluster-1
-        
+
       - name: Deploy to DigitalOcean Kubernetes
         run: kubectl --namespace poker apply -f $GITHUB_WORKSPACE/k8s/15-poker-deployment.yaml
-        
+
       - name: Verify deployment
         run: kubectl --namespace poker rollout status deployment/pepper-poker
-        

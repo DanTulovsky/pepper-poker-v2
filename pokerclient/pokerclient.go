@@ -58,7 +58,7 @@ var (
 
 const (
 	game            = "Pepper-Poker"
-	version         = "0.2-pre-alpha"
+	version         = "0.3-pre-alpha"
 	oidcProviderURL = "https://login.wetsnow.com"
 )
 
