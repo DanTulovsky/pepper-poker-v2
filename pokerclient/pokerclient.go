@@ -381,7 +381,7 @@ func (pc *PokerClient) TakeTurn(ctx context.Context, in *ppb.GameData) error {
 		}
 
 	case ppb.PlayerAction_PlayerActionBet:
-		// TODO(sishi): under the gun has to raise at least a Big Blind if raising
+		// TODO(sishi): under the gun has to raise at least a Big Blind if raising at all
 		amount := paction.Opts.BetAmount
 		if err = pc.Bet(ctx, amount); err != nil {
 			pc.l.Infof("error betting: %v", err)
@@ -534,7 +534,7 @@ func (pc *PokerClient) Call(ctx context.Context) error {
 
 // IsWinner returns true if the players appears in the winners proto
 func (pc *PokerClient) IsWinner(p *ppb.Player, winners []*ppb.Winners) bool {
-	// TODO: Fix this
+	// TODO: Fix this to display winners properly
 	for _, level := range winners {
 		for _, w := range level.Ids {
 			if p.Id == w {

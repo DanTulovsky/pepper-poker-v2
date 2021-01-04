@@ -26,7 +26,7 @@ type User struct {
 // Load returns a user based on the username and token
 func Load(username string) (User, error) {
 
-	// TODO: read from external database
+	// TODO: read from external database for users
 	return loadFromStatic(username)
 
 }

@@ -821,7 +821,7 @@ func (t *Table) playersReady() bool {
 }
 
 // reset resets the table completely
-// TODO: Remove?
+// TODO: Remove this, nothing uses it?
 func (t *Table) reset() error {
 	t.l.Info("Table resetting...")
 
@@ -843,7 +843,7 @@ func (t *Table) reset() error {
 	return t.setState(t.waitingPlayersState)
 }
 
-// TODO: Is this needed?
+// TODO: Is this needed at all?
 func (t *Table) resetStates() {
 
 	t.waitingPlayersState.Reset()
