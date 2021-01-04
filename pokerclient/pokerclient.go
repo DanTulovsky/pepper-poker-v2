@@ -57,7 +57,8 @@ var (
 )
 
 const (
-	game            = "Pepper-Poker"
+	game = "Pepper-Poker"
+	// TODO: Make this update automatically
 	version         = "0.3-pre-alpha"
 	oidcProviderURL = "https://login.wetsnow.com"
 )
