@@ -83,8 +83,8 @@ jobs:
         run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 cluster-1
         
       - name: Deploy to DigitalOcean Kubernetes
-        run: kubectl apply -f $GITHUB_WORKSPACE/k8s/15-poker-deployment.yaml
+        run: kubectl --namespace poker apply -f $GITHUB_WORKSPACE/k8s/15-poker-deployment.yaml
         
       - name: Verify deployment
-        run: kubectl rollout status deployment/pepper-poker
+        run: kubectl --namespace poker rollout status deployment/pepper-poker
         
