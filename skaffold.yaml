@@ -2,7 +2,7 @@ apiVersion: skaffold/v1beta13
 kind: Config
 build:
   artifacts:
-    - image: "docker.io/mrwetsnow/pepper-poker"
+    - image: "ghcr.io/dantulovsky/pepper-poker-v2/server"
   tagPolicy:
     # sha256: {}
     # gitCommit: {}
