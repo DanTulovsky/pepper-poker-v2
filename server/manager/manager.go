@@ -5,7 +5,12 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
+	"log"
 	"time"
+
+	"github.com/uber/jaeger-client-go"
+	jaegercfg "github.com/uber/jaeger-client-go/config"
 
 	"github.com/DanTulovsky/logger"
 	"github.com/DanTulovsky/pepper-poker-v2/actions"
@@ -16,6 +21,7 @@ import (
 	"github.com/DanTulovsky/pepper-poker-v2/server/table"
 	"github.com/DanTulovsky/pepper-poker-v2/server/users"
 	"github.com/fatih/color"
+	"github.com/opentracing/opentracing-go"
 
 	ppb "github.com/DanTulovsky/pepper-poker-v2/proto"
 )
@@ -58,6 +64,12 @@ func New() *Manager {
 
 // Run is the main function that starts running the entire system
 func (m *Manager) Run(ctx context.Context) error {
+	closer, err := m.enableTracer()
+	if err != nil {
+		return err
+	}
+	defer closer.Close()
+
 	m.startServers(ctx, m.fromGrpcServerChan)
 	m.createTables()
 	m.startTables()
@@ -68,6 +80,32 @@ func (m *Manager) Run(ctx context.Context) error {
 			return err
 		}
 	}
+}
+
+func (m *Manager) enableTracer() (io.Closer, error) {
+	cfg, err := jaegercfg.FromEnv()
+	if err != nil {
+		// parsing errors might happen here, such as when we get a string where we expect a number
+		log.Printf("Could not parse Jaeger env vars: %s", err.Error())
+		return nil, err
+	}
+
+	cfg.ServiceName = "pepper-poker"
+	cfg.Reporter.CollectorEndpoint = "http://linkerd-collector.linkerd:14268/api/traces"
+	cfg.Sampler = &jaegercfg.SamplerConfig{
+		Type:  jaeger.SamplerTypeConst,
+		Param: 1,
+	}
+	cfg.RPCMetrics = true
+
+	tracer, closer, err := cfg.NewTracer()
+	if err != nil {
+		log.Printf("Could not initialize jaeger tracer: %s", err.Error())
+		return nil, err
+	}
+
+	opentracing.SetGlobalTracer(tracer)
+	return closer, nil
 }
 
 func (m *Manager) createTables() {

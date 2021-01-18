@@ -13,6 +13,7 @@ import (
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"github.com/opentracing/opentracing-go"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/channelz/service"
 	"google.golang.org/grpc/codes"
@@ -121,6 +122,10 @@ type pokerServer struct {
 func (ps *pokerServer) Register(ctx context.Context, in *ppb.RegisterRequest) (*ppb.RegisterResponse, error) {
 	ps.l.Info("Received Register RPC")
 
+	if span := opentracing.SpanFromContext(ctx); span != nil {
+		span.SetBaggageItem("call", "register")
+	}
+
 	var err error
 	defer func() {
 		if r := recover(); r != nil {
@@ -156,6 +161,10 @@ func (ps *pokerServer) Register(ctx context.Context, in *ppb.RegisterRequest) (*
 func (ps *pokerServer) JoinTable(ctx context.Context, in *ppb.JoinTableRequest) (*ppb.JoinTableResponse, error) {
 	ps.l.Info("Received JoinTable RPC")
 
+	if span := opentracing.SpanFromContext(ctx); span != nil {
+		span.SetBaggageItem("call", "joinTable")
+	}
+
 	var err error
 	defer func() {
 		if r := recover(); r != nil {
@@ -186,6 +195,10 @@ func (ps *pokerServer) JoinTable(ctx context.Context, in *ppb.JoinTableRequest) 
 // TakeTurn takes a single poker turn
 func (ps *pokerServer) TakeTurn(ctx context.Context, in *ppb.TakeTurnRequest) (*ppb.TakeTurnResponse, error) {
 	ps.l.Info("Received TakeTurn RPC")
+
+	if span := opentracing.SpanFromContext(ctx); span != nil {
+		span.SetBaggageItem("call", "takeTune")
+	}
 
 	var err error
 	defer func() {
