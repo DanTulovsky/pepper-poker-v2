@@ -83,6 +83,8 @@ func (m *Manager) Run(ctx context.Context) error {
 }
 
 func (m *Manager) enableTracer() (io.Closer, error) {
+	m.l.Info("Enabling OpenTracing tracer...")
+
 	cfg, err := jaegercfg.FromEnv()
 	if err != nil {
 		// parsing errors might happen here, such as when we get a string where we expect a number

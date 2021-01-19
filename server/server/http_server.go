@@ -6,6 +6,8 @@ import (
 	"html/template"
 	"net/http"
 	"path"
+
+	"github.com/opentracing/opentracing-go"
 )
 
 var (
@@ -30,6 +32,19 @@ type indexPage struct {
 }
 
 func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+
+	var parentCtx opentracing.SpanContext
+	parentSpan := opentracing.SpanFromContext(r.Context())
+	if parentSpan != nil {
+		parentCtx = parentSpan.Context()
+	}
+
+	tracer := opentracing.GlobalTracer()
+	span := tracer.StartSpan(
+		"/",
+		opentracing.ChildOf(parentCtx),
+	)
+	defer span.Finish()
 
 	data := &indexPage{
 		Welcome: "Welcome to pepper-poker...",

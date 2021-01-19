@@ -14,5 +14,5 @@ spec:
   selector:
     app: pepper-poker
   type: ClusterIP
+  # type: LoadBalancer
   clusterIP: None # headless service
-
