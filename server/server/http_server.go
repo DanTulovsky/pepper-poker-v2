@@ -33,7 +33,11 @@ type indexPage struct {
 
 func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
+	var parentCtx opentracing.SpanContext
 	parentSpan := opentracing.SpanFromContext(r.Context())
+	if parentSpan != nil {
+		parentCtx = parentSpan.Context()
+	}
 
 	tracer := opentracing.GlobalTracer()
 	span := tracer.StartSpan(
