@@ -41,6 +41,7 @@ func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 	}
+	log.Printf("%#v", ectx)
 
 	var span opentracing.Span
 	if ectx == nil {
