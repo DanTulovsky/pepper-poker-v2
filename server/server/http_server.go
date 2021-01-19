@@ -42,7 +42,7 @@ func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	tracer := opentracing.GlobalTracer()
 	span := tracer.StartSpan(
 		"/",
-		opentracing.ChildOf(parentSpan.Context()),
+		opentracing.ChildOf(parentCtx),
 		opentracing.Tag{
 			Key:   "user_agent",
 			Value: r.UserAgent()},
