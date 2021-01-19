@@ -51,6 +51,12 @@ func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	)
 	defer span.Finish()
 
+	span.Tracer().Inject(
+		span.Context(),
+		opentracing.HTTPHeaders,
+		opentracing.HTTPHeadersCarrier(r.Header),
+	)
+
 	requestDump, err := httputil.DumpRequest(r, true)
 	if err != nil {
 		fmt.Println(err)
