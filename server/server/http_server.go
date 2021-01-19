@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"html/template"
+	"log"
 	"net/http"
 	"net/http/httputil"
 	"path"
@@ -35,27 +36,28 @@ type indexPage struct {
 
 func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	var parentCtx opentracing.SpanContext
-	parentSpan := opentracing.SpanFromContext(r.Context())
-	if parentSpan != nil {
-		parentCtx = parentSpan.Context()
+	tracer := opentracing.GlobalTracer()
+	ectx, err := tracer.Extract(opentracing.HTTPHeaders, r.Header)
+	if err != nil {
+		log.Println(err)
 	}
 
-	tracer := opentracing.GlobalTracer()
-	span := tracer.StartSpan(
-		"/",
-		opentracing.ChildOf(parentCtx),
-		opentracing.Tag{
-			Key:   "user_agent",
-			Value: r.UserAgent()},
-	)
-	defer span.Finish()
+	var span opentracing.Span
+	if ectx == nil {
+		span = tracer.StartSpan("/",
+			opentracing.Tag{
+				Key:   "user_agent",
+				Value: r.UserAgent()},
+		)
+	} else {
+		span = tracer.StartSpan("/", opentracing.ChildOf(ectx),
+			opentracing.Tag{
+				Key:   "user_agent",
+				Value: r.UserAgent()},
+		)
+	}
 
-	span.Tracer().Inject(
-		span.Context(),
-		opentracing.HTTPHeaders,
-		opentracing.HTTPHeadersCarrier(r.Header),
-	)
+	defer span.Finish()
 
 	requestDump, err := httputil.DumpRequest(r, true)
 	if err != nil {
