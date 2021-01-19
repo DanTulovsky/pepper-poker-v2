@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"net/http/httputil"
 	"path"
 
 	"github.com/opentracing/opentracing-go"
@@ -29,6 +30,7 @@ type HTTPHandler struct {
 
 type indexPage struct {
 	Welcome string
+	Request string
 }
 
 func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -49,8 +51,14 @@ func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	)
 	defer span.Finish()
 
+	requestDump, err := httputil.DumpRequest(r, true)
+	if err != nil {
+		fmt.Println(err)
+	}
+
 	data := &indexPage{
 		Welcome: "Welcome to pepper-poker...",
+		Request: string(requestDump),
 	}
 
 	file := "index.html"
