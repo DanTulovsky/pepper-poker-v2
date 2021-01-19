@@ -37,7 +37,7 @@ type indexPage struct {
 func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	tracer := opentracing.GlobalTracer()
-	ectx, err := tracer.Extract(opentracing.HTTPHeaders, r.Header)
+	ectx, err := tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(r.Header))
 	if err != nil {
 		log.Println(err)
 	}
