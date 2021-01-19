@@ -85,5 +85,8 @@ jobs:
       - name: Deploy to DigitalOcean Kubernetes
         run: kubectl --namespace poker apply -f $GITHUB_WORKSPACE/k8s/15-poker-deployment.yaml
 
+      - name: Rolling restart Deployment
+        run: kubectl --namespace poker rollout restart deployment/pepper-poker
+
       - name: Verify deployment
         run: kubectl --namespace poker rollout status deployment/pepper-poker
