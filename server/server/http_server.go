@@ -9,6 +9,7 @@ import (
 	"net/http/httputil"
 	"path"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
 )
@@ -43,7 +44,7 @@ func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 	}
-	log.Printf("%#v", ectx)
+	spew.Dump(ectx)
 
 	span := opentracing.StartSpan("/",
 		ext.RPCServerOption(ectx),
@@ -51,9 +52,12 @@ func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			Key:   "user_agent",
 			Value: r.UserAgent()},
 	)
-	log.Printf("%#v", span)
-	// ctx := opentracing.ContextWithSpan(context.Background(), serverSpan)
+	spew.Dump(span)
+
 	defer span.Finish()
+
+	// If sending RPC to a downstream service, use this context
+	// ctx := opentracing.ContextWithSpan(context.Background(), serverSpan)
 
 	requestDump, err := httputil.DumpRequest(r, true)
 	if err != nil {
