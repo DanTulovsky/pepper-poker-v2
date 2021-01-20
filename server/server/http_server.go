@@ -43,18 +43,29 @@ func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("%#v", ectx)
 
+	// span := opentracing.StartSpan("/",
+	// 	ext.RPCServerOption(ectx),
+	// )
+	// ctx := opentracing.ContextWithSpan(context.Background(), serverSpan)
+
 	var span opentracing.Span
 	if ectx == nil {
 		span = tracer.StartSpan("/",
 			opentracing.Tag{
 				Key:   "user_agent",
 				Value: r.UserAgent()},
+			opentracing.Tag{
+				Key:   "X-Request-Id",
+				Value: r.Header["X-Request-Id"]},
 		)
 	} else {
 		span = tracer.StartSpan("/", opentracing.ChildOf(ectx),
 			opentracing.Tag{
 				Key:   "user_agent",
 				Value: r.UserAgent()},
+			opentracing.Tag{
+				Key:   "X-Request-Id",
+				Value: r.Header["X-Request-Id"]},
 		)
 	}
 
