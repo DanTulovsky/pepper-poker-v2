@@ -55,8 +55,8 @@ func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				Key:   "user_agent",
 				Value: r.UserAgent()},
 			opentracing.Tag{
-				Key:   "X-Request-Id",
-				Value: r.Header["X-Request-Id"]},
+				Key:   "guid:x-request-id",
+				Value: r.Header["X-Request-Id"][0]},
 		)
 	} else {
 		span = tracer.StartSpan("/", opentracing.ChildOf(ectx),
@@ -64,8 +64,8 @@ func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				Key:   "user_agent",
 				Value: r.UserAgent()},
 			opentracing.Tag{
-				Key:   "X-Request-Id",
-				Value: r.Header["X-Request-Id"]},
+				Key:   "guid:x-request-id",
+				Value: r.Header["X-Request-Id"][0]},
 		)
 	}
 
