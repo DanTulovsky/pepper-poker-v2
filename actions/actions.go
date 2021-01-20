@@ -1,6 +1,8 @@
 package actions
 
 import (
+	"context"
+
 	ppb "github.com/DanTulovsky/pepper-poker-v2/proto"
 )
 
@@ -15,16 +17,20 @@ type PlayerAction struct {
 
 	// use this channel to send back and error to the grpc server on the initial subscription
 	ResultC chan PlayerActionResult
+
+	// Pass RPC context into the Manager (used in tracing)
+	Ctx context.Context
 }
 
 // NewPlayerAction makes a new playeraction
-func NewPlayerAction(action ppb.PlayerAction, opts *ppb.ActionOpts, ci *ppb.ClientInfo, managerChan chan GameData, resultc chan PlayerActionResult) PlayerAction {
+func NewPlayerAction(ctx context.Context, action ppb.PlayerAction, opts *ppb.ActionOpts, ci *ppb.ClientInfo, managerChan chan GameData, resultc chan PlayerActionResult) PlayerAction {
 	return PlayerAction{
 		Action:       action,
 		Opts:         opts,
 		ClientInfo:   ci,
 		ToClientChan: managerChan,
 		ResultC:      resultc,
+		Ctx:          ctx,
 	}
 }
 

@@ -526,6 +526,13 @@ func (m *Manager) disconnectPlayer(p *player.Player, t *table.Table) error {
 // addPlayer add the player to the manager instance and make them available for playing games
 // player must exist in the userdb
 func (m *Manager) addPlayer(in actions.PlayerAction) (*player.Player, error) {
+	span, _ := opentracing.StartSpanFromContext(in.Ctx, "register",
+		opentracing.Tag{
+			Key:   "playerUsername",
+			Value: in.ClientInfo.PlayerUsername},
+	)
+	defer span.Finish()
+
 	username := in.ClientInfo.PlayerUsername
 	if m.havePlayerUsername(username) {
 		return m.getPlayerByUsername(username), actions.ErrUserExists

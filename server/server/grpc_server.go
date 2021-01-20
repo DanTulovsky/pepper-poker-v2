@@ -134,7 +134,7 @@ func (ps *pokerServer) Register(ctx context.Context, in *ppb.RegisterRequest) (*
 	cinfo.PlayerUsername = *ctx.Value(auth.UinfoType("uinfo")).(*gocloak.UserInfo).PreferredUsername
 
 	resultc := make(chan actions.PlayerActionResult)
-	action := actions.NewPlayerAction(ppb.PlayerAction_PlayerActionRegister, nil, in.GetClientInfo(), nil, resultc)
+	action := actions.NewPlayerAction(ctx, ppb.PlayerAction_PlayerActionRegister, nil, in.GetClientInfo(), nil, resultc)
 
 	// Send request to manager
 	ps.managerChan <- action
@@ -168,7 +168,7 @@ func (ps *pokerServer) JoinTable(ctx context.Context, in *ppb.JoinTableRequest) 
 	cinfo.PlayerUsername = *ctx.Value(auth.UinfoType("uinfo")).(*gocloak.UserInfo).PreferredUsername
 
 	resultc := make(chan actions.PlayerActionResult)
-	action := actions.NewPlayerAction(ppb.PlayerAction_PlayerActionJoinTable, nil, in.GetClientInfo(), nil, resultc)
+	action := actions.NewPlayerAction(ctx, ppb.PlayerAction_PlayerActionJoinTable, nil, in.GetClientInfo(), nil, resultc)
 
 	// Send request to manager
 	ps.managerChan <- action
@@ -199,7 +199,7 @@ func (ps *pokerServer) TakeTurn(ctx context.Context, in *ppb.TakeTurnRequest) (*
 	cinfo.PlayerUsername = *ctx.Value(auth.UinfoType("uinfo")).(*gocloak.UserInfo).PreferredUsername
 
 	resultc := make(chan actions.PlayerActionResult)
-	action := actions.NewPlayerAction(in.GetPlayerAction(), in.GetActionOpts(), in.GetClientInfo(), nil, resultc)
+	action := actions.NewPlayerAction(ctx, in.GetPlayerAction(), in.GetActionOpts(), in.GetClientInfo(), nil, resultc)
 
 	// Send request to manager
 	ps.managerChan <- action
@@ -231,7 +231,7 @@ func (ps *pokerServer) AckToken(ctx context.Context, in *ppb.AckTokenRequest) (*
 	opts := &ppb.ActionOpts{
 		AckToken: in.GetToken(),
 	}
-	action := actions.NewPlayerAction(ppb.PlayerAction_PlayerActionAckToken, opts, in.GetClientInfo(), nil, resultc)
+	action := actions.NewPlayerAction(ctx, ppb.PlayerAction_PlayerActionAckToken, opts, in.GetClientInfo(), nil, resultc)
 
 	// Send request to manager
 	ps.managerChan <- action
@@ -258,7 +258,7 @@ func (ps *pokerServer) Play(in *ppb.PlayRequest, stream ppb.PokerServer_PlayServ
 	toPlayerC := make(chan actions.GameData)
 
 	resultc := make(chan actions.PlayerActionResult)
-	action := actions.NewPlayerAction(ppb.PlayerAction_PlayerActionPlay, nil, in.GetClientInfo(), toPlayerC, resultc)
+	action := actions.NewPlayerAction(stream.Context(), ppb.PlayerAction_PlayerActionPlay, nil, in.GetClientInfo(), toPlayerC, resultc)
 
 	// Send request to manager
 	ps.managerChan <- action
@@ -292,7 +292,7 @@ OUTER:
 	}
 
 	// Return any player.Stack() to player.Bank()
-	if err := ps.playerDisconnected(cinfo); err != nil {
+	if err := ps.playerDisconnected(stream.Context(), cinfo); err != nil {
 		ps.l.Error(err)
 	}
 
@@ -300,10 +300,10 @@ OUTER:
 	return err
 }
 
-func (ps *pokerServer) playerDisconnected(cinfo *ppb.ClientInfo) error {
+func (ps *pokerServer) playerDisconnected(ctx context.Context, cinfo *ppb.ClientInfo) error {
 
 	resultc := make(chan actions.PlayerActionResult)
-	action := actions.NewPlayerAction(ppb.PlayerAction_PlayerActionDisconnect, nil, cinfo, nil, resultc)
+	action := actions.NewPlayerAction(ctx, ppb.PlayerAction_PlayerActionDisconnect, nil, cinfo, nil, resultc)
 
 	// Send request to manager
 	ps.managerChan <- action
