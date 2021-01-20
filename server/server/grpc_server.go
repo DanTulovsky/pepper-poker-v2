@@ -13,6 +13,7 @@ import (
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"github.com/opentracing/opentracing-go"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/channelz/service"
 	"google.golang.org/grpc/codes"
@@ -34,12 +35,12 @@ func insecureGRPCServer(managerChan chan actions.PlayerAction) *grpc.Server {
 	opts := []grpc.ServerOption{
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
 			// grpc_auth.StreamServerInterceptor(pokerAuthFunc),
-			grpc_opentracing.StreamServerInterceptor(),
+			grpc_opentracing.StreamServerInterceptor(grpc_opentracing.WithTracer(opentracing.GlobalTracer())),
 			grpc_prometheus.StreamServerInterceptor,
 		)),
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
 			// grpc_auth.UnaryServerInterceptor(pokerAuthFunc),
-			grpc_opentracing.UnaryServerInterceptor(),
+			grpc_opentracing.UnaryServerInterceptor(grpc_opentracing.WithTracer(opentracing.GlobalTracer())),
 			grpc_prometheus.UnaryServerInterceptor,
 		)),
 	}
@@ -71,13 +72,13 @@ func secureGRPCServer(cert tls.Certificate, authClient *auth.Server, managerChan
 		grpc.Creds(credentials.NewServerTLSFromCert(&cert)),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
 			grpc_auth.StreamServerInterceptor(authClient.PokerAuthFunc),
-			grpc_opentracing.StreamServerInterceptor(),
+			grpc_opentracing.StreamServerInterceptor(grpc_opentracing.WithTracer(opentracing.GlobalTracer())),
 			grpc_prometheus.StreamServerInterceptor,
 			grpc_recovery.StreamServerInterceptor(recoveryOpts...),
 		)),
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
 			grpc_auth.UnaryServerInterceptor(authClient.PokerAuthFunc),
-			grpc_opentracing.UnaryServerInterceptor(),
+			grpc_opentracing.UnaryServerInterceptor(grpc_opentracing.WithTracer(opentracing.GlobalTracer())),
 			grpc_prometheus.UnaryServerInterceptor,
 			grpc_recovery.UnaryServerInterceptor(recoveryOpts...),
 		)),
