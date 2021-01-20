@@ -31,7 +31,7 @@ require (
 	github.com/rantav/go-grpc-channelz v0.0.2
 	github.com/tcnksm/go-input v0.0.0-20180404061846-548a7d7a8ee8
 	github.com/uber/jaeger-client-go v2.25.0+incompatible
-	github.com/uber/jaeger-lib v2.4.0+incompatible // indirect
+	github.com/uber/jaeger-lib v2.4.0+incompatible
 	github.com/wayneashleyberry/terminal-dimensions v1.0.0 // indirect
 	go.opencensus.io v0.22.5
 	golang.org/x/net v0.0.0-20201224014010-6772e930b67b // indirect

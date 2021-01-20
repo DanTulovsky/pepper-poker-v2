@@ -11,6 +11,9 @@ import (
 
 	"github.com/uber/jaeger-client-go"
 	jaegercfg "github.com/uber/jaeger-client-go/config"
+	jaegerlog "github.com/uber/jaeger-client-go/log"
+	"github.com/uber/jaeger-client-go/zipkin"
+	"github.com/uber/jaeger-lib/metrics"
 
 	"github.com/DanTulovsky/logger"
 	"github.com/DanTulovsky/pepper-poker-v2/actions"
@@ -85,6 +88,11 @@ func (m *Manager) Run(ctx context.Context) error {
 func (m *Manager) enableTracer() (io.Closer, error) {
 	m.l.Info("Enabling OpenTracing tracer...")
 
+	zipkinPropagator := zipkin.NewZipkinB3HTTPHeaderPropagator()
+	serviceName := "pepper-poker"
+	jLogger := jaegerlog.StdLogger
+	jMetricsFactory := metrics.NullFactory
+
 	cfg, err := jaegercfg.FromEnv()
 	if err != nil {
 		// parsing errors might happen here, such as when we get a string where we expect a number
@@ -92,7 +100,6 @@ func (m *Manager) enableTracer() (io.Closer, error) {
 		return nil, err
 	}
 
-	cfg.ServiceName = "pepper-poker"
 	cfg.Reporter.CollectorEndpoint = "http://linkerd-collector.linkerd:14268/api/traces"
 	cfg.Sampler = &jaegercfg.SamplerConfig{
 		Type:  jaeger.SamplerTypeConst,
@@ -100,13 +107,21 @@ func (m *Manager) enableTracer() (io.Closer, error) {
 	}
 	cfg.RPCMetrics = true
 
-	tracer, closer, err := cfg.NewTracer()
+	// Create tracer and then initialize global tracer
+	closer, err := cfg.InitGlobalTracer(
+		serviceName,
+		jaegercfg.Logger(jLogger),
+		jaegercfg.Metrics(jMetricsFactory),
+		jaegercfg.Injector(opentracing.HTTPHeaders, zipkinPropagator),
+		jaegercfg.Extractor(opentracing.HTTPHeaders, zipkinPropagator),
+		jaegercfg.ZipkinSharedRPCSpan(true),
+	)
+
 	if err != nil {
 		log.Printf("Could not initialize jaeger tracer: %s", err.Error())
 		return nil, err
 	}
 
-	opentracing.SetGlobalTracer(tracer)
 	return closer, nil
 }
 
