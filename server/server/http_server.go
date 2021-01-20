@@ -10,6 +10,7 @@ import (
 	"path"
 
 	"github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go/ext"
 )
 
 var (
@@ -37,38 +38,21 @@ type indexPage struct {
 func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	tracer := opentracing.GlobalTracer()
+
 	ectx, err := tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(r.Header))
 	if err != nil {
 		log.Println(err)
 	}
 	log.Printf("%#v", ectx)
 
-	// span := opentracing.StartSpan("/",
-	// 	ext.RPCServerOption(ectx),
-	// )
+	span := opentracing.StartSpan("/",
+		ext.RPCServerOption(ectx),
+		opentracing.Tag{
+			Key:   "user_agent",
+			Value: r.UserAgent()},
+	)
+	log.Printf("%#v", span)
 	// ctx := opentracing.ContextWithSpan(context.Background(), serverSpan)
-
-	var span opentracing.Span
-	if ectx == nil {
-		span = tracer.StartSpan("/",
-			opentracing.Tag{
-				Key:   "user_agent",
-				Value: r.UserAgent()},
-			opentracing.Tag{
-				Key:   "guid:x-request-id",
-				Value: r.Header["X-Request-Id"][0]},
-		)
-	} else {
-		span = tracer.StartSpan("/", opentracing.ChildOf(ectx),
-			opentracing.Tag{
-				Key:   "user_agent",
-				Value: r.UserAgent()},
-			opentracing.Tag{
-				Key:   "guid:x-request-id",
-				Value: r.Header["X-Request-Id"][0]},
-		)
-	}
-
 	defer span.Finish()
 
 	requestDump, err := httputil.DumpRequest(r, true)
