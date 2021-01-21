@@ -47,10 +47,8 @@ func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	span := opentracing.StartSpan("/",
 		ext.RPCServerOption(ectx),
-		opentracing.Tag{
-			Key:   "user_agent",
-			Value: r.UserAgent()},
 	)
+	span.SetTag("user_agent", r.UserAgent())
 	// spew.Dump(span)
 
 	defer span.Finish()

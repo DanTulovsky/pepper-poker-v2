@@ -25,6 +25,7 @@ import (
 	"github.com/DanTulovsky/pepper-poker-v2/server/users"
 	"github.com/fatih/color"
 	"github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go/ext"
 
 	ppb "github.com/DanTulovsky/pepper-poker-v2/proto"
 )
@@ -100,7 +101,7 @@ func (m *Manager) enableTracer() (io.Closer, error) {
 		return nil, err
 	}
 
-	cfg.Reporter.CollectorEndpoint = "http://linkerd-collector.linkerd:14268/api/traces"
+	cfg.Reporter.CollectorEndpoint = "http://jaeger-query.observability:14268/api/traces"
 	cfg.Sampler = &jaegercfg.SamplerConfig{
 		Type:  jaeger.SamplerTypeConst,
 		Param: 1,
@@ -526,11 +527,9 @@ func (m *Manager) disconnectPlayer(p *player.Player, t *table.Table) error {
 // addPlayer add the player to the manager instance and make them available for playing games
 // player must exist in the userdb
 func (m *Manager) addPlayer(in actions.PlayerAction) (*player.Player, error) {
-	span, _ := opentracing.StartSpanFromContext(in.Ctx, "register",
-		opentracing.Tag{
-			Key:   "playerUsername",
-			Value: in.ClientInfo.PlayerUsername},
-	)
+	span, _ := opentracing.StartSpanFromContext(in.Ctx, "register")
+	span.SetTag("playerUsername", in.ClientInfo.PlayerUsername)
+	ext.Component.Set(span, "Manager")
 	defer span.Finish()
 
 	username := in.ClientInfo.PlayerUsername
@@ -541,6 +540,7 @@ func (m *Manager) addPlayer(in actions.PlayerAction) (*player.Player, error) {
 	m.l.Infof("[%v] Checking for playing in userdb...", username)
 	u, err := users.Load(username)
 	if err != nil {
+		ext.Error.Set(span, true)
 		return nil, err
 	}
 
