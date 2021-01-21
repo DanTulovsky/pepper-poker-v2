@@ -113,7 +113,7 @@ func (m *Manager) enableTracer() (io.Closer, error) {
 		serviceName,
 		jaegercfg.Logger(jLogger),
 		jaegercfg.Metrics(jMetricsFactory),
-		jaegercfg.Injector(opentracing.HTTPHeaders, zipkinPropagator),
+		// jaegercfg.Injector(opentracing.HTTPHeaders, zipkinPropagator),
 		jaegercfg.Extractor(opentracing.HTTPHeaders, zipkinPropagator),
 		jaegercfg.ZipkinSharedRPCSpan(true),
 	)
