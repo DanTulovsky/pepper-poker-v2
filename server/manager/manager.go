@@ -25,6 +25,7 @@ import (
 	"github.com/DanTulovsky/pepper-poker-v2/server/users"
 	"github.com/fatih/color"
 	"github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go/ext"
 
 	ppb "github.com/DanTulovsky/pepper-poker-v2/proto"
 )
@@ -527,10 +528,10 @@ func (m *Manager) disconnectPlayer(p *player.Player, t *table.Table) error {
 // addPlayer add the player to the manager instance and make them available for playing games
 // player must exist in the userdb
 func (m *Manager) addPlayer(in actions.PlayerAction) (*player.Player, error) {
-	// span, _ := opentracing.StartSpanFromContext(in.Ctx, "register")
-	// span.SetTag("playerUsername", in.ClientInfo.PlayerUsername)
-	// ext.Component.Set(span, "Manager")
-	// defer span.Finish()
+	span, _ := opentracing.StartSpanFromContext(in.Ctx, "register")
+	span.SetTag("playerUsername", in.ClientInfo.PlayerUsername)
+	ext.Component.Set(span, "Manager")
+	defer span.Finish()
 
 	username := in.ClientInfo.PlayerUsername
 	if m.havePlayerUsername(username) {
