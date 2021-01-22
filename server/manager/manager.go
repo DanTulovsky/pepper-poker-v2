@@ -103,8 +103,9 @@ func (m *Manager) enableTracer() (io.Closer, error) {
 
 	cfg.Reporter.CollectorEndpoint = "http://jaeger-query.observability:14268/api/traces"
 	cfg.Sampler = &jaegercfg.SamplerConfig{
-		Type:  jaeger.SamplerTypeConst,
-		Param: 1,
+		Type:              jaeger.SamplerTypeRemote,
+		Param:             0,
+		SamplingServerURL: "http://jaeger-agent.observability:5778/sampling",
 	}
 	cfg.RPCMetrics = true
 
