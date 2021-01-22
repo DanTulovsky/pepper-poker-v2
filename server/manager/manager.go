@@ -32,8 +32,13 @@ import (
 
 var (
 	tickDelay = flag.Duration("manager_tick_delay", time.Millisecond*10, "delay between manager ticks")
-
 	numTables = 1
+)
+
+const (
+	jaegerSamplingServerURL = "http://jaeger-agent.observability:5778/sampling"
+	jaegerCollectorEndpoint = "http://jaeger-query.observability:14268/api/traces"
+	jaegerServiceName       = "pepper-poker"
 )
 
 // Manager manages incoming user requests and sends them to each table
@@ -90,7 +95,7 @@ func (m *Manager) enableTracer() (io.Closer, error) {
 	m.l.Info("Enabling OpenTracing tracer...")
 
 	zipkinPropagator := zipkin.NewZipkinB3HTTPHeaderPropagator()
-	serviceName := "pepper-poker"
+	serviceName := jaegerServiceName
 	jLogger := jaegerlog.StdLogger
 	jMetricsFactory := metrics.NullFactory
 
@@ -101,11 +106,12 @@ func (m *Manager) enableTracer() (io.Closer, error) {
 		return nil, err
 	}
 
-	cfg.Reporter.CollectorEndpoint = "http://jaeger-query.observability:14268/api/traces"
+	cfg.Reporter.CollectorEndpoint = jaegerCollectorEndpoint
+	// github.com/DanTulovsky/k8s-configs/configs/jaeger/operator-config.yaml has the config
 	cfg.Sampler = &jaegercfg.SamplerConfig{
 		Type:              jaeger.SamplerTypeRemote,
-		Param:             0,
-		SamplingServerURL: "http://jaeger-agent.observability:5778/sampling",
+		Param:             0, // default sampling if server does not answer
+		SamplingServerURL: jaegerSamplingServerURL,
 	}
 	cfg.RPCMetrics = true
 
@@ -118,6 +124,7 @@ func (m *Manager) enableTracer() (io.Closer, error) {
 		// upstream from ambassador is in zipkin format
 		jaegercfg.Extractor(opentracing.HTTPHeaders, zipkinPropagator),
 		jaegercfg.ZipkinSharedRPCSpan(true),
+		// jaegercfg.Ta
 	)
 
 	if err != nil {
@@ -242,7 +249,7 @@ func (m *Manager) processPlayerRequests() {
 			in.ResultC <- result
 
 		case proto.PlayerAction_PlayerActionDisconnect:
-			if err = m.disconnectPlayer(p, t); err != nil {
+			if err = m.disconnectPlayer(in.Ctx, p, t); err != nil {
 				m.l.Error(err)
 				in.ResultC <- actions.NewPlayerActionError(err)
 				break
@@ -514,7 +521,12 @@ func (m *Manager) firstAvailableTable() (*table.Table, error) {
 }
 
 // disconnectPlayer handles a player that disconnected
-func (m *Manager) disconnectPlayer(p *player.Player, t *table.Table) error {
+func (m *Manager) disconnectPlayer(ctx context.Context, p *player.Player, t *table.Table) error {
+
+	span, _ := opentracing.StartSpanFromContext(ctx, "disconnect")
+	span.SetTag("playerUsername", p.Username)
+	ext.Component.Set(span, "Manager")
+	defer span.Finish()
 
 	result := make(chan table.ActionResult)
 	req := table.NewTableAction(actions.ActionDisconnect, result, p, nil)
@@ -523,6 +535,9 @@ func (m *Manager) disconnectPlayer(p *player.Player, t *table.Table) error {
 	// block until response
 	res := <-result
 
+	if res.Err != nil {
+		ext.Error.Set(span, true)
+	}
 	return res.Err
 }
 
@@ -542,7 +557,7 @@ func (m *Manager) addPlayer(in actions.PlayerAction) (*player.Player, error) {
 	m.l.Infof("[%v] Checking for playing in userdb...", username)
 	u, err := users.Load(username)
 	if err != nil {
-		// ext.Error.Set(span, true)
+		ext.Error.Set(span, true)
 		return nil, err
 	}
 
