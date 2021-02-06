@@ -36,7 +36,7 @@ var (
 )
 
 const (
-	jaegerSamplingServerURL = "http://jaeger-agent.observability:5778/sampling"
+	jaegerSamplingServerURL = "http://otel-collector.observability:5778/sampling"
 	jaegerCollectorEndpoint = "http://otel-collector.observability:14268/api/traces"
 	jaegerServiceName       = "pepper-poker"
 )
