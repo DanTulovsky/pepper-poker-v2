@@ -86,9 +86,6 @@ type Table struct {
 
 	gameStartsInTime time.Duration
 
-	// keeps track of the last time the table ticked
-	lastTickTime time.Time
-
 	l *logger.Logger
 }
 
@@ -118,8 +115,6 @@ func New(tableAction chan ActionRequest) *Table {
 		gameEndDelay:      time.Second * 10,
 		gameWaitTimeout:   time.Second * 10,
 		stateAdvanceDelay: time.Second * 0,
-
-		lastTickTime: time.Now(),
 	}
 
 	t.positions = make([]*player.Player, t.maxPlayers)
@@ -171,26 +166,17 @@ func (t *Table) Run() error {
 	t.l.Infof("Table [%v] starting run loop...", t.Name)
 
 	ticker := time.NewTicker(*tickDelay)
-	done := make(chan bool)
-	errc := make(chan error)
 
-	go func(t *Table) {
-		for {
-			select {
-			case <-done:
-				errc <- nil
-
-			case <-ticker.C:
-				if err := t.Tick(); err != nil {
-					errc <- err
-					return
-				}
+	for {
+		select {
+		case <-ticker.C:
+			if err := t.Tick(); err != nil {
+				return err
 			}
 		}
-	}(t)
+	}
 
-	err := <-errc
-	return err
+	// return nil
 }
 
 // ResetPlayersBets resets player bet this round

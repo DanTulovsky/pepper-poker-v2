@@ -84,9 +84,15 @@ func (m *Manager) Run(ctx context.Context) error {
 	m.startTables()
 
 	m.l.Info("Starting manager loop...")
+
+	ticker := time.NewTicker(*tickDelay)
+
 	for {
-		if err := m.tick(); err != nil {
-			return err
+		select {
+		case <-ticker.C:
+			if err := m.tick(); err != nil {
+				return err
+			}
 		}
 	}
 }
@@ -170,11 +176,7 @@ func (m *Manager) startServers(ctx context.Context, serverChan chan actions.Play
 
 // tick is one pass through the manager
 func (m *Manager) tick() error {
-	// m.l.Debug("Tick()")
-
 	m.processPlayerRequests()
-
-	time.Sleep(*tickDelay)
 
 	return nil
 }
