@@ -33,10 +33,10 @@ spec:
           command:
             - /app/server.bin
           env:
-            - name: GRPC_GO_LOG_SEVERITY_LEVEL
-              value: info
-            - name: GRPC_GO_LOG_VERBOSITY_LEVEL
-              value: "0"
+            # - name: GRPC_GO_LOG_SEVERITY_LEVEL
+            #   value: info
+            # - name: GRPC_GO_LOG_VERBOSITY_LEVEL
+            #   value: "0"
             - name: PEPPER_POKER_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:

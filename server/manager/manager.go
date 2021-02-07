@@ -96,7 +96,7 @@ func (m *Manager) enableTracer() (io.Closer, error) {
 
 	zipkinPropagator := zipkin.NewZipkinB3HTTPHeaderPropagator()
 	serviceName := jaegerServiceName
-	jLogger := jaegerlog.StdLogger
+	jLogger := jaegerlog.NullLogger
 	jMetricsFactory := metrics.NullFactory
 
 	cfg, err := jaegercfg.FromEnv()
