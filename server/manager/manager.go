@@ -6,9 +6,9 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"log"
 	"time"
 
+	"github.com/opentracing/opentracing-go/log"
 	"github.com/uber/jaeger-client-go"
 	jaegercfg "github.com/uber/jaeger-client-go/config"
 	jaegerlog "github.com/uber/jaeger-client-go/log"
@@ -102,7 +102,6 @@ func (m *Manager) enableTracer() (io.Closer, error) {
 	cfg, err := jaegercfg.FromEnv()
 	if err != nil {
 		// parsing errors might happen here, such as when we get a string where we expect a number
-		log.Printf("Could not parse Jaeger env vars: %s", err.Error())
 		return nil, err
 	}
 
@@ -128,7 +127,6 @@ func (m *Manager) enableTracer() (io.Closer, error) {
 	)
 
 	if err != nil {
-		log.Printf("Could not initialize jaeger tracer: %s", err.Error())
 		return nil, err
 	}
 
@@ -536,6 +534,9 @@ func (m *Manager) disconnectPlayer(ctx context.Context, p *player.Player, t *tab
 	res := <-result
 
 	if res.Err != nil {
+		span.LogFields(
+			log.String("error", res.Err.Error()),
+		)
 		ext.Error.Set(span, true)
 	}
 	return res.Err
@@ -544,7 +545,7 @@ func (m *Manager) disconnectPlayer(ctx context.Context, p *player.Player, t *tab
 // addPlayer add the player to the manager instance and make them available for playing games
 // player must exist in the userdb
 func (m *Manager) addPlayer(in actions.PlayerAction) (*player.Player, error) {
-	span, _ := opentracing.StartSpanFromContext(in.Ctx, "register")
+	span, _ := opentracing.StartSpanFromContext(in.Ctx, "addPlayer")
 	span.SetTag("playerUsername", in.ClientInfo.PlayerUsername)
 	ext.Component.Set(span, "Manager")
 	defer span.Finish()
@@ -558,6 +559,9 @@ func (m *Manager) addPlayer(in actions.PlayerAction) (*player.Player, error) {
 	u, err := users.Load(username)
 	if err != nil {
 		ext.Error.Set(span, true)
+		span.LogFields(
+			log.String("error", err.Error()),
+		)
 		return nil, err
 	}
 

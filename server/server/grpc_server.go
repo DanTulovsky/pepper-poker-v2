@@ -13,7 +13,10 @@ import (
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
 	"github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go/ext"
+	"github.com/opentracing/opentracing-go/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/channelz/service"
 	"google.golang.org/grpc/codes"
@@ -72,13 +75,15 @@ func secureGRPCServer(cert tls.Certificate, authClient *auth.Server, managerChan
 		grpc.Creds(credentials.NewServerTLSFromCert(&cert)),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
 			grpc_auth.StreamServerInterceptor(authClient.PokerAuthFunc),
-			grpc_opentracing.StreamServerInterceptor(grpc_opentracing.WithTracer(opentracing.GlobalTracer())),
+			// grpc_opentracing.StreamServerInterceptor(grpc_opentracing.WithTracer(opentracing.GlobalTracer())),
+			otgrpc.OpenTracingStreamServerInterceptor(opentracing.GlobalTracer()),
 			grpc_prometheus.StreamServerInterceptor,
 			grpc_recovery.StreamServerInterceptor(recoveryOpts...),
 		)),
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
 			grpc_auth.UnaryServerInterceptor(authClient.PokerAuthFunc),
-			grpc_opentracing.UnaryServerInterceptor(grpc_opentracing.WithTracer(opentracing.GlobalTracer())),
+			// grpc_opentracing.UnaryServerInterceptor(grpc_opentracing.WithTracer(opentracing.GlobalTracer())),
+			otgrpc.OpenTracingServerInterceptor(opentracing.GlobalTracer()),
 			grpc_prometheus.UnaryServerInterceptor,
 			grpc_recovery.UnaryServerInterceptor(recoveryOpts...),
 		)),
@@ -249,9 +254,10 @@ func (ps *pokerServer) AckToken(ctx context.Context, in *ppb.AckTokenRequest) (*
 // Play is a server streaming RPC that us used to send GameData back to the client as needed
 func (ps *pokerServer) Play(in *ppb.PlayRequest, stream ppb.PokerServer_PlayServer) error {
 	ps.l.Info("Received Play RPC")
+	ctx := stream.Context()
 
 	cinfo := in.GetClientInfo()
-	cinfo.PlayerUsername = *stream.Context().Value(auth.UinfoType("uinfo")).(*gocloak.UserInfo).PreferredUsername
+	cinfo.PlayerUsername = *ctx.Value(auth.UinfoType("uinfo")).(*gocloak.UserInfo).PreferredUsername
 
 	// Create a channel that the game can send data back to the client on
 	// it is read in the goroutine started below
@@ -277,6 +283,7 @@ OUTER:
 	for {
 		select {
 		case input, ok := <-toPlayerC:
+
 			if !ok {
 				ps.l.Debug("Lost connection to table player channel")
 				err = fmt.Errorf("Lost connection to table player channel")
@@ -302,6 +309,11 @@ OUTER:
 
 func (ps *pokerServer) playerDisconnected(ctx context.Context, cinfo *ppb.ClientInfo) error {
 
+	span, _ := opentracing.StartSpanFromContext(ctx, "playerDisconnected")
+	span.SetTag("playerUsername", cinfo.PlayerUsername)
+	ext.Component.Set(span, "Manager")
+	defer span.Finish()
+
 	resultc := make(chan actions.PlayerActionResult)
 	action := actions.NewPlayerAction(ctx, ppb.PlayerAction_PlayerActionDisconnect, nil, cinfo, nil, resultc)
 
@@ -311,6 +323,10 @@ func (ps *pokerServer) playerDisconnected(ctx context.Context, cinfo *ppb.Client
 	// block on response, an error here means we failed to subscribe and should exit
 	res := <-resultc
 	if res.Err != nil {
+		ext.Error.Set(span, true)
+		span.LogFields(
+			log.String("error", res.Err.Error()),
+		)
 		return fmt.Errorf("invalid request: %v", res.Err)
 	}
 
