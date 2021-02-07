@@ -286,8 +286,12 @@ OUTER:
 		case input, ok := <-toPlayerC:
 
 			span, _ := opentracing.StartSpanFromContext(ctx, "sendPlayerUpdate")
-			span.SetTag("playerUsername", cinfo.PlayerUsername)
-			span.SetTag("waitTurnID", input.Data.WaitTurnID)
+			span.SetTag("playerUsername", cinfo.GetPlayerUsername())
+			span.SetTag("waitTurnName", input.Data.GetWaitTurnName())
+			span.SetTag("waitTurnNum", input.Data.GetWaitTurnNum())
+			span.SetTag("waitTurnTimeLeftSec", input.Data.GetWaitTurnTimeLeftSec())
+			span.SetTag("waitTurnTimeMaxSec", input.Data.GetWaitTurnTimeMaxSec())
+			span.SetTag("waitTurnTimeMaxSec", input.Data.GetInfo().GetTableName())
 			ext.Component.Set(span, "grpc_server")
 
 			if !ok {
@@ -300,7 +304,7 @@ OUTER:
 				break OUTER
 			}
 
-			ps.l.Debugf("Sending data to client (%v): %#v", in.ClientInfo.PlayerUsername, input.Data.WaitTurnID)
+			ps.l.Debugf("Sending data to client (%v): %#v", in.ClientInfo.GetPlayerUsername(), input.Data.GetWaitTurnName())
 			if err = stream.Send(input.Data); err != nil {
 				message := fmt.Sprintf("client connection to %v lost: %v", in.ClientInfo.PlayerUsername, err)
 				ps.l.Infof(message)
