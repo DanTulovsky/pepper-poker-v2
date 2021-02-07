@@ -284,17 +284,34 @@ OUTER:
 		select {
 		case input, ok := <-toPlayerC:
 
+			span, _ := opentracing.StartSpanFromContext(ctx, "sendPlayerUpdate")
+			span.SetTag("playerUsername", cinfo.PlayerUsername)
+			span.SetTag("waitTurnID", input.Data.WaitTurnID)
+			ext.Component.Set(span, "grpc_server")
+
 			if !ok {
 				ps.l.Debug("Lost connection to table player channel")
 				err = fmt.Errorf("Lost connection to table player channel")
+
+				ext.Error.Set(span, true)
+				span.LogFields(log.String("error", err.Error()))
+				span.Finish()
 				break OUTER
 			}
+
 			ps.l.Debugf("Sending data to client (%v): %#v", in.ClientInfo.PlayerUsername, input.Data.WaitTurnID)
 			if err = stream.Send(input.Data); err != nil {
-				ps.l.Infof("client connection to %v lost: %v", in.ClientInfo.PlayerUsername, err)
+				message := fmt.Sprintf("client connection to %v lost: %v", in.ClientInfo.PlayerUsername, err)
+				ps.l.Infof(message)
+
+				ext.Error.Set(span, true)
+				span.LogFields(log.String("error", message))
+				span.Finish()
 				break OUTER
 			}
 			ps.l.Debugf("Sent data to client (%v): %#v", in.ClientInfo.PlayerUsername, input.Data.WaitTurnID)
+
+			span.Finish()
 		}
 	}
 
@@ -311,7 +328,7 @@ func (ps *pokerServer) playerDisconnected(ctx context.Context, cinfo *ppb.Client
 
 	span, _ := opentracing.StartSpanFromContext(ctx, "playerDisconnected")
 	span.SetTag("playerUsername", cinfo.PlayerUsername)
-	ext.Component.Set(span, "Manager")
+	ext.Component.Set(span, "grpc_server")
 	defer span.Finish()
 
 	resultc := make(chan actions.PlayerActionResult)
@@ -324,9 +341,7 @@ func (ps *pokerServer) playerDisconnected(ctx context.Context, cinfo *ppb.Client
 	res := <-resultc
 	if res.Err != nil {
 		ext.Error.Set(span, true)
-		span.LogFields(
-			log.String("error", res.Err.Error()),
-		)
+		span.LogFields(log.String("error", res.Err.Error()))
 		return fmt.Errorf("invalid request: %v", res.Err)
 	}
 

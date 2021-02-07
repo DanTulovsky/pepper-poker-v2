@@ -521,7 +521,7 @@ func (m *Manager) firstAvailableTable() (*table.Table, error) {
 // disconnectPlayer handles a player that disconnected
 func (m *Manager) disconnectPlayer(ctx context.Context, p *player.Player, t *table.Table) error {
 
-	span, _ := opentracing.StartSpanFromContext(ctx, "disconnect")
+	span, _ := opentracing.StartSpanFromContext(ctx, "disconnectPlayer")
 	span.SetTag("playerUsername", p.Username)
 	ext.Component.Set(span, "Manager")
 	defer span.Finish()
