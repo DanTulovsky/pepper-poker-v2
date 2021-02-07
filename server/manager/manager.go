@@ -257,7 +257,7 @@ func (m *Manager) processPlayerRequests() {
 
 		case proto.PlayerAction_PlayerActionJoinTable:
 			var pos int
-			if tableID, pos, err = m.joinTable(p, t); err != nil {
+			if tableID, pos, err = m.joinTable(in.Ctx, p, t); err != nil {
 				m.l.Error(err)
 				in.ResultC <- actions.NewPlayerActionError(err)
 				break
@@ -464,9 +464,18 @@ func (m *Manager) playerBet(p *player.Player, t *table.Table, amount int64) erro
 }
 
 // jointable attempts to join a table
-func (m *Manager) joinTable(p *player.Player, t *table.Table) (tableID id.TableID, pos int, err error) {
+func (m *Manager) joinTable(ctx context.Context, p *player.Player, t *table.Table) (tableID id.TableID, pos int, err error) {
+	span, _ := opentracing.StartSpanFromContext(ctx, "joinTable")
+	span.SetTag("playerUsername", p.Username)
+	ext.Component.Set(span, "Manager")
+	defer span.Finish()
+
 	if p == nil {
-		return "", -1, fmt.Errorf("joinTable received nil player")
+		err = fmt.Errorf("joinTable received nil player")
+		span.LogFields(log.String("error", err.Error()))
+		ext.Error.Set(span, true)
+
+		return "", -1, err
 	}
 
 	pos = -1
@@ -475,6 +484,8 @@ func (m *Manager) joinTable(p *player.Player, t *table.Table) (tableID id.TableI
 	if t == nil {
 		t, err = m.firstAvailableTable()
 		if err != nil {
+			span.LogFields(log.String("error", err.Error()))
+			ext.Error.Set(span, true)
 			return
 		}
 	}
@@ -488,9 +499,12 @@ func (m *Manager) joinTable(p *player.Player, t *table.Table) (tableID id.TableI
 	res := <-result
 	err = res.Err
 	if err != nil {
+		span.LogFields(log.String("error", err.Error()))
+		ext.Error.Set(span, true)
 		return
 	}
 
+	span.SetTag("table", t.Name)
 	r := res.Result.(table.ActionAddPlayerResult)
 	return t.ID, r.Position, err
 }
@@ -534,9 +548,7 @@ func (m *Manager) disconnectPlayer(ctx context.Context, p *player.Player, t *tab
 	res := <-result
 
 	if res.Err != nil {
-		span.LogFields(
-			log.String("error", res.Err.Error()),
-		)
+		span.LogFields(log.String("error", res.Err.Error()))
 		ext.Error.Set(span, true)
 	}
 	return res.Err

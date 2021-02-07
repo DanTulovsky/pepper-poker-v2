@@ -11,7 +11,6 @@ import (
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
-	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
 	"github.com/opentracing/opentracing-go"
@@ -38,12 +37,14 @@ func insecureGRPCServer(managerChan chan actions.PlayerAction) *grpc.Server {
 	opts := []grpc.ServerOption{
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
 			// grpc_auth.StreamServerInterceptor(pokerAuthFunc),
-			grpc_opentracing.StreamServerInterceptor(grpc_opentracing.WithTracer(opentracing.GlobalTracer())),
+			// grpc_opentracing.StreamServerInterceptor(grpc_opentracing.WithTracer(opentracing.GlobalTracer())),
+			otgrpc.OpenTracingStreamServerInterceptor(opentracing.GlobalTracer()),
 			grpc_prometheus.StreamServerInterceptor,
 		)),
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
 			// grpc_auth.UnaryServerInterceptor(pokerAuthFunc),
-			grpc_opentracing.UnaryServerInterceptor(grpc_opentracing.WithTracer(opentracing.GlobalTracer())),
+			// grpc_opentracing.UnaryServerInterceptor(grpc_opentracing.WithTracer(opentracing.GlobalTracer())),
+			otgrpc.OpenTracingServerInterceptor(opentracing.GlobalTracer()),
 			grpc_prometheus.UnaryServerInterceptor,
 		)),
 	}
