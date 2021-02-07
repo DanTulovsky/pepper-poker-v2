@@ -20,7 +20,7 @@ import (
 )
 
 var (
-	tickDelay = flag.Duration("table_tick_delay", time.Millisecond*100, "delay between table ticks")
+	tickDelay = flag.Duration("table_tick_delay", time.Second*1, "delay between table ticks")
 )
 
 // Table hosts a game and allows playing multiple rounds
@@ -86,6 +86,9 @@ type Table struct {
 
 	gameStartsInTime time.Duration
 
+	// keeps track of the last time the table ticked
+	lastTickTime time.Time
+
 	l *logger.Logger
 }
 
@@ -115,6 +118,8 @@ func New(tableAction chan ActionRequest) *Table {
 		gameEndDelay:      time.Second * 10,
 		gameWaitTimeout:   time.Second * 10,
 		stateAdvanceDelay: time.Second * 0,
+
+		lastTickTime: time.Now(),
 	}
 
 	t.positions = make([]*player.Player, t.maxPlayers)
@@ -164,12 +169,28 @@ func New(tableAction chan ActionRequest) *Table {
 // Run runs the table
 func (t *Table) Run() error {
 	t.l.Infof("Table [%v] starting run loop...", t.Name)
-	for {
-		if err := t.Tick(); err != nil {
-			return err
+
+	ticker := time.NewTicker(*tickDelay)
+	done := make(chan bool)
+	errc := make(chan error)
+
+	go func(t *Table) {
+		for {
+			select {
+			case <-done:
+				errc <- nil
+
+			case <-ticker.C:
+				if err := t.Tick(); err != nil {
+					errc <- err
+					return
+				}
+			}
 		}
-		time.Sleep(*tickDelay)
-	}
+	}(t)
+
+	err := <-errc
+	return err
 }
 
 // ResetPlayersBets resets player bet this round
