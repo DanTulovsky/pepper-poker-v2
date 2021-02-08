@@ -800,13 +800,15 @@ func (t *Table) haveWinner() bool {
 // sendUpdateToPlayers sends updates to players as needed
 func (t *Table) sendUpdateToPlayers() {
 
-	pl := t.State.WaitingTurnPlayer()
+	// pl := t.State.WaitingTurnPlayer()
 
-	if pl == nil {
-		if t.currentAckToken != nil && t.currentAckToken.AllAcked() {
-			return
-		}
-	}
+	// // don't send player updates if not waiting for a player's turn
+	// if pl == nil {
+	// 	// unless there is an ack token
+	// 	if t.currentAckToken != nil && t.currentAckToken.AllAcked() {
+	// 		return
+	// 	}
+	// }
 
 	// note that this sends updates to all ActivePlayers, not just the ones playing a hand
 	for _, p := range t.ActivePlayers() {
