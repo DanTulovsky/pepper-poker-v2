@@ -802,8 +802,10 @@ func (t *Table) sendUpdateToPlayers() {
 
 	pl := t.State.WaitingTurnPlayer()
 
-	if pl == nil || (t.currentAckToken != nil && t.currentAckToken.AllAcked()) {
-		return
+	if pl == nil {
+		if t.currentAckToken != nil && t.currentAckToken.AllAcked() {
+			return
+		}
 	}
 
 	// note that this sends updates to all ActivePlayers, not just the ones playing a hand
