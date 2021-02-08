@@ -802,7 +802,7 @@ func (t *Table) sendUpdateToPlayers() {
 
 	pl := t.State.WaitingTurnPlayer()
 
-	if pl == nil && t.currentAckToken != nil && !t.currentAckToken.AllAcked() {
+	if pl == nil || (t.currentAckToken != nil && t.currentAckToken.AllAcked()) {
 		return
 	}
 
