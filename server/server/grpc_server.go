@@ -285,7 +285,7 @@ OUTER:
 		select {
 		case input, ok := <-toPlayerC:
 
-			span, _ := opentracing.StartSpanFromContext(ctx, "sendPlayerUpdate")
+			span := opentracing.StartSpan("sendPlayerUpdate")
 			span.SetTag("playerUsername", cinfo.GetPlayerUsername())
 			span.SetTag("waitTurnName", input.Data.GetWaitTurnName())
 			span.SetTag("waitTurnNum", input.Data.GetWaitTurnNum())
