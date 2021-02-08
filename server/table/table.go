@@ -799,6 +799,12 @@ func (t *Table) haveWinner() bool {
 
 // sendUpdateToPlayers sends updates to players as needed
 func (t *Table) sendUpdateToPlayers() {
+
+	pl := t.State.WaitingTurnPlayer()
+	if pl == nil {
+		return
+	}
+
 	// note that this sends updates to all ActivePlayers, not just the ones playing a hand
 	for _, p := range t.ActivePlayers() {
 		in := t.gameDataProto(p)
