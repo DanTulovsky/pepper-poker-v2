@@ -801,9 +801,8 @@ func (t *Table) haveWinner() bool {
 func (t *Table) sendUpdateToPlayers() {
 
 	pl := t.State.WaitingTurnPlayer()
-	needAck := t.currentAckToken.AllAcked()
 
-	if pl == nil && !needAck {
+	if pl == nil && t.currentAckToken != nil && !t.currentAckToken.AllAcked() {
 		return
 	}
 
