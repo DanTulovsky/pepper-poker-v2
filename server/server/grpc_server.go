@@ -291,7 +291,7 @@ OUTER:
 			span.SetTag("waitTurnNum", input.Data.GetWaitTurnNum())
 			span.SetTag("waitTurnTimeLeftSec", input.Data.GetWaitTurnTimeLeftSec())
 			span.SetTag("waitTurnTimeMaxSec", input.Data.GetWaitTurnTimeMaxSec())
-			span.SetTag("waitTurnTimeMaxSec", input.Data.GetInfo().GetTableName())
+			span.SetTag("tableName", input.Data.GetInfo().GetTableName())
 			ext.Component.Set(span, "grpc_server")
 
 			if !ok {

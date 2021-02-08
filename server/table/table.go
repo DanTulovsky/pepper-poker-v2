@@ -802,6 +802,7 @@ func (t *Table) sendUpdateToPlayers() {
 
 	// pl := t.State.WaitingTurnPlayer()
 
+	// TODO: This breaks the flow of updates when, e.g., players go all-in
 	// // don't send player updates if not waiting for a player's turn
 	// if pl == nil {
 	// 	// unless there is an ack token
