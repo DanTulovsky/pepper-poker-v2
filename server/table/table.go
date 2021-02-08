@@ -20,7 +20,7 @@ import (
 )
 
 var (
-	tickDelay = flag.Duration("table_tick_delay", time.Second*1, "delay between table ticks")
+	tickDelay = flag.Duration("table_tick_delay", time.Millisecond*100, "delay between table ticks")
 )
 
 // Table hosts a game and allows playing multiple rounds
