@@ -731,7 +731,7 @@ func loadTLSCredentials(serverAddr string) (credentials.TransportCredentials, er
 		return nil, fmt.Errorf("failed to add server CA's certificate")
 	}
 
-	keyFile := "/Users/dant/Downloads/snoop/grpc.log"
+	keyFile := "/tmp/grpc.log"
 	w, err := os.OpenFile(keyFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return nil, err
