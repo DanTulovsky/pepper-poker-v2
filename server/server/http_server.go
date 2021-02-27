@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"html/template"
-	"log"
 	"net/http"
 	"net/http/httputil"
 	"path"
@@ -41,13 +40,11 @@ func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	ectx, err := tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(r.Header))
 	if err != nil {
-		log.Println(err)
+		// log.Println(err)
 	}
 	// spew.Dump(ectx)
 
-	span := opentracing.StartSpan("/",
-		ext.RPCServerOption(ectx),
-	)
+	span := opentracing.StartSpan("/", ext.RPCServerOption(ectx))
 	span.SetTag("user_agent", r.UserAgent())
 	// spew.Dump(span)
 
