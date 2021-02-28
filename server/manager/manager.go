@@ -115,7 +115,7 @@ func (m *Manager) enableTracer() (io.Closer, error) {
 	// github.com/DanTulovsky/k8s-configs/configs/jaeger/operator-config.yaml has the config
 	cfg.Sampler = &jaegercfg.SamplerConfig{
 		Type:              jaeger.SamplerTypeRemote,
-		Param:             0, // default sampling if server does not answer
+		Param:             1, // default sampling if server does not answer
 		SamplingServerURL: jaegerSamplingServerURL,
 	}
 	cfg.RPCMetrics = true
