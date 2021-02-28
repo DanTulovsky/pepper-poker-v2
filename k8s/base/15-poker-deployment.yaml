@@ -8,6 +8,7 @@ spec:
   replicas: 1
   selector:
     matchLabels:
+      # these are part of the deployment, immutable once set
       app.kubernetes.io/name: pepper-poker
       app.kubernetes.io/instance: pepper-poker-0
       app.kubernetes.io/component: single
@@ -19,9 +20,10 @@ spec:
   template:
     metadata:
       labels:
+        # must include the matchLabels from above, but also can include others
         app.kubernetes.io/name: pepper-poker
         app.kubernetes.io/instance: pepper-poker-0
-        app.kubernetes.io/version: "latest"
+        # app.kubernetes.io/version: "latest"
         app.kubernetes.io/component: single
     spec:
       containers:
