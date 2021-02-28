@@ -42,7 +42,7 @@ spec:
                 secretKeyRef:
                   name: pepper-poker-secrets
                   key: PEPPER_POKER_CLIENT_SECRET
-          image: ghcr.io/dantulovsky/pepper-poker-v2/server:latest
+          image: ghcr.io/dantulovsky/pepper-poker-v2/server:TAG
           name: pepper-poker
           ports:
             - containerPort: 8081

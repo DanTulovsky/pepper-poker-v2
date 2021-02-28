@@ -1,3 +1,4 @@
+# https://github.com/google-github-actions/setup-gcloud/tree/master/example-workflows/gke
 name: Docker
 
 on:
@@ -15,6 +16,13 @@ on:
 
 env:
   IMAGE_NAME: server
+  PROJECT_ID: ${{ secrets.GKE_PROJECT }}
+  GKE_CLUSTER: cluster0
+  GKE_REGION: us-east1
+  DEPLOYMENT_NAME: pepper-poker
+  GHCR_USERNAME: dantulovsky
+  GHCR_REPO: pepper-poker-v2
+  GHCR_HOST: ghcr.io
 
 jobs:
   # Run tests.
@@ -49,6 +57,22 @@ jobs:
       - name: Build image
         run: docker build . --file Dockerfile --tag $IMAGE_NAME
 
+      # Setup gcloud CLI
+      - uses: google-github-actions/setup-gcloud@master
+        with:
+          version: "290.0.1"
+          service_account_key: ${{ secrets.GKE_SA_KEY }}
+          project_id: ${{ secrets.GKE_PROJECT }}
+
+      # Configure Docker to use the gcloud command-line tool as a credential
+      # helper for authentication
+      - run: |-
+          gcloud --quiet auth configure-docker
+
+      # Get the GKE credentials so we can deploy to the cluster
+      - run: |-
+          gcloud container clusters get-credentials "$GKE_CLUSTER" --region "$GKE_REGION"
+
       - name: Log into registry
         run: echo "${{ secrets.CR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
@@ -74,19 +98,23 @@ jobs:
           docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
           docker push $IMAGE_ID:$VERSION
 
-      - name: Install doctl
-        uses: digitalocean/action-doctl@v2
-        with:
-          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+      # Set up kustomize
+      - name: Set up Kustomize
+        run: |-
+          curl -sfLo kustomize https://github.com/kubernetes-sigs/kustomize/releases/download/v3.1.0/kustomize_3.1.0_linux_amd64
+          chmod u+x ./kustomize
 
-      - name: Save DigitalOcean kubeconfig with short-lived credentials
-        run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 cluster-1
+      # Deploy the Docker image to the GKE cluster
+      - name: Deploy
+        run: |-
+          ./kustomize edit set image $GHCR_HOST/$GHCR_USERNAME/$GHCR_REPO/$IMAGE_NAME:TAG=$GHCR_HOST/$GHCR_USERNAME/$GHCR_REPO/$IMAGE_NAME:$GITHUB_SHA
+          ./kustomize edit set label version:$GITHUB_SHA
+          ./kustomize build . | kubectl apply -f -
+          kubectl rollout status deployment/$DEPLOYMENT_NAME
+          kubectl get services -o wide
 
-      - name: Deploy to DigitalOcean Kubernetes
-        run: kubectl --namespace poker apply -f $GITHUB_WORKSPACE/k8s/15-poker-deployment.yaml
-
-      - name: Rolling restart Deployment
-        run: kubectl --namespace poker rollout restart deployment/pepper-poker
+      # - name: Rolling restart Deployment
+      #   run: kubectl --namespace poker rollout restart deployment/pepper-poker
 
       - name: Verify deployment
-        run: kubectl --namespace poker rollout status deployment/pepper-poker
+        run: kubectl --namespace poker rollout status deployment/$DEPLOYMENT_NAME
