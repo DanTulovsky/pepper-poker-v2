@@ -3,12 +3,15 @@ kind: Deployment
 metadata:
   name: pepper-poker
   namespace: poker
+  labels:
+    version: latest
 spec:
   minReadySeconds: 30
   replicas: 1
   selector:
     matchLabels:
       app: pepper-poker
+      version: latest
   strategy:
     rollingUpdate:
       maxSurge: 1

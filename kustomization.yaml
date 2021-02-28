@@ -1,7 +1,13 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - k8s/00-monitoring-prom.yaml
-  - k8s/15-poker-deployment.yaml
-  - k8s/20-poker-service-http.yaml
-  - k8s/21-poker-service-grpc.yaml
+- k8s/00-monitoring-prom.yaml
+- k8s/15-poker-deployment.yaml
+- k8s/20-poker-service-http.yaml
+- k8s/21-poker-service-grpc.yaml
+commonLabels:
+  version: latest
+images:
+- name: ghcr.io/dantulovsky/pepper-poker-v2/server:TAG
+  newName: ghcr.io/dantulovsky/pepper-poker-v2/server
+  newTag: latest
