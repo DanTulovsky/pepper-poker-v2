@@ -41,7 +41,7 @@ jobs:
       - name: Build image
         run: |-
           docker build \
-            --file Dockerfile
+            --file Dockerfile \
             --tag $GHCR_HOST/$GHCR_USERNAME/$GHCR_REPO/$IMAGE_NAME:$GITHUB_SHA \
             --tag $GHCR_HOST/$GHCR_USERNAME/$GHCR_REPO/$IMAGE_NAME:latest \
             --build-arg GITHUB_SHA="$GITHUB_SHA" \
