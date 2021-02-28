@@ -3,23 +3,27 @@ kind: Deployment
 metadata:
   name: pepper-poker
   namespace: poker
-  labels:
-    app.kubernetes.io/name: pepper-poker
-    app.kubernetes.io/instance: pepper-poker-0
-    app.kubernetes.io/version: "latest"
-    app.kubernetes.io/component: single
 spec:
   minReadySeconds: 30
   replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: pepper-poker
+      app.kubernetes.io/instance: pepper-poker-0
+      app.kubernetes.io/version: "latest"
+      app.kubernetes.io/component: single
   strategy:
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 1
     type: RollingUpdate
   template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: pepper-poker
+        app.kubernetes.io/instance: pepper-poker-0
+        app.kubernetes.io/version: "latest"
+        app.kubernetes.io/component: single
     spec:
       containers:
         - args:
