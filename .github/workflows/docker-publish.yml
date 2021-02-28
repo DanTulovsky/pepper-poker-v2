@@ -42,9 +42,9 @@ jobs:
   #           docker build . --file Dockerfile
   #         fi
 
-  # Push image to GitHub Packages.
+  # Build, push and deploy
   # See also https://docs.docker.com/docker-hub/builds/
-  push:
+  build_push_deploy:
     # Ensure test job passes before pushing image.
     # needs: test
 
