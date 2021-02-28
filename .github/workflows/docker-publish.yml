@@ -69,7 +69,6 @@ jobs:
 
       - name: Push image
         run: |-
-
           docker push $GHCR_HOST/$GHCR_USERNAME/$GHCR_REPO/$IMAGE_NAME:$GITHUB_SHA
           docker push $GHCR_HOST/$GHCR_USERNAME/$GHCR_REPO/$IMAGE_NAME:latest
 
@@ -87,8 +86,8 @@ jobs:
           ../../kustomize edit set image $GHCR_HOST/$GHCR_USERNAME/$GHCR_REPO/$IMAGE_NAME:latest=$GHCR_HOST/$GHCR_USERNAME/$GHCR_REPO/$IMAGE_NAME:$GITHUB_SHA
           # How to deal with version labels properly?
           # ./kustomize edit set label app.kubernetes.io/version:$GITHUB_SHA
-          ../../kustomize build . | kubectl --namespace=$NAMESPACE apply -f -
           popd
+          kubectl apply -k k8s/base/.
 
       - name: Verify deployment
         run: |-
