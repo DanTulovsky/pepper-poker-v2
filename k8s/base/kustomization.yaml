@@ -1,5 +1,11 @@
+# https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+namespace: poker
+commonLabels:
+  app.kubernetes.io/managed-by: manual
+commonAnnotations:
+  dogName: pepper
 resources:
   - 00-monitoring-prom.yaml
   - 15-poker-deployment.yaml

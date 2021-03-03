@@ -1,0 +1,3 @@
+- op: replace
+  path: /spec/minReadySeconds
+  value: 45

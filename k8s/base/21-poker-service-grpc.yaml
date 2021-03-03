@@ -15,7 +15,7 @@ spec:
       protocol: TCP
       name: grpc
   selector:
-    app: pepper-poker
+    app.kubernetes.io/name: pepper-poker
   type: NodePort
   # type: LoadBalancer
   # clusterIP: None # headless service

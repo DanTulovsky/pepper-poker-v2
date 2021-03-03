@@ -8,11 +8,11 @@ metadata:
     service: pepper-poker-http-service
 spec:
   ports:
-    - port: 8081  # no targetPort for headless service
+    - port: 8081 # no targetPort for headless service
       # targetPort: http
       protocol: TCP
       name: http
   selector:
-    app: pepper-poker
+    app.kubernetes.io/name: pepper-poker
   type: ClusterIP
-  clusterIP: None  # headless service
+  clusterIP: None # headless service
