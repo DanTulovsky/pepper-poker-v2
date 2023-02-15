@@ -27,7 +27,7 @@ require (
 	github.com/ozankasikci/go-image-merge v0.2.2 // indirect
 	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2
 	github.com/pquerna/cachecontrol v0.0.0-20201205024021-ac21108117ac // indirect
-	github.com/prometheus/client_golang v1.9.0
+	github.com/prometheus/client_golang v1.11.1
 	github.com/qeesung/image2ascii v1.0.1 // indirect
 	github.com/rantav/go-grpc-channelz v0.0.2
 	github.com/tcnksm/go-input v0.0.0-20180404061846-548a7d7a8ee8
@@ -35,10 +35,11 @@ require (
 	github.com/uber/jaeger-lib v2.4.0+incompatible
 	github.com/wayneashleyberry/terminal-dimensions v1.0.0 // indirect
 	go.opencensus.io v0.22.5
+	go.uber.org/atomic v1.5.0 // indirect
 	golang.org/x/net v0.0.0-20201224014010-6772e930b67b // indirect
 	golang.org/x/oauth2 v0.0.0-20201208152858-08078c50e5b5
 	google.golang.org/grpc v1.34.0
 	google.golang.org/grpc/examples v0.0.0-20201226181154-53788aa5dcb4 // indirect
-	google.golang.org/protobuf v1.25.0
+	google.golang.org/protobuf v1.26.0-rc.1
 	gopkg.in/square/go-jose.v2 v2.5.1 // indirect
 )
