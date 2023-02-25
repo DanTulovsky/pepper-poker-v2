@@ -35,7 +35,7 @@ require (
 	github.com/uber/jaeger-lib v2.4.0+incompatible
 	github.com/wayneashleyberry/terminal-dimensions v1.0.0 // indirect
 	go.opencensus.io v0.22.5
-	golang.org/x/net v0.0.0-20201224014010-6772e930b67b // indirect
+	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20201208152858-08078c50e5b5
 	google.golang.org/grpc v1.34.0
 	google.golang.org/grpc/examples v0.0.0-20201226181154-53788aa5dcb4 // indirect
